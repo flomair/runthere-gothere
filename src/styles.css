@@ -1,0 +1,50 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+.leaflet-container {
+  font: inherit;
+  background: #dfe6e9;
+}
+.rtgt-marker {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+  color: #fff;
+  font-size: 16px;
+}
+.rtgt-marker.me {
+  background: #fc4c02;
+  animation: rtgt-pulse 2s infinite;
+}
+.rtgt-marker.start {
+  background: #1d3557;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+}
+.rtgt-marker.goal {
+  background: #2a9d8f;
+}
+.rtgt-marker.peek {
+  background: #6c5ce7;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+@keyframes rtgt-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(252 76 2 / 55%);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgb(252 76 2 / 0%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(252 76 2 / 0%);
+  }
+}
