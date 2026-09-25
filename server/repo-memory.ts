@@ -1,5 +1,5 @@
-import type { Activity, Journey, Milestone } from '../shared/types.js';
-import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, toStored } from './repo.js';
+import type { Activity, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
+import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 
 const merge = <T extends object>(base: T, patch: object): T => {
   const out = { ...base } as Record<string, unknown>;
@@ -20,6 +20,9 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const activities = new Map<string, Map<number, Activity>>();
   const narrations = new Map<string, Map<string, { text: string; at: string }>>();
   const milestones = new Map<string, Map<string, Milestone>>();
+  const groups = new Map<string, ReturnType<typeof toStoredGroup>>();
+  const feeds = new Map<string, Map<string, FeedItem>>();
+  const shares = new Map<string, { uid: string; journeyId: string; createdAt: string }>();
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
     return m.get(uid)!;
@@ -59,5 +62,24 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
       [...sub(milestones, uid).values()].filter((m) => !journeyId || m.journeyId === journeyId).sort((a, b) => a.atM - b.atM),
     getMilestone: async (uid, id) => sub(milestones, uid).get(id) ?? null,
     putMilestone: async (uid, m) => void sub(milestones, uid).set(m.id, structuredClone(m)),
+    getGroup: async (id) => (groups.has(id) ? fromStoredGroup(structuredClone(groups.get(id)!)) : null),
+    putGroup: async (g: Group) => void groups.set(g.id, structuredClone(toStoredGroup(g))),
+    deleteGroup: async (id) => {
+      groups.delete(id);
+      feeds.delete(id);
+    },
+    listGroupsFor: async (uid, email) =>
+      [...groups.values()]
+        .filter((g) => g.memberUids.includes(uid) || g.invitedEmails.includes(email))
+        .map((g) => fromStoredGroup(structuredClone(g)))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    listFeed: async (groupId, limit = 50) =>
+      [...sub(feeds, groupId).values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit).map((x) => structuredClone(x)),
+    getFeedItem: async (groupId, id) => (sub(feeds, groupId).has(id) ? structuredClone(sub(feeds, groupId).get(id)!) : null),
+    putFeedItem: async (groupId, item) => void sub(feeds, groupId).set(item.id, structuredClone(item)),
+    getShare: async (t) => shares.get(t) ?? null,
+    putShare: async (t, sh) => void shares.set(t, sh),
+    deleteShare: async (t) => void shares.delete(t),
+    listShares: async (uid, journeyId) => [...shares.entries()].filter(([, v]) => v.uid === uid && v.journeyId === journeyId).map(([k]) => k),
   };
 }

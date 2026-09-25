@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Journey, Milestone } from '../shared/types.js';
+import type { Activity, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
 import { db } from './firebase.js';
 
 /**
@@ -80,6 +80,20 @@ export interface Repo {
   listMilestones(uid: string, journeyId?: string): Promise<Milestone[]>;
   getMilestone(uid: string, id: string): Promise<Milestone | null>;
   putMilestone(uid: string, m: Milestone): Promise<void>;
+
+  getGroup(id: string): Promise<Group | null>;
+  putGroup(g: Group): Promise<void>;
+  deleteGroup(id: string): Promise<void>;
+  /** Groups the user belongs to or is invited to (by email). */
+  listGroupsFor(uid: string, email: string): Promise<Group[]>;
+  listFeed(groupId: string, limit?: number): Promise<FeedItem[]>;
+  getFeedItem(groupId: string, id: string): Promise<FeedItem | null>;
+  putFeedItem(groupId: string, item: FeedItem): Promise<void>;
+
+  getShare(token: string): Promise<{ uid: string; journeyId: string; createdAt: string } | null>;
+  putShare(token: string, share: { uid: string; journeyId: string; createdAt: string }): Promise<void>;
+  deleteShare(token: string): Promise<void>;
+  listShares(uid: string, journeyId: string): Promise<string[]>;
 }
 
 /** Firestore doc ids can't contain "/"; keep them short and safe. */
@@ -209,7 +223,57 @@ export const firestoreRepo: Repo = {
   async putMilestone(uid, m) {
     await db().collection('users').doc(uid).collection('milestones').doc(docId(m.id)).set(m);
   },
+
+  async getGroup(id) {
+    const d = await db().collection('groups').doc(docId(id)).get();
+    return d.exists ? fromStoredGroup(d.data() as StoredGroup) : null;
+  },
+  async putGroup(g) {
+    await db().collection('groups').doc(docId(g.id)).set(toStoredGroup(g));
+  },
+  async deleteGroup(id) {
+    await db().recursiveDelete(db().collection('groups').doc(docId(id)));
+  },
+  async listGroupsFor(uid, email) {
+    const [member, invited] = await Promise.all([
+      db().collection('groups').where('memberUids', 'array-contains', uid).get(),
+      db().collection('groups').where('invitedEmails', 'array-contains', email).get(),
+    ]);
+    const byId = new Map<string, Group>();
+    for (const d of [...member.docs, ...invited.docs]) byId.set(d.id, fromStoredGroup(d.data() as StoredGroup));
+    return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  async listFeed(groupId, limit = 50) {
+    const snap = await db().collection('groups').doc(docId(groupId)).collection('feed').orderBy('createdAt', 'desc').limit(limit).get();
+    return snap.docs.map((d) => d.data() as FeedItem);
+  },
+  async getFeedItem(groupId, id) {
+    const d = await db().collection('groups').doc(docId(groupId)).collection('feed').doc(docId(id)).get();
+    return d.exists ? (d.data() as FeedItem) : null;
+  },
+  async putFeedItem(groupId, item) {
+    await db().collection('groups').doc(docId(groupId)).collection('feed').doc(docId(item.id)).set(item);
+  },
+
+  async getShare(token) {
+    const d = await db().collection('shares').doc(docId(token)).get();
+    return d.exists ? (d.data() as { uid: string; journeyId: string; createdAt: string }) : null;
+  },
+  async putShare(token, share) {
+    await db().collection('shares').doc(docId(token)).set(share);
+  },
+  async deleteShare(token) {
+    await db().collection('shares').doc(docId(token)).delete();
+  },
+  async listShares(uid, journeyId) {
+    const snap = await db().collection('shares').where('uid', '==', uid).where('journeyId', '==', journeyId).get();
+    return snap.docs.map((d) => d.id);
+  },
 };
+
+type StoredGroup = Omit<Group, 'route'> & { route: { polyline: string; totalM: number; provider: string } };
+export const toStoredGroup = (g: Group): StoredGroup => ({ ...g, route: toStored({ route: g.route } as Journey).route });
+export const fromStoredGroup = (g: StoredGroup): Group => ({ ...g, route: fromStored({ route: g.route } as StoredJourney).route });
 
 /** The active repository (swappable in tests). */
 export let repo: Repo = firestoreRepo;

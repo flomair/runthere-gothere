@@ -9,8 +9,10 @@ import { journeyStore, useJourneyState } from './lib/storage';
 
 const JourneyView = lazy(() => import('./components/JourneyView'));
 const DiaryPage = lazy(() => import('./components/DiaryPage'));
+const GroupView = lazy(() => import('./components/GroupView'));
+const PublicView = lazy(() => import('./components/PublicView'));
 
-/** Tiny hash router: #/ (list), #/j/<id> (journey), #/j/<id>/diary, #/admin. */
+/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/g/<id> (shared journey), #/s/<token> (public), #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -19,7 +21,15 @@ function useHashRoute() {
     return () => window.removeEventListener('hashchange', on);
   }, []);
   const m = /^#\/j\/([^/]+)(\/diary)?/.exec(hash);
-  return { journeyId: m ? decodeURIComponent(m[1]) : null, diary: !!m?.[2], admin: hash.startsWith('#/admin') };
+  const g = /^#\/g\/([^/?]+)/.exec(hash);
+  const s = /^#\/s\/([^/?]+)/.exec(hash);
+  return {
+    journeyId: m ? decodeURIComponent(m[1]) : null,
+    diary: !!m?.[2],
+    groupId: g ? decodeURIComponent(g[1]) : null,
+    shareToken: s ? decodeURIComponent(s[1]) : null,
+    admin: hash.startsWith('#/admin'),
+  };
 }
 
 function useStravaFlash() {
@@ -37,7 +47,7 @@ function useStravaFlash() {
 }
 
 function Main() {
-  const { journeyId, diary, admin } = useHashRoute();
+  const { journeyId, diary, groupId, admin } = useHashRoute();
   const { journeys, status, error } = useJourneyState();
   const journey = journeyId ? journeys.find((j) => j.id === journeyId) : undefined;
   const [flash, clearFlash] = useStravaFlash();
@@ -51,9 +61,13 @@ function Main() {
             {error}
           </Alert>
         )}
-        <PageTransition routeKey={admin ? 'admin' : journey ? `${journey.id}${diary ? '/diary' : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
+        <PageTransition routeKey={admin ? 'admin' : groupId ? `g/${groupId}` : journey ? `${journey.id}${diary ? '/diary' : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
         {admin ? (
             <AdminPage />
+          ) : groupId ? (
+            <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
+              <GroupView key={groupId} id={groupId} />
+            </Suspense>
           ) : status !== 'ready' && status !== 'error' ? (
             <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />
           ) : journey ? (
@@ -77,6 +91,15 @@ function Main() {
 }
 
 export default function App() {
+  const { shareToken } = useHashRoute();
+  // public share links work without signing in
+  if (shareToken) {
+    return (
+      <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
+        <PublicView token={shareToken} />
+      </Suspense>
+    );
+  }
   return (
     <AuthGate>
       <Main />

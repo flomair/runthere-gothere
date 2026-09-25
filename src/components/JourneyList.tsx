@@ -23,6 +23,7 @@ import type { Journey } from '../lib/types';
 import NewJourneyDialog, { type JourneyPreset } from './NewJourneyDialog';
 import RouteSketch from './RouteSketch';
 import { AnimatedBar, Stagger, StaggerItem } from './motion';
+import SharedJourneys from './SharedJourneys';
 import StravaButton from './StravaButton';
 
 const PRESETS: JourneyPreset[] = [
@@ -235,6 +236,8 @@ export default function JourneyList() {
           {importError}
         </Alert>
       )}
+
+      <SharedJourneys />
 
       <Box>
         <Stack direction="row" sx={{ alignItems: 'center', mb: 2, gap: 1 }}>

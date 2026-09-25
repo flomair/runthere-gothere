@@ -31,7 +31,9 @@ import GoalsCard from './GoalsCard';
 import JourneySettingsDialog from './JourneySettingsDialog';
 import LocationExplorer from './LocationExplorer';
 import RouteMap from './RouteMap';
+import InviteDialog from './InviteDialog';
 import JourneyHero from './JourneyHero';
+import ShareDialog from './ShareDialog';
 import { PageTransition, Reveal } from './motion';
 import SectionNav, { type Section } from './SectionNav';
 import StravaButton from './StravaButton';
@@ -93,6 +95,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [selected, setSelected] = useState<ProgressEntry | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -186,6 +190,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
 
   const menuEl = (
     <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
+      <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}>📤 Share card &amp; public link</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}>👥 Invite friends (race or relay)</MenuItem>
       <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>Settings</MenuItem>
       <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>Download route as GPX</MenuItem>
       {journey.trail && (
@@ -435,6 +441,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         Route: {journey.route.provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{me?.features.mapillary ? ', Mapillary' : ''}. Weather: Open-Meteo.
       </Typography>
       <JourneySettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} journey={journey} />
+      <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} journey={journey} />
+      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} journey={journey} doneM={progress.doneM} />
     </Stack>
   );
 }

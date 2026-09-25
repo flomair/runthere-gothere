@@ -241,3 +241,86 @@ export interface Milestone {
   postcard?: { text: string; at: string };
   seen?: boolean;
 }
+
+// ---------- friends: shared journeys ----------
+
+export type GroupMode = 'race' | 'relay';
+
+export interface GroupMember {
+  uid: string;
+  name: string;
+  email: string;
+  picture?: string;
+  joinedAt: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  mode: GroupMode;
+  ownerUid: string;
+  memberUids: string[];
+  members: Record<string, GroupMember>;
+  invitedEmails: string[];
+  route: Journey['route'];
+  waypoints: Waypoint[];
+  startDate: string;
+  sportTypes: string[];
+  countElevation?: boolean;
+  createdAt: string;
+}
+
+export interface Standing {
+  uid: string;
+  name: string;
+  picture?: string;
+  /** Race: own distance along the route. Relay: this member's contribution. */
+  distanceM: number;
+  /** Race: position along the route (≤ total). */
+  doneM: number;
+  lastActivity?: string;
+  weeklyAvgM: number;
+  point: LatLon;
+  finishedOn?: string;
+}
+
+export interface GroupStandings {
+  group: Group;
+  standings: Standing[];
+  /** Relay: the team's combined distance along the route. */
+  team?: { doneM: number; point: LatLon; finishedOn?: string };
+}
+
+export interface FeedComment {
+  uid: string;
+  name: string;
+  text: string;
+  at: string;
+}
+
+export interface FeedItem {
+  id: string;
+  type: 'milestone' | 'post' | 'join';
+  uid: string;
+  name: string;
+  picture?: string;
+  text: string;
+  milestone?: { kind: MilestoneKind; title: string; atM: number; countryCode?: string };
+  createdAt: string;
+  kudos: string[];
+  comments: FeedComment[];
+}
+
+/** What a public share link shows (no personal data beyond a first name). */
+export interface PublicJourney {
+  name: string;
+  ownerFirstName: string;
+  from: string;
+  to: string;
+  totalM: number;
+  doneM: number;
+  points: LatLon[];
+  position: LatLon;
+  place?: string;
+  updatedAt: string;
+}
