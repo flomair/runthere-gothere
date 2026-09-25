@@ -137,3 +137,71 @@ export async function commonsSearch(lat: number, lon: number, max: number): Prom
   }
   return photos.sort((a, b) => (b.takenAt ?? '').localeCompare(a.takenAt ?? ''));
 }
+
+/** The Mapillary image closest to the point (within ~1 km), or null. */
+export async function mapillaryNearest(lat: number, lon: number): Promise<Photo | null> {
+  const token = process.env.MAPILLARY_TOKEN;
+  if (!token) return null;
+  for (const r of [0.0015, 0.005, 0.01]) {
+    const bbox = [lon - r, lat - r, lon + r, lat + r].map((v) => v.toFixed(6)).join(',');
+    const u = new URL('https://graph.mapillary.com/images');
+    u.searchParams.set('access_token', token);
+    u.searchParams.set('fields', 'id,captured_at,thumb_1024_url,thumb_2048_url,creator,geometry');
+    u.searchParams.set('bbox', bbox);
+    u.searchParams.set('limit', '30');
+    const res = await fetchJson<MapillaryResponse>(u.toString()).catch(() => null);
+    const data = res?.data?.filter((d) => d.thumb_1024_url) ?? [];
+    if (!data.length) continue;
+    const best = data
+      .map((d) => ({ d, dist: haversine([lat, lon], [d.geometry.coordinates[1], d.geometry.coordinates[0]]) }))
+      .sort((a, b) => a.dist - b.dist)[0];
+    const [plon, plat] = best.d.geometry.coordinates;
+    return {
+      id: `mly-${best.d.id}`,
+      source: 'mapillary',
+      thumbUrl: best.d.thumb_1024_url!,
+      fullUrl: best.d.thumb_2048_url ?? best.d.thumb_1024_url!,
+      pageUrl: `https://www.mapillary.com/app/?pKey=${best.d.id}&focus=photo`,
+      title: 'Street-level view',
+      author: best.d.creator?.username,
+      license: 'CC BY-SA 4.0',
+      takenAt: best.d.captured_at ? new Date(best.d.captured_at).toISOString() : undefined,
+      lat: plat,
+      lon: plon,
+      distanceM: best.dist,
+    };
+  }
+  return null;
+}
+
+export interface AlongFrame {
+  /** Index of the requested point. */
+  i: number;
+  photo: Photo | null;
+}
+
+/**
+ * One photo per point along a stretch of route, for the slideshow: the nearest street-level
+ * image, or else the nearest not-yet-used Commons photo within 3 km.
+ */
+export async function photosAlong(points: [number, number][], opts: { mapillary?: boolean } = {}): Promise<AlongFrame[]> {
+  const useMly = opts.mapillary ?? !!process.env.MAPILLARY_TOKEN;
+  const out: AlongFrame[] = [];
+  const used = new Set<string>();
+  for (let start = 0; start < points.length; start += 6) {
+    const batch = points.slice(start, start + 6);
+    const found = await Promise.all(
+      batch.map(async ([lat, lon]) => {
+        const mly = useMly ? await mapillaryNearest(lat, lon).catch(() => null) : null;
+        if (mly) return [mly];
+        return (await commonsSearch(lat, lon, 30).catch(() => [] as Photo[])).filter((p) => p.distanceM <= 3000).sort((a, b) => a.distanceM - b.distanceM);
+      }),
+    );
+    found.forEach((cands, k) => {
+      const photo = cands.find((p) => !used.has(p.id)) ?? null;
+      if (photo) used.add(photo.id);
+      out.push({ i: start + k, photo });
+    });
+  }
+  return out;
+}

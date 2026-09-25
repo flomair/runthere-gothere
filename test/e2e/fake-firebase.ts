@@ -25,3 +25,7 @@ export function useAuthUser() {
   }, []);
   return u;
 }
+export const vapidKey = 'test-vapid-key';
+export function firebaseApp(): never {
+  throw new Error('no Firebase app in e2e');
+}

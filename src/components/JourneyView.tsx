@@ -32,6 +32,7 @@ import GoalsCard from './GoalsCard';
 import JourneySettingsDialog from './JourneySettingsDialog';
 import LocationExplorer from './LocationExplorer';
 const Flyover3D = lazy(() => import('./Flyover3D'));
+const StreetSlideshow = lazy(() => import('./StreetSlideshow'));
 import RouteMap from './RouteMap';
 import CoachCard from './CoachCard';
 import InviteDialog from './InviteDialog';
@@ -98,6 +99,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [flyover, setFlyover] = useState(false);
+  const [slideshow, setSlideshow] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -384,6 +386,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
                 point={here}
                 eyebrow={progress.finished ? 'You have arrived' : `You are here · ${getUnit()} ${toUnit(progress.doneM).toFixed(1)}`}
                 narrate={narrateBase(progress.doneM)}
+                onSlideshow={() => setSlideshow(true)}
               />
             ) : (
               <LocationExplorer
@@ -460,6 +463,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
         Route: {journey.route.provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{me?.features.mapillary ? ', Mapillary' : ''}. Weather: Open-Meteo.
       </Typography>
+      {slideshow && (
+        <Suspense fallback={null}>
+          <StreetSlideshow open onClose={() => setSlideshow(false)} points={points} cum={cum} doneM={progress.doneM * scale} journeyM={progress.totalM} title={journey.name} />
+        </Suspense>
+      )}
       {flyover && (
         <Suspense fallback={null}>
           <Flyover3D open onClose={() => setFlyover(false)} points={points} cum={cum} doneM={progress.doneM * scale} title={journey.name} journeyM={progress.totalM} />

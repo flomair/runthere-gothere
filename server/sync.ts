@@ -131,6 +131,10 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
       console.error('milestone detection failed', err);
       return [];
     });
+    if (created.length) {
+      const { notifyMilestones } = await import('./push.js');
+      await notifyMilestones(uid, created);
+    }
     return created.length ? `saved, ${created.length} milestone(s)` : 'saved';
   } catch (err) {
     // made private without read_all, or deleted meanwhile

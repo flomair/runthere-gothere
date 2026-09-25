@@ -1,4 +1,5 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SlideshowIcon from '@mui/icons-material/SlideshowOutlined';
 import { Box, Button, Card, CardContent, Skeleton, Stack, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import type { LatLon } from '../../shared/geo';
@@ -32,9 +33,11 @@ interface Props {
   /** e.g. "You are here" / "In 25 km" */
   eyebrow: string;
   narrate: Omit<NarrateRequest, 'style' | 'language' | 'lat' | 'lon' | 'photoTitles'>;
+  /** Opens the street-level slideshow along the route. */
+  onSlideshow?: () => void;
 }
 
-export default function LocationExplorer({ journeyId, point, eyebrow, narrate }: Props) {
+export default function LocationExplorer({ journeyId, point, eyebrow, narrate, onSlideshow }: Props) {
   const { data: me } = useMe();
   const photos = usePhotos(point);
   const env = useSurroundings(point);
@@ -83,7 +86,16 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate }:
       </Card>
 
       <Reveal>
-      <Section title="What it looks like">
+      <Section
+        title="What it looks like"
+        action={
+          onSlideshow && (
+            <Button size="small" variant="contained" startIcon={<SlideshowIcon />} onClick={onSlideshow}>
+              Slideshow
+            </Button>
+          )
+        }
+      >
         <PhotoStrip photos={photos.data?.photos} historic={photos.data?.historic} loading={photos.isLoading} />
       </Section>
       </Reveal>

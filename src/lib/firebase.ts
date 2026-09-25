@@ -20,7 +20,13 @@ const config = {
   authDomain: (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined) || 'run-there-go-threre.firebaseapp.com',
   projectId: (import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined) || 'run-there-go-threre',
   appId: (import.meta.env.VITE_FIREBASE_APP_ID as string | undefined) || '1:788921664587:web:3fdedfdbe593066ed279ce',
+  messagingSenderId: '',
 };
+// the sender id (needed for push) is the project number inside the app id: "1:<number>:web:…"
+config.messagingSenderId = (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined) || config.appId.split(':')[1] || '';
+
+/** Web Push certificate (Firebase console → Project settings → Cloud Messaging); push is off without it. */
+export const vapidKey = (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined)?.trim() || '';
 
 export const firebaseConfigured = Boolean(config.apiKey && config.authDomain && config.projectId);
 
@@ -33,6 +39,11 @@ function authInstance(): Auth {
     auth = getAuth(app);
   }
   return auth;
+}
+
+export function firebaseApp(): FirebaseApp {
+  authInstance();
+  return app!;
 }
 
 export async function signInWithGoogle() {

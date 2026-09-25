@@ -1,0 +1,96 @@
+import type { Milestone } from '../shared/types.js';
+import { messaging } from './firebase.js';
+import { repo } from './repo.js';
+
+export interface PushMessage {
+  title: string;
+  body: string;
+  /** In-app link, e.g. "/#/j/abc/diary". */
+  url?: string;
+  /** Replaces an earlier notification with the same tag. */
+  tag?: string;
+  image?: string;
+}
+
+export interface PushResult {
+  token: string;
+  ok: boolean;
+  /** FCM error code, e.g. "messaging/registration-token-not-registered". */
+  code?: string;
+}
+
+export type PushSender = (tokens: string[], data: Record<string, string>) => Promise<PushResult[]>;
+
+const fcmSender: PushSender = async (tokens, data) => {
+  // data-only message: the service worker (public/sw.js) shows it, so it looks the same on every browser
+  const res = await messaging().sendEachForMulticast({ tokens, data, webpush: { headers: { TTL: String(3 * 86_400), Urgency: 'normal' } } });
+  return res.responses.map((r, i) => ({ token: tokens[i], ok: r.success, code: r.error?.code }));
+};
+
+let sender: PushSender = fcmSender;
+/** For tests. */
+export const setPushSender = (s: PushSender | null) => {
+  sender = s ?? fcmSender;
+};
+
+const DEAD = /registration-token-not-registered|invalid-registration-token|invalid-argument|mismatched-credential/;
+
+/** Send to every device of the user; forgets devices FCM says are gone. Never throws. */
+export async function notify(uid: string, msg: PushMessage): Promise<number> {
+  try {
+    const tokens = (await repo.getUser(uid))?.pushTokens ?? [];
+    if (!tokens.length) return 0;
+    const data = Object.fromEntries(Object.entries({ ...msg, url: msg.url ?? '/' }).filter(([, v]) => v != null).map(([k, v]) => [k, String(v).slice(0, 1000)]));
+    const results = await sender(tokens, data);
+    const dead = results.filter((r) => !r.ok && DEAD.test(r.code ?? '')).map((r) => r.token);
+    if (dead.length) await repo.removePushTokens(uid, dead);
+    return results.filter((r) => r.ok).length;
+  } catch (e) {
+    console.error('push failed', e);
+    return 0;
+  }
+}
+
+const ICON: Record<Milestone['kind'], string> = { waypoint: '📍', distance: '🏃', halfway: '⚖️', border: '🛂', finish: '🏁' };
+
+const TEXT = {
+  en: {
+    one: (m: Milestone) => (m.kind === 'finish' ? 'You made it! Time to go there for real.' : m.place ? `${m.place.name}, ${m.place.context}` : 'A new chapter in your diary.'),
+    many: (n: number) => `${n} new milestones in your diary`,
+    manyBody: (ms: Milestone[]) => ms.map((m) => m.title).join(' · '),
+    kudos: (who: string) => `${who} gave you kudos 👏`,
+    comment: (who: string) => `${who} commented`,
+  },
+  de: {
+    one: (m: Milestone) => (m.kind === 'finish' ? 'Geschafft! Zeit, wirklich hinzufahren.' : m.place ? `${m.place.name}, ${m.place.context}` : 'Ein neues Kapitel in deinem Tagebuch.'),
+    many: (n: number) => `${n} neue Meilensteine in deinem Tagebuch`,
+    manyBody: (ms: Milestone[]) => ms.map((m) => m.title).join(' · '),
+    kudos: (who: string) => `${who} hat dir Kudos gegeben 👏`,
+    comment: (who: string) => `${who} hat kommentiert`,
+  },
+};
+const textFor = async (uid: string) => TEXT[((await repo.getUser(uid))?.pushLang === 'de' ? 'de' : 'en') as 'en' | 'de'];
+
+/** One notification for the milestones a sync just reached (grouped when there are several). */
+export async function notifyMilestones(uid: string, created: Milestone[]): Promise<void> {
+  if (!created.length) return;
+  const tx = await textFor(uid);
+  const last = created[created.length - 1];
+  const url = `/#/j/${encodeURIComponent(last.journeyId)}/diary`;
+  if (created.length === 1) {
+    await notify(uid, { title: `${ICON[last.kind]} ${last.title}`, body: tx.one(last), url, tag: `ms-${last.journeyId}`, image: last.photo?.url });
+  } else {
+    await notify(uid, { title: `${ICON[last.kind]} ${tx.many(created.length)}`, body: tx.manyBody(created), url, tag: `ms-${last.journeyId}` });
+  }
+}
+
+/** Kudos or a comment on someone's post in a shared journey. */
+export async function notifyFeed(ownerUid: string, kind: 'kudos' | 'comment', who: string, groupId: string, text?: string): Promise<void> {
+  const tx = await textFor(ownerUid);
+  await notify(ownerUid, {
+    title: kind === 'kudos' ? tx.kudos(who) : tx.comment(who),
+    body: text ?? '',
+    url: `/#/g/${encodeURIComponent(groupId)}`,
+    tag: `feed-${groupId}`,
+  });
+}

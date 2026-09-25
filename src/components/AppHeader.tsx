@@ -16,6 +16,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Switch,
   Toolbar,
   Tooltip,
   Typography,
@@ -28,6 +29,9 @@ import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
 import { getUnit, setUnit } from '../lib/units';
 import { useInstallAction } from './InstallPrompt';
+import { usePush } from '../lib/push';
+import { vapidKey } from '../lib/firebase';
+import NotificationsIcon from '@mui/icons-material/NotificationsOutlined';
 import StravaButton from './StravaButton';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 
@@ -40,6 +44,7 @@ export default function AppHeader() {
   const effective = mode === 'system' ? systemMode : mode;
   const close = () => setAnchor(null);
   const installAction = useInstallAction();
+  const push = usePush();
 
   return (
     <AppBar
@@ -157,6 +162,40 @@ export default function AppHeader() {
                 </ListItemIcon>
                 <ListItemText primary={getUnit() === 'km' ? 'Show miles' : 'Show kilometres'} secondary={`currently ${getUnit()}`} />
               </MenuItem>
+              {(push.status !== 'unsupported' || me.user.isAdmin) && (
+                <MenuItem
+                  disabled={push.busy || push.status === 'unsupported' || push.status === 'denied'}
+                  onClick={async () => {
+                    const wasOn = push.status === 'on';
+                    if (push.status === 'needs-install') {
+                      close();
+                      installAction.run();
+                      return;
+                    }
+                    await push.toggle();
+                    if (!wasOn) void push.test().catch(() => undefined);
+                  }}
+                >
+                  <ListItemIcon>
+                    <NotificationsIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Notifications"
+                    secondary={
+                      push.error ??
+                      {
+                        on: 'On for this device',
+                        off: 'Milestones, kudos and comments',
+                        denied: 'Blocked in the browser settings',
+                        'needs-install': 'Install the app first (Share → Add to Home Screen)',
+                        unsupported: vapidKey ? 'Not supported in this browser' : 'Needs VITE_FIREBASE_VAPID_KEY (see README)',
+                      }[push.status]
+                    }
+                    slotProps={{ secondary: { sx: { whiteSpace: 'normal', color: push.error ? 'error.main' : undefined } } }}
+                  />
+                  <Switch edge="end" size="small" checked={push.status === 'on'} tabIndex={-1} sx={{ ml: 1 }} />
+                </MenuItem>
+              )}
               {installAction.available && (
                 <MenuItem
                   onClick={() => {

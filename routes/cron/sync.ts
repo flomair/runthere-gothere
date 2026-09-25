@@ -13,6 +13,7 @@ export const GET = handle(async (req) => {
   const results: Record<string, string> = {};
   const started = Date.now();
   const { detectMilestones } = await import('../../server/milestones.js');
+  const { notifyMilestones } = await import('../../server/push.js');
   for (const uid of uids) {
     // stay well within the function time limit; the rest is picked up tomorrow or by webhooks
     if (Date.now() - started > 40_000) {
@@ -22,6 +23,7 @@ export const GET = handle(async (req) => {
     try {
       const r = await syncUser(uid);
       const m = await detectMilestones(uid, { maxNew: 3, maxPostcards: 0 });
+      await notifyMilestones(uid, m);
       results[uid] = `${r.fetched} activities, ${m.length} milestone(s)`;
     } catch (e) {
       results[uid] = `error: ${e instanceof Error ? e.message : e}`;

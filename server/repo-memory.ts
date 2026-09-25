@@ -92,6 +92,14 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
       const u = users.get(uid) ?? {};
       users.set(uid, { ...u, stats: { ...(u.stats ?? {}), [key]: (u.stats?.[key] ?? 0) + 1 } });
     },
+    addPushToken: async (uid, token) => {
+      const u = users.get(uid) ?? {};
+      users.set(uid, { ...u, pushTokens: [...new Set([...(u.pushTokens ?? []), token])] });
+    },
+    removePushTokens: async (uid, tokens) => {
+      const u = users.get(uid) ?? {};
+      users.set(uid, { ...u, pushTokens: (u.pushTokens ?? []).filter((t) => !tokens.includes(t)) });
+    },
     listUsers: async () => [...users.entries()].map(([uid, u]) => ({ uid, ...u })),
     hasAiKey: async (uid) => Boolean(secrets.get(uid)?.ai),
     listShares: async (uid, journeyId) => [...shares.entries()].filter(([, v]) => v.uid === uid && v.journeyId === journeyId).map(([k]) => k),

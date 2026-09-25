@@ -8,6 +8,7 @@ import { HttpError } from './http.js';
 import { milestoneCandidates } from './milestones.js';
 import { reverseGeocode } from './places.js';
 import { repo } from './repo.js';
+import { notifyFeed } from './push.js';
 
 const newId = () => randomBytes(9).toString('base64url');
 const firstName = (name?: string, email?: string) => (name?.split(' ')[0] || email?.split('@')[0] || 'Runner').slice(0, 40);
@@ -172,11 +173,15 @@ async function postMilestones(g: Group, who: string, name: string, picture: stri
 }
 
 export async function toggleKudos(user: User, groupId: string, itemId: string): Promise<FeedItem> {
-  await requireMember(groupId, user);
+  const g = await requireMember(groupId, user);
   const item = await repo.getFeedItem(groupId, itemId);
   if (!item) throw new HttpError(404, 'post not found');
-  item.kudos = item.kudos.includes(user.uid) ? item.kudos.filter((u) => u !== user.uid) : [...item.kudos, user.uid];
+  const adding = !item.kudos.includes(user.uid);
+  item.kudos = adding ? [...item.kudos, user.uid] : item.kudos.filter((u) => u !== user.uid);
   await repo.putFeedItem(groupId, item);
+  if (adding && item.uid !== user.uid) {
+    await notifyFeed(item.uid, 'kudos', g.members[user.uid]?.name ?? firstName(user.name, user.email), groupId, item.text);
+  }
   return item;
 }
 
@@ -193,6 +198,7 @@ export async function comment(user: User, groupId: string, itemId: string | unde
   if (!item) throw new HttpError(404, 'post not found');
   item.comments = [...item.comments, { uid: user.uid, name, text: clean, at: new Date().toISOString() }].slice(-100);
   await repo.putFeedItem(groupId, item);
+  if (item.uid !== user.uid) await notifyFeed(item.uid, 'comment', name, groupId, clean);
 }
 
 // ---------- public share links ----------

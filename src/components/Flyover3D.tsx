@@ -42,10 +42,10 @@ function lerpAngle(from: number, to: number, f: number) {
 }
 
 /** Start/end metres of the stretch to fly for a range. */
-export function flyoverSpan(range: FlyoverRange, doneM: number, totalM: number): [number, number] {
+export function flyoverSpan(range: FlyoverRange, doneM: number, totalM: number, stretchM = STRETCH_M): [number, number] {
   if (range === 'all') return [0, totalM];
-  if (range === 'next') return [Math.min(doneM, totalM), Math.min(totalM, doneM + STRETCH_M)];
-  return [Math.max(0, doneM - STRETCH_M), Math.max(doneM, Math.min(totalM, STRETCH_M))];
+  if (range === 'next') return [Math.min(doneM, totalM), Math.min(totalM, doneM + stretchM)];
+  return [Math.max(0, doneM - stretchM), Math.max(doneM, Math.min(totalM, stretchM))];
 }
 
 const lngLat = (p: LatLon): [number, number] => [p[1], p[0]];
@@ -100,7 +100,7 @@ export default function Flyover3D({ open, onClose, points, cum, doneM, title, jo
   const [ready, setReady] = useState(false);
   const state = useRef({ t: 0, bearing: 0, last: 0 });
 
-  const [fromM, toM] = useMemo(() => flyoverSpan(range, doneM, totalM), [range, doneM, totalM]);
+  const [fromM, toM] = useMemo(() => flyoverSpan(range, doneM, totalM, (STRETCH_M * totalM) / Math.max(1, journeyM)), [range, doneM, totalM, journeyM]);
   const spanM = Math.max(1, toM - fromM);
   // ~2 s per km close up, capped for long spans; the whole journey flies higher and faster
   const durationMs = range === 'all' ? 60_000 : Math.min(60_000, Math.max(15_000, spanM * 2));

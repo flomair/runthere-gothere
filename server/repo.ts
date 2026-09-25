@@ -40,6 +40,10 @@ export interface UserDoc {
   } | null;
   ai?: { masked: string; workspaceId?: string; updatedAt: string } | null;
   stats?: { stories?: number; postcards?: number; coachPlans?: number };
+  /** FCM registration tokens of the devices that turned on notifications. */
+  pushTokens?: string[];
+  /** Language for notifications ('en' | 'de'). */
+  pushLang?: string;
 }
 
 export interface Secrets {
@@ -104,6 +108,8 @@ export interface Repo {
   putCoachPlan(uid: string, journeyId: string, plan: CoachPlan): Promise<void>;
 
   incrementStat(uid: string, key: 'stories' | 'postcards' | 'coachPlans'): Promise<void>;
+  addPushToken(uid: string, token: string): Promise<void>;
+  removePushTokens(uid: string, tokens: string[]): Promise<void>;
   listUsers(): Promise<(UserDoc & { uid: string })[]>;
   hasAiKey(uid: string): Promise<boolean>;
 }
@@ -297,6 +303,12 @@ export const firestoreRepo: Repo = {
   },
   async incrementStat(uid, key) {
     await db().collection('users').doc(uid).set({ stats: { [key]: FieldValue.increment(1) } }, { merge: true });
+  },
+  async addPushToken(uid, token) {
+    await db().collection('users').doc(uid).set({ pushTokens: FieldValue.arrayUnion(token) }, { merge: true });
+  },
+  async removePushTokens(uid, tokens) {
+    if (tokens.length) await db().collection('users').doc(uid).set({ pushTokens: FieldValue.arrayRemove(...tokens) }, { merge: true });
   },
   async listUsers() {
     const snap = await db().collection('users').get();

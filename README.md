@@ -14,6 +14,7 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **classic trails**: pick a famous hiking trail (Rennsteig, West Highland Way, Camino Francés, E5, Pacific Crest Trail…) from the recommendations or search any waymarked route in OpenStreetMap
 - **your stats**: km covered and remaining, weekly pace, estimated arrival date, and a logbook of the activities that got you there
 
+- **a slideshow along the route**: street-level photos (Mapillary, or Wikimedia Commons) every 500 m of your last or next 10 km
 - **3D flyover**: fly along your last 20 km, the next 20 km or the whole journey over satellite imagery and real terrain
 - **the real trip**: save places while exploring, then plan the trip to the finish (race countdown, transport and stay links, KML export)
 - **an app on your phone**: install it to the home screen (Android: *Install*; iPhone: Share → *Add to Home Screen*). It opens full screen and keeps working on a patchy connection
@@ -121,7 +122,9 @@ Webhooks can't reach `localhost`; use **Sync now** in the account menu while dev
 - `MAPILLARY_TOKEN`: recent street-level photos along the route.
 - `GOOGLE_PLACES_API_KEY`: top-rated cafés, sights and parks with a review snippet. Without it the app links to Google Maps searches.
 
-These two are shared by everyone using the deployment. The AI narrator is not: **each user adds their own Anthropic key** in the narrator settings. The key is checked, stored encrypted in their account, and used only for their own stories. Organization-level keys also need the Workspace ID (Anthropic says "not scoped to a workspace" otherwise).
+- `VITE_FIREBASE_VAPID_KEY`: turns on **push notifications** (milestones reached, kudos and comments from friends). In the Firebase console open *Project settings → Cloud Messaging → Web Push certificates* and click *Generate key pair*; copy the key. Each person then turns notifications on per device in the account menu. On iPhone this works only in the installed app (iOS 16.4+). Sending uses the service account you already set up.
+
+The Mapillary and Google keys are shared by everyone using the deployment. The AI narrator is not: **each user adds their own Anthropic key** in the narrator settings. The key is checked, stored encrypted in their account, and used only for their own stories. Organization-level keys also need the Workspace ID (Anthropic says "not scoped to a workspace" otherwise).
 
 ## Route options
 

@@ -1,5 +1,6 @@
 import { type App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 import { HttpError } from './http.js';
 import { verifyFirebaseIdToken } from './idtoken.js';
 
@@ -60,6 +61,9 @@ export const db = () => {
   }
   return firestore;
 };
+
+/** Firebase Cloud Messaging, for push notifications. */
+export const messaging = () => getMessaging(app());
 
 export interface VerifiedToken {
   uid: string;
