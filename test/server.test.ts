@@ -349,3 +349,15 @@ describe('single-function router', () => {
     expect(fns).toEqual(['router.ts']);
   });
 });
+
+describe('health check', () => {
+  it('reports settings presence and Firebase status without values', async () => {
+    const { GET } = await import('../api/router');
+    const r = (await (await GET(req('/api/health'))).json()) as { ok: boolean; firebase: string; env: Record<string, boolean> };
+    expect(r.ok).toBe(false);
+    expect(r.firebase).toMatch(/^error: Firestore must not be used in tests/);
+    expect(r.env.SESSION_SECRET).toBe(true);
+    expect(r.env.FIREBASE_SERVICE_ACCOUNT).toBe(false);
+    expect(JSON.stringify(r)).not.toContain('test-secret');
+  });
+});

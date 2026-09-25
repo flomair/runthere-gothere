@@ -33,7 +33,9 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
   }
   if (!res.ok) {
     const b = body as { error?: string } | null;
-    throw new ApiError(res.status, b?.error ?? `${res.status} ${res.statusText}`);
+    // non-JSON answers (e.g. Vercel's own crash page) are shown as text so the cause is visible
+    const detail = b?.error ?? (text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300) || res.statusText);
+    throw new ApiError(res.status, `${res.status}${detail ? `: ${detail}` : ''}`);
   }
   return body as T;
 }

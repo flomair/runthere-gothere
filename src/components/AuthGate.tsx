@@ -131,8 +131,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   if (me.error) {
     return (
       <Screen>
-        <Alert severity="error" sx={{ textAlign: 'left', mb: 2 }}>
+        <Alert severity="error" sx={{ textAlign: 'left', mb: 2, wordBreak: 'break-word' }}>
           {me.error.message}
+          <br />
+          <a href="/api/health" target="_blank" rel="noopener">
+            Open the configuration check
+          </a>
         </Alert>
         <Button onClick={() => me.refetch()}>Retry</Button> <Button onClick={() => signOutUser()}>Sign out</Button>
       </Screen>
