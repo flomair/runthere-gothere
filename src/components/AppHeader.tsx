@@ -27,7 +27,9 @@ import { signOutUser } from '../lib/firebase';
 import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
 import { getUnit, setUnit } from '../lib/units';
+import { useInstallAction } from './InstallPrompt';
 import StravaButton from './StravaButton';
+import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 
 export default function AppHeader() {
   const { data: me } = useMe();
@@ -37,6 +39,7 @@ export default function AppHeader() {
   const { mode, systemMode, setMode } = useColorScheme();
   const effective = mode === 'system' ? systemMode : mode;
   const close = () => setAnchor(null);
+  const installAction = useInstallAction();
 
   return (
     <AppBar
@@ -45,6 +48,7 @@ export default function AppHeader() {
       sx={{
         borderBottom: 1,
         borderColor: 'divider',
+        pt: 'env(safe-area-inset-top)',
         backdropFilter: 'saturate(180%) blur(16px)',
         bgcolor: 'color-mix(in srgb, var(--mui-palette-background-default) 72%, transparent)',
       }}
@@ -153,6 +157,19 @@ export default function AppHeader() {
                 </ListItemIcon>
                 <ListItemText primary={getUnit() === 'km' ? 'Show miles' : 'Show kilometres'} secondary={`currently ${getUnit()}`} />
               </MenuItem>
+              {installAction.available && (
+                <MenuItem
+                  onClick={() => {
+                    close();
+                    installAction.run();
+                  }}
+                >
+                  <ListItemIcon>
+                    <InstallMobileIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="Install app" secondary="Home screen, full screen, works offline" />
+                </MenuItem>
+              )}
               {me.user.isAdmin && (
                 <MenuItem
                   onClick={() => {
@@ -182,6 +199,7 @@ export default function AppHeader() {
           </>
         )}
       </Toolbar>
+      {installAction.dialog}
     </AppBar>
   );
 }

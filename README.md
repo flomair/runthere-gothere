@@ -14,6 +14,10 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **classic trails**: pick a famous hiking trail (Rennsteig, West Highland Way, Camino Francés, E5, Pacific Crest Trail…) from the recommendations or search any waymarked route in OpenStreetMap
 - **your stats**: km covered and remaining, weekly pace, estimated arrival date, and a logbook of the activities that got you there
 
+- **3D flyover**: fly along your last 20 km, the next 20 km or the whole journey over satellite imagery and real terrain
+- **the real trip**: save places while exploring, then plan the trip to the finish (race countdown, transport and stay links, KML export)
+- **an app on your phone**: install it to the home screen (Android: *Install*; iPhone: Share → *Add to Home Screen*). It opens full screen and keeps working on a patchy connection
+
 Once you arrive, go there for real. 🏁
 
 ## Stack
@@ -70,6 +74,7 @@ firestore.rules deny-all rules for direct database access
 | Places & reviews | Google Places API (New) | optional |
 | AI narrator | Anthropic Claude (`claude-sonnet-5`) | each user's own key (stored encrypted) |
 | Read aloud | Browser Web Speech API | no |
+| 3D flyover | [MapLibre GL](https://maplibre.org), Esri World Imagery, [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) | no |
 
 ## Setup
 

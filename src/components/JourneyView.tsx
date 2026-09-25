@@ -1,4 +1,5 @@
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
 import {
   Alert,
   AlertTitle,
@@ -16,7 +17,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { cumulativeDistances, haversine, positionAt, samplePoints } from '../../shared/geo';
 import { navigate } from '../lib/nav';
 import { api, useActivities, useMe, useMilestoneActions, useMilestones, useStravaActions } from '../lib/api';
@@ -30,6 +31,7 @@ import ElevationProfile from './ElevationProfile';
 import GoalsCard from './GoalsCard';
 import JourneySettingsDialog from './JourneySettingsDialog';
 import LocationExplorer from './LocationExplorer';
+const Flyover3D = lazy(() => import('./Flyover3D'));
 import RouteMap from './RouteMap';
 import CoachCard from './CoachCard';
 import InviteDialog from './InviteDialog';
@@ -95,6 +97,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const [peekM, setPeekM] = useState<number>(() => Math.min(progress.totalM, progress.doneM + 10_000));
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
+  const [flyover, setFlyover] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -308,6 +311,16 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       >
         Where am I?
       </Button>
+      <Button
+        variant="contained"
+        size="small"
+        color="secondary"
+        startIcon={<ThreeDRotationIcon />}
+        onClick={() => setFlyover(true)}
+        sx={{ position: 'absolute', zIndex: 1000, left: { xs: 12, sm: 148 }, bottom: { xs: 22, sm: 12 } }}
+      >
+        3D
+      </Button>
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -447,6 +460,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
         Route: {journey.route.provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{me?.features.mapillary ? ', Mapillary' : ''}. Weather: Open-Meteo.
       </Typography>
+      {flyover && (
+        <Suspense fallback={null}>
+          <Flyover3D open onClose={() => setFlyover(false)} points={points} cum={cum} doneM={progress.doneM * scale} title={journey.name} journeyM={progress.totalM} />
+        </Suspense>
+      )}
       <JourneySettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} journey={journey} />
       <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} journey={journey} />
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} journey={journey} doneM={progress.doneM} />

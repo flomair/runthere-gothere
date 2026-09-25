@@ -25,6 +25,7 @@ import RouteSketch from './RouteSketch';
 import { AnimatedBar, Stagger, StaggerItem } from './motion';
 import SharedJourneys from './SharedJourneys';
 import StravaButton from './StravaButton';
+import { InstallBanner } from './InstallPrompt';
 
 const PRESETS: JourneyPreset[] = [
   { name: 'Berlin → Vienna', from: 'Berlin', to: 'Vienna' },
@@ -106,6 +107,7 @@ export default function JourneyList() {
 
   return (
     <Stack spacing={4}>
+      <InstallBanner />
       <Box
         component={motion.section}
         initial={{ opacity: 0, y: 16 }}

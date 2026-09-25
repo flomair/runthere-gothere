@@ -5,8 +5,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'leaflet/dist/leaflet.css';
 import App from './App';
+import { initPwa } from './lib/pwa';
 import './styles.css';
 import { theme } from './theme';
+
+initPwa();
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
