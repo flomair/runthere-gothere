@@ -3,6 +3,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import AdminPage from './components/AdminPage';
 import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
+import { PageTransition } from './components/motion';
 import JourneyList from './components/JourneyList';
 import { journeyStore, useJourneyState } from './lib/storage';
 
@@ -44,23 +45,25 @@ function Main() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 8 }}>
       <AppHeader />
-      <Container maxWidth="lg" sx={{ pt: { xs: 2, sm: 4 } }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 1.5, sm: 3 }, px: { xs: 1.5, sm: 3 } }}>
         {error && (
           <Alert severity="error" onClose={() => journeyStore.clearError()} sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
+        <PageTransition routeKey={admin ? 'admin' : journey ? `${journey.id}${diary ? '/diary' : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
         {admin ? (
-          <AdminPage />
-        ) : status !== 'ready' && status !== 'error' ? (
-          <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />
-        ) : journey ? (
-          <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
-            {diary ? <DiaryPage key={`d-${journey.id}`} journey={journey} /> : <JourneyView key={journey.id} journey={journey} />}
-          </Suspense>
-        ) : (
-          <JourneyList />
-        )}
+            <AdminPage />
+          ) : status !== 'ready' && status !== 'error' ? (
+            <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />
+          ) : journey ? (
+            <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
+              {diary ? <DiaryPage key={`d-${journey.id}`} journey={journey} /> : <JourneyView key={journey.id} journey={journey} />}
+            </Suspense>
+          ) : (
+            <JourneyList />
+          )}
+        </PageTransition>
       </Container>
       <Snackbar open={!!flash} autoHideDuration={6000} onClose={clearFlash}>
         {flash ? (

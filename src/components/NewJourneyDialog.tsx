@@ -260,7 +260,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
           {error && <Alert severity="error">{error}</Alert>}
 
           {route && (
-            <Box sx={{ p: 2, borderRadius: 3, bgcolor: 'action.hover' }}>
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'action.hover' }}>
               <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                 <Box sx={{ width: 120, flexShrink: 0, color: 'text.primary' }}>
                   <RouteSketch points={route.points} doneM={0} height={90} />

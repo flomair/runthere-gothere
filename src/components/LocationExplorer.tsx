@@ -5,6 +5,7 @@ import type { LatLon } from '../../shared/geo';
 import { useMe, usePhotos, useSurroundings } from '../lib/api';
 import type { NarrateRequest } from '../lib/types';
 import NarratorCard from './NarratorCard';
+import { Reveal } from './motion';
 import PhotoStrip from './PhotoStrip';
 import { PlacesList, WeatherBadge, WikipediaList } from './SurroundingsPanel';
 
@@ -73,15 +74,19 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate }:
         </CardContent>
       </Card>
 
+      <Reveal>
       <Section title="What it looks like">
         <PhotoStrip photos={photos.data?.photos} historic={photos.data?.historic} loading={photos.isLoading} />
       </Section>
+      </Reveal>
 
+      <Reveal>
       <NarratorCard
         journeyId={journeyId}
         title={`The story of ${place?.name ?? 'this place'}`}
         request={{ ...narrate, lat, lon, photoTitles: photos.data?.photos.map((p) => p.title) }}
       />
+      </Reveal>
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>
         <Section title="Wikipedia nearby">

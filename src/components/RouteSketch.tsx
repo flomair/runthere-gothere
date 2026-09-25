@@ -1,4 +1,5 @@
 import { Box } from '@mui/material';
+import { motion } from 'motion/react';
 import { useMemo } from 'react';
 import { type LatLon, cumulativeDistances, simplifyToMax, splitRoute } from '../../shared/geo';
 
@@ -36,7 +37,19 @@ export default function RouteSketch({ points, doneM, height = 120 }: { points: L
       aria-hidden
     >
       <path d={ahead} fill="none" stroke="currentColor" strokeOpacity={0.25} strokeWidth={3} vectorEffect="non-scaling-stroke" strokeDasharray="4 4" strokeLinecap="round" />
-      <path d={done} fill="none" stroke="#fc4c02" strokeWidth={4} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+      <motion.path
+        d={done}
+        fill="none"
+        stroke="#fc4c02"
+        strokeWidth={4}
+        vectorEffect="non-scaling-stroke"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        whileInView={{ pathLength: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+      />
       {me && (
         <>
           <path d={`M${me[0]},${me[1]}l0,0`} stroke="#fff" strokeWidth={14} strokeLinecap="round" vectorEffect="non-scaling-stroke" />

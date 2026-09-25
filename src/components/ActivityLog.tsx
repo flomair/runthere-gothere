@@ -25,6 +25,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { useMediaQuery, type Theme } from '@mui/material';
+import { Stagger, StaggerItem } from './motion';
 import { type ParsedRun, parseActivityFile } from '../lib/activityFile';
 import { formatDate, formatDuration, formatKm, todayIso } from '../lib/format';
 import type { Progress, ProgressEntry } from '../lib/progress';
@@ -148,6 +150,7 @@ interface Props {
 export default function ActivityLog({ journey, progress, selectedKey, onSelect }: Props) {
   const [adding, setAdding] = useState(false);
   const rows = [...progress.entries].reverse();
+  const isMobile = useMediaQuery((t: Theme) => t.breakpoints.down('sm'));
 
   const toggleExcluded = (id: number) =>
     journeyStore.update(journey.id, (j) => ({
@@ -166,7 +169,7 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
               </Typography>
             )}
           </Box>
-          <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(true)}>
+          <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAdding(true)} sx={{ flexShrink: 0 }}>
             Add run
           </Button>
         </Stack>
@@ -174,6 +177,82 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
           <Typography color="text.secondary" variant="body2">
             No activities yet since {formatDate(journey.startDate)}. Go for a run, and it will show up here once it's on Strava.
           </Typography>
+        ) : isMobile ? (
+          <Stagger gap={0.03} sx={{ display: 'grid', gap: 1 }}>
+            {rows.map((e) => {
+              const selected = selectedKey === e.key;
+              return (
+                <StaggerItem key={e.key}>
+                  <Box
+                    onClick={() => !e.excluded && onSelect?.(selected ? null : e)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.25,
+                      p: 1.25,
+                      borderRadius: '16px',
+                      border: 1,
+                      borderColor: selected ? 'primary.main' : 'divider',
+                      bgcolor: selected ? 'action.selected' : 'transparent',
+                      opacity: e.excluded ? 0.45 : 1,
+                      transition: 'background-color .2s, border-color .2s',
+                      '&:active': { transform: 'scale(0.99)' },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '12px',
+                        flexShrink: 0,
+                        display: 'grid',
+                        placeItems: 'center',
+                        textAlign: 'center',
+                        lineHeight: 1.05,
+                        bgcolor: 'action.hover',
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1 }}>{new Date(e.date.length === 10 ? `${e.date}T12:00:00` : e.date).getDate()}</Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', lineHeight: 1 }}>
+                        {new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(e.date.length === 10 ? `${e.date}T12:00:00` : e.date))}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                      <Typography sx={{ fontWeight: 600 }} noWrap>
+                        {e.label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap component="div">
+                        {[e.source === 'manual' ? 'manual' : e.sportType, e.movingTimeS && formatDuration(e.movingTimeS), e.elevationGainM ? `↑ ${Math.round(e.elevationGainM)} m` : null]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                      <Typography sx={{ fontWeight: 800 }}>{formatKm(e.distanceM)}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        at {formatKm(e.cumulativeM, 0)}
+                      </Typography>
+                    </Box>
+                    {e.activityId != null && (
+                      <Checkbox size="small" checked={!e.excluded} onClick={(ev) => ev.stopPropagation()} onChange={() => toggleExcluded(e.activityId!)} sx={{ ml: -0.5 }} />
+                    )}
+                    {e.manualId && (
+                      <IconButton
+                        size="small"
+                        aria-label="delete entry"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          journeyStore.update(journey.id, (j) => ({ manualEntries: j.manualEntries.filter((m) => m.id !== e.manualId) }));
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Box>
+                </StaggerItem>
+              );
+            })}
+          </Stagger>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
             <Table size="small">

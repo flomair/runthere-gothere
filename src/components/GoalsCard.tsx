@@ -15,21 +15,21 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  LinearProgress,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
+import { AnimatedBar, CountUp, Stagger, StaggerItem } from './motion';
 import { formatDate, formatKm, formatPace, todayIso } from '../lib/format';
 import type { Progress } from '../lib/progress';
 import { journeyStore, newId } from '../lib/storage';
 import type { Journey } from '../lib/types';
 
-function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Tile({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
-    <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+    <StaggerItem sx={{ p: 1.5, borderRadius: '16px', bgcolor: 'action.hover' }}>
       <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>
         {label}
       </Typography>
@@ -39,7 +39,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub?: strin
           {sub}
         </Typography>
       )}
-    </Box>
+    </StaggerItem>
   );
 }
 
@@ -195,7 +195,7 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Stack>
-                <LinearProgress variant="determinate" value={frac * 100} color={c.achieved ? 'success' : 'primary'} sx={{ height: 6, borderRadius: 3 }} />
+                <AnimatedBar value={frac * 100} height={8} color={c.achieved ? 'linear-gradient(90deg, #4caf50, #2e7d32)' : undefined} />
               </Box>
             );
           })}
@@ -209,10 +209,10 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
         </Stack>
 
         {/* streaks & records */}
-        <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(5, 1fr)' } }}>
+        <Stagger sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(5, 1fr)' } }}>
           <Tile
             label="Streak"
-            value={`${streaks.weeks} week${streaks.weeks === 1 ? '' : 's'}`}
+            value={<CountUp value={streaks.weeks} format={(n) => `${Math.round(n)} week${Math.round(n) === 1 ? '' : 's'}`} />}
             sub={streaks.days > 1 ? `🔥 ${streaks.days} days in a row` : `best: ${streaks.bestWeeks} weeks`}
           />
           <Tile label="Longest run" value={records.longest ? formatKm(records.longest.distanceM) : '—'} sub={records.longest ? formatDate(records.longest.date) : undefined} />
@@ -224,10 +224,10 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
           <Tile label="Best week" value={records.bestWeek ? formatKm(records.bestWeek.distanceM) : '—'} sub={records.bestWeek ? `from ${formatDate(records.bestWeek.weekStart)}` : undefined} />
           <Tile
             label="Climbed"
-            value={`${Math.round(records.climbedM).toLocaleString()} m`}
+            value={<CountUp value={records.climbedM} format={(n) => `${Math.round(n).toLocaleString()} m`} />}
             sub={journey.countElevation ? `+${formatKm(records.climbedM * 10, 0)} effort` : `${((records.climbedM / 8849) * 100).toFixed(0)}% of Everest`}
           />
-        </Box>
+        </Stagger>
         {streaks.weeks >= 4 && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
             <LocalFireDepartmentIcon fontSize="inherit" color="warning" /> {streaks.weeks} weeks in a row. Keep it going!

@@ -8,6 +8,7 @@ import { formatDate, formatKm } from '../lib/format';
 import { navigate } from '../lib/nav';
 import { computeProgress } from '../lib/progress';
 import type { Journey, Milestone } from '../lib/types';
+import { Reveal } from './motion';
 
 const KIND_ICON: Record<Milestone['kind'], string> = { waypoint: '📍', distance: '🏃', halfway: '⚖️', border: '🛂', finish: '🏁' };
 
@@ -171,9 +172,12 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
         <Stack spacing={3}>
           {items.map((it) =>
             it.type === 'milestone' ? (
-              <MilestoneChapter key={it.m.id} m={it.m} canWrite={!!me?.ai} />
+              <Reveal key={it.m.id}>
+                <MilestoneChapter m={it.m} canWrite={!!me?.ai} />
+              </Reveal>
             ) : (
-              <Card key={it.key} variant="outlined" sx={{ breakInside: 'avoid', bgcolor: 'action.hover' }}>
+              <Reveal key={it.key}>
+              <Card variant="outlined" sx={{ breakInside: 'avoid', bgcolor: 'action.hover' }}>
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">
                     📖 Story · {formatDate(it.at)}
@@ -182,6 +186,7 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
                   <Prose text={it.text} />
                 </CardContent>
               </Card>
+              </Reveal>
             ),
           )}
         </Stack>

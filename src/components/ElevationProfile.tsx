@@ -146,7 +146,7 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
                   bgcolor: 'background.paper',
                   border: 1,
                   borderColor: 'divider',
-                  borderRadius: 1.5,
+                  borderRadius: '8px',
                   px: 1,
                   py: 0.5,
                   pointerEvents: 'none',

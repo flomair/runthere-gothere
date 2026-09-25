@@ -56,7 +56,7 @@ export default function PhotoStrip({ photos: recent, historic, loading }: { phot
               all: 'unset',
               cursor: 'pointer',
               position: 'relative',
-              borderRadius: 3,
+              borderRadius: '16px',
               overflow: 'hidden',
               height: 180,
               scrollSnapAlign: 'start',

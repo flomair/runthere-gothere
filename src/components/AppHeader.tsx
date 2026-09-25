@@ -42,9 +42,14 @@ export default function AppHeader() {
     <AppBar
       position="sticky"
       color="inherit"
-      sx={{ borderBottom: 1, borderColor: 'divider', backdropFilter: 'blur(8px)', bgcolor: 'background.paper' }}
+      sx={{
+        borderBottom: 1,
+        borderColor: 'divider',
+        backdropFilter: 'saturate(180%) blur(16px)',
+        bgcolor: 'color-mix(in srgb, var(--mui-palette-background-default) 72%, transparent)',
+      }}
     >
-      <Toolbar sx={{ gap: 1 }}>
+      <Toolbar sx={{ gap: 1, minHeight: { xs: 56, sm: 64 } }}>
         <Link
           href="#/"
           onClick={(e) => {

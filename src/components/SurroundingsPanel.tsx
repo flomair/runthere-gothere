@@ -55,7 +55,7 @@ export function WikipediaList({ items, loading }: { items: SurroundingsResponse[
     <List dense disablePadding>
       {items.slice(0, 6).map((a) => (
         <ListItem key={a.title} disablePadding>
-          <ListItemButton component="a" href={a.url} target="_blank" rel="noopener" sx={{ borderRadius: 2, alignItems: 'flex-start' }}>
+          <ListItemButton component="a" href={a.url} target="_blank" rel="noopener" sx={{ borderRadius: '12px', alignItems: 'flex-start' }}>
             <ListItemAvatar>
               <Avatar variant="rounded" src={a.thumbUrl} sx={{ width: 56, height: 56, mr: 1.5 }}>
                 W

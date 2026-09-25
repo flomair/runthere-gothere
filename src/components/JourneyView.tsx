@@ -1,30 +1,25 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import MoreIcon from '@mui/icons-material/MoreVert';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
-import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert,
   AlertTitle,
-  Badge,
-  Box,
   Button,
   Card,
   Chip,
-  IconButton,
   Menu,
   MenuItem,
   Slider,
   Stack,
-  Tab,
-  Tabs,
-  Tooltip,
+  type Theme,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cumulativeDistances, haversine, positionAt, samplePoints } from '../../shared/geo';
 import { navigate } from '../lib/nav';
-import { api, flag, useActivities, useMe, useMilestoneActions, useMilestones, useStravaActions } from '../lib/api';
+import { api, useActivities, useMe, useMilestoneActions, useMilestones, useStravaActions } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
 import { fromUnit, getUnit, toUnit } from '../lib/units';
 import { type ProgressEntry, computeProgress } from '../lib/progress';
@@ -36,7 +31,9 @@ import GoalsCard from './GoalsCard';
 import JourneySettingsDialog from './JourneySettingsDialog';
 import LocationExplorer from './LocationExplorer';
 import RouteMap from './RouteMap';
-import StatsRow from './StatsRow';
+import JourneyHero from './JourneyHero';
+import { PageTransition, Reveal } from './motion';
+import SectionNav, { type Section } from './SectionNav';
 import StravaButton from './StravaButton';
 
 function downloadGpx(j: Journey) {
@@ -90,6 +87,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const here = positionAt(points, cum, progress.doneM * scale).point;
 
   const [tab, setTab] = useState<'here' | 'ahead'>('here');
+  const [section, setSection] = useState<Section>('overview');
+  const isMobile = useMediaQuery((t: Theme) => t.breakpoints.down('sm'));
   const [peekM, setPeekM] = useState<number>(() => Math.min(progress.totalM, progress.doneM + 10_000));
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
@@ -185,227 +184,271 @@ export default function JourneyView({ journey }: { journey: Journey }) {
     .filter((m) => m < progress.totalM);
 
 
-  return (
-    <Stack spacing={3}>
-      <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}>
-        <IconButton onClick={() => navigate('/')} aria-label="back to journeys">
-          <ArrowBackIcon />
-        </IconButton>
-        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' }, overflowWrap: 'anywhere' }}>
-            {journey.name}
-          </Typography>
-          <Typography color="text.secondary" variant="body2" sx={{ overflowWrap: 'anywhere' }}>
-            {journey.waypoints.map((w) => w.name).join(' → ')} · {formatKm(journey.route.totalM, 0)} · counting since {formatDate(journey.startDate)}
-            {journey.trail && (
-              <>
-                {' · '}
-                <a href={`https://hiking.waymarkedtrails.org/#route?id=${journey.trail.osmId}`} target="_blank" rel="noopener" style={{ color: 'inherit' }}>
-                  {journey.trail.ref ? `${journey.trail.ref} · ` : ''}trail info
-                </a>
-              </>
-            )}
-          </Typography>
-        </Box>
-        {connected && journey.useStrava && (
-          <Tooltip title="Sync Strava">
-            <IconButton onClick={syncNow} disabled={syncing} aria-label="sync strava">
-              <RefreshIcon sx={{ animation: syncing ? 'spin 1s linear infinite' : undefined, '@keyframes spin': { to: { transform: 'rotate(360deg)' } } }} />
-            </IconButton>
-          </Tooltip>
-        )}
-        <Tooltip title="Travel diary">
-          <IconButton onClick={() => navigate(`/j/${journey.id}/diary`)} aria-label="travel diary">
-            <Badge color="primary" badgeContent={unseen.length} invisible={!unseen.length}>
-              <AutoStoriesIcon />
-            </Badge>
-          </IconButton>
-        </Tooltip>
-        <IconButton onClick={(e) => setMenu(e.currentTarget)} aria-label="journey menu">
-          <MoreIcon />
-        </IconButton>
-        <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
-          <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>Settings</MenuItem>
-          <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>Download route as GPX</MenuItem>
-          <MenuItem
-            sx={{ color: 'error.main' }}
-            onClick={() => {
-              setMenu(null);
-              if (confirm(`Delete "${journey.name}"? This can't be undone.`)) {
-                journeyStore.remove(journey.id);
-                navigate('/');
-              }
-            }}
-          >
-            Delete journey
-          </MenuItem>
-        </Menu>
-      </Stack>
+  const menuEl = (
+    <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
+      <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>Settings</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>Download route as GPX</MenuItem>
+      {journey.trail && (
+        <MenuItem component="a" href={`https://hiking.waymarkedtrails.org/#route?id=${journey.trail.osmId}`} target="_blank" onClick={() => setMenu(null)}>
+          Trail info (Waymarked Trails)
+        </MenuItem>
+      )}
+      <MenuItem
+        sx={{ color: 'error.main' }}
+        onClick={() => {
+          setMenu(null);
+          if (confirm(`Delete "${journey.name}"? This can't be undone.`)) {
+            journeyStore.remove(journey.id);
+            navigate('/');
+          }
+        }}
+      >
+        Delete journey
+      </MenuItem>
+    </Menu>
+  );
 
+  const banners = (
+    <AnimatePresence initial={false}>
       {journey.useStrava && me?.features.strava && !connected && (
-        <Alert severity="info" action={<StravaButton size="small" />}>
-          Connect Strava so your runs move you along this route.
-        </Alert>
+        <Pop key="connect">
+          <Alert severity="info" action={<StravaButton size="small" />}>
+            Connect Strava so your runs move you along this route.
+          </Alert>
+        </Pop>
       )}
       {syncError && (
-        <Alert severity="error" onClose={() => setSyncError(null)}>
-          Strava sync failed: {syncError}
-        </Alert>
+        <Pop key="syncerr">
+          <Alert severity="error" onClose={() => setSyncError(null)}>
+            Strava sync failed: {syncError}
+          </Alert>
+        </Pop>
       )}
-      {activitiesQ.error && <Alert severity="error">Could not load activities: {activitiesQ.error.message}</Alert>}
-
+      {activitiesQ.error && (
+        <Pop key="acterr">
+          <Alert severity="error">Could not load activities: {activitiesQ.error.message}</Alert>
+        </Pop>
+      )}
       {progress.finished && (
-        <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>
-          <AlertTitle>You've arrived in {journey.waypoints[journey.waypoints.length - 1]?.name ?? 'your destination'}!</AlertTitle>
-          {formatKm(progress.totalM, 0)} done{progress.finishedOn ? ` on ${formatDate(progress.finishedOn)}` : ''}. Time to go there for real?{' '}
-          <a href={`https://www.google.com/travel/flights?q=flights+to+${encodeURIComponent(journey.waypoints[journey.waypoints.length - 1]?.name ?? '')}`} target="_blank" rel="noopener">
-            Plan the trip
-          </a>
-        </Alert>
+        <Pop key="finished">
+          <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>
+            <AlertTitle>You've arrived in {journey.waypoints[journey.waypoints.length - 1]?.name ?? 'your destination'}!</AlertTitle>
+            {formatKm(progress.totalM, 0)} done{progress.finishedOn ? ` on ${formatDate(progress.finishedOn)}` : ''}. Time to go there for real?{' '}
+            <a href={`https://www.google.com/travel/flights?q=flights+to+${encodeURIComponent(journey.waypoints[journey.waypoints.length - 1]?.name ?? '')}`} target="_blank" rel="noopener">
+              Plan the trip
+            </a>
+          </Alert>
+        </Pop>
       )}
       {sinceLast && !progress.finished && (
-        <Alert severity="success" onClose={() => setSinceLast(null)}>
-          Since your last visit ({formatDate(sinceLast.at)}) you've moved <strong>{formatKm(sinceLast.m)}</strong> further along the route.
-        </Alert>
+        <Pop key="since">
+          <Alert severity="success" icon={<span style={{ fontSize: 22 }}>🏃</span>} onClose={() => setSinceLast(null)}>
+            Since your last visit ({formatDate(sinceLast.at)}) you've moved <strong>{formatKm(sinceLast.m)}</strong> further along the route.
+          </Alert>
+        </Pop>
       )}
-
       {unseen.length > 0 && (
-        <Alert
-          severity="info"
-          icon={<span style={{ fontSize: 22 }}>📮</span>}
-          action={
-            <Button color="inherit" onClick={() => navigate(`/j/${journey.id}/diary`)}>
-              Open diary
-            </Button>
-          }
-        >
-          {unseen.length === 1 ? `New postcard: ${unseen[0].title}` : `${unseen.length} new postcards, latest: ${unseen[unseen.length - 1].title}`}
-        </Alert>
-      )}
-      {countries.length > 1 && (
-        <Stack direction="row" sx={{ gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>
-            Countries:
-          </Typography>
-          {countries.map((c) => (
-            <Tooltip key={c} title={`${new Intl.DisplayNames([navigator.language], { type: 'region' }).of(c) ?? c}${reachedCountries.has(c) ? '' : ' (ahead)'}`}>
-              <Box component="span" sx={{ fontSize: 22, lineHeight: 1, opacity: reachedCountries.has(c) ? 1 : 0.35, filter: reachedCountries.has(c) ? 'none' : 'grayscale(1)' }}>
-                {flag(c)}
-              </Box>
-            </Tooltip>
-          ))}
-        </Stack>
-      )}
-
-      <StatsRow p={progress} />
-
-      <Card ref={mapRef} sx={{ overflow: 'hidden', position: 'relative', scrollMarginTop: 80 }}>
-        <RouteMap
-          points={points}
-          cum={cum}
-          doneM={progress.doneM * scale}
-          waypoints={journey.waypoints}
-          peekM={tab === 'ahead' ? peekM * scale : null}
-          onPeek={(m) => {
-            setPeekM(Math.max(0, Math.min(progress.totalM, m / scale)));
-            setTab('ahead');
-          }}
-          flyToken={fly.token}
-          flyTarget={fly.target}
-          highlight={selected ? { fromM: selected.startM * scale, toM: selected.cumulativeM * scale } : null}
-        />
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<MyLocationIcon />}
-          onClick={() => setFly((f) => ({ token: f.token + 1, target: here }))}
-          sx={{ position: 'absolute', left: 12, bottom: 12, zIndex: 1000 }}
-        >
-          Where am I?
-        </Button>
-        {selected && (
-          <Chip
-            label={`${selected.label} · ${formatDate(selected.date)} · ${formatKm(selected.countedM)}`}
-            onDelete={() => setSelected(null)}
-            sx={{ position: 'absolute', right: 12, bottom: 12, zIndex: 1000, bgcolor: '#f4b400', color: '#1d1d1d', maxWidth: '60%' }}
-          />
-        )}
-      </Card>
-
-      <ElevationProfile
-        profile={journey.profile}
-        loading={profileState.loading && !journey.profile}
-        error={profileState.error}
-        doneM={progress.doneM}
-        highlight={selected ? { fromM: selected.startM, toM: selected.cumulativeM } : null}
-        peekM={tab === 'ahead' ? peekM : null}
-      />
-
-      <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />
-
-      <Box>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-          <Tab value="here" label="Where I am" />
-          <Tab value="ahead" label="Look ahead" disabled={progress.finished} />
-        </Tabs>
-
-        {tab === 'ahead' && (
-          <Card sx={{ p: 2, mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Preview any point on the route: drag the slider, tap a chip, or click the line on the map.
-            </Typography>
-            <Slider
-              value={peekM}
-              min={0}
-              max={progress.totalM}
-              step={500}
-              onChange={(_, v) => setPeekM(v as number)}
-              valueLabelDisplay="auto"
-              valueLabelFormat={(v) => formatKm(v, 0)}
-              marks={[{ value: progress.doneM, label: 'you' }]}
-            />
-            <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
-              {quickPeeks.map((m) => (
-                <Chip key={m} label={`+${formatKm(m - progress.doneM, 0)}`} onClick={() => setPeekM(m)} variant={Math.abs(m - peekM) < 1 ? 'filled' : 'outlined'} color="secondary" />
-              ))}
-              {waypointDist.slice(1).filter((w) => w.m > progress.doneM).map((w) => (
-                <Chip key={w.name} label={w.name} onClick={() => setPeekM(w.m)} variant={Math.abs(w.m - peekM) < 1 ? 'filled' : 'outlined'} />
-              ))}
-            </Stack>
-          </Card>
-        )}
-
-        {tab === 'here' ? (
-          <LocationExplorer
-            key="here"
-            journeyId={journey.id}
-            point={here}
-            eyebrow={progress.finished ? 'You have arrived' : `You are here · ${getUnit()} ${toUnit(progress.doneM).toFixed(1)}`}
-            narrate={narrateBase(progress.doneM)}
-          />
-        ) : (
-          <LocationExplorer
-            key="ahead"
-            journeyId={journey.id}
-            point={peekPoint}
-            eyebrow={
-              peekM > progress.doneM
-                ? `In ${formatKm(peekM - progress.doneM, 0)} · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
-                : `Behind you · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
+        <Pop key="postcards">
+          <Alert
+            severity="info"
+            icon={
+              <motion.span
+                style={{ fontSize: 24, display: 'inline-block' }}
+                animate={{ rotate: [0, -12, 10, -6, 0], y: [0, -3, 0] }}
+                transition={{ duration: 1.2, repeat: 2, repeatDelay: 1.5 }}
+              >
+                📮
+              </motion.span>
             }
-            narrate={{ ...narrateBase(peekM), peek: { aheadM: peekM - progress.doneM } }}
+            action={
+              <Button color="inherit" onClick={() => navigate(`/j/${journey.id}/diary`)}>
+                Open diary
+              </Button>
+            }
+          >
+            {unseen.length === 1 ? `New postcard: ${unseen[0].title}` : `${unseen.length} new postcards, latest: ${unseen[unseen.length - 1].title}`}
+          </Alert>
+        </Pop>
+      )}
+    </AnimatePresence>
+  );
+
+  const mapCard = (
+    <Card ref={mapRef} sx={{ overflow: 'hidden', position: 'relative', scrollMarginTop: 120, p: 0 }}>
+      <RouteMap
+        points={points}
+        cum={cum}
+        doneM={progress.doneM * scale}
+        waypoints={journey.waypoints}
+        peekM={section === 'explore' && tab === 'ahead' ? peekM * scale : null}
+        onPeek={(m) => {
+          setPeekM(Math.max(0, Math.min(progress.totalM, m / scale)));
+          setTab('ahead');
+          setSection('explore');
+        }}
+        flyToken={fly.token}
+        flyTarget={fly.target}
+        highlight={selected ? { fromM: selected.startM * scale, toM: selected.cumulativeM * scale } : null}
+        height={isMobile ? 360 : 480}
+      />
+      <Button
+        variant="contained"
+        size="small"
+        startIcon={<MyLocationIcon />}
+        onClick={() => setFly((f) => ({ token: f.token + 1, target: here }))}
+        sx={{ position: 'absolute', zIndex: 1000, left: { xs: '50%', sm: 12 }, top: { xs: 12, sm: 'auto' }, bottom: { sm: 12 }, transform: { xs: 'translateX(-50%)', sm: 'none' } }}
+      >
+        Where am I?
+      </Button>
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            key={selected.key}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            style={{ position: 'absolute', right: 12, bottom: 12, zIndex: 1000, maxWidth: '62%' }}
+          >
+            <Chip
+              label={`${selected.label} · ${formatDate(selected.date)} · ${formatKm(selected.countedM)}`}
+              onDelete={() => setSelected(null)}
+              sx={{ bgcolor: '#f4b400', color: '#1d1d1d', maxWidth: '100%', boxShadow: 3 }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  );
+
+  const explore = (
+    <Stack spacing={2}>
+      <ToggleButtonGroup exclusive value={tab} onChange={(_, v) => v && setTab(v)} fullWidth sx={{ bgcolor: 'background.paper', borderRadius: 999, '& .MuiToggleButton-root': { border: 0, borderRadius: '999px !important', py: 1 }, '& .Mui-selected': { bgcolor: 'action.selected' } }}>
+        <ToggleButton value="here">📍 Where I am</ToggleButton>
+        <ToggleButton value="ahead" disabled={progress.finished}>
+          👀 Look ahead
+        </ToggleButton>
+      </ToggleButtonGroup>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div key={tab} initial={{ opacity: 0, x: tab === 'ahead' ? 24 : -24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tab === 'ahead' ? -24 : 24 }} transition={{ duration: 0.25 }}>
+          <Stack spacing={2}>
+            {tab === 'ahead' && (
+              <Card sx={{ p: 2 }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Preview any point on the route: drag the slider, tap a chip, or tap the line on the map.
+                </Typography>
+                <Slider
+                  value={peekM}
+                  min={0}
+                  max={progress.totalM}
+                  step={500}
+                  onChange={(_, v) => setPeekM(v as number)}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(v) => formatKm(v, 0)}
+                  marks={[{ value: progress.doneM, label: 'you' }]}
+                />
+                <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+                  {quickPeeks.map((m) => (
+                    <Chip key={m} label={`+${formatKm(m - progress.doneM, 0)}`} onClick={() => setPeekM(m)} variant={Math.abs(m - peekM) < 1 ? 'filled' : 'outlined'} color="secondary" />
+                  ))}
+                  {waypointDist.slice(1).filter((w) => w.m > progress.doneM).map((w) => (
+                    <Chip key={w.name} label={w.name} onClick={() => setPeekM(w.m)} variant={Math.abs(w.m - peekM) < 1 ? 'filled' : 'outlined'} />
+                  ))}
+                </Stack>
+              </Card>
+            )}
+            {tab === 'here' ? (
+              <LocationExplorer
+                key="here"
+                journeyId={journey.id}
+                point={here}
+                eyebrow={progress.finished ? 'You have arrived' : `You are here · ${getUnit()} ${toUnit(progress.doneM).toFixed(1)}`}
+                narrate={narrateBase(progress.doneM)}
+              />
+            ) : (
+              <LocationExplorer
+                key="ahead"
+                journeyId={journey.id}
+                point={peekPoint}
+                eyebrow={
+                  peekM > progress.doneM
+                    ? `In ${formatKm(peekM - progress.doneM, 0)} · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
+                    : `Behind you · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
+                }
+                narrate={{ ...narrateBase(peekM), peek: { aheadM: peekM - progress.doneM } }}
+              />
+            )}
+          </Stack>
+        </motion.div>
+      </AnimatePresence>
+    </Stack>
+  );
+
+  return (
+    <Stack spacing={2.5} sx={{ pb: { xs: 10, sm: 0 } }}>
+      <JourneyHero
+        journey={journey}
+        progress={progress}
+        countries={countries}
+        reachedCountries={reachedCountries}
+        unseen={unseen.length}
+        syncing={syncing}
+        onSync={connected && journey.useStrava ? syncNow : undefined}
+        onMenu={setMenu}
+      />
+      {menuEl}
+      <Stack spacing={1.5}>{banners}</Stack>
+      <SectionNav value={section} onChange={setSection} onDiary={() => navigate(`/j/${journey.id}/diary`)} unseen={unseen.length} />
+      <PageTransition routeKey={section}>
+        {section === 'overview' && (
+          <Stack spacing={2.5}>
+            {mapCard}
+            <Reveal>
+              <ElevationProfile
+                profile={journey.profile}
+                loading={profileState.loading && !journey.profile}
+                error={profileState.error}
+                doneM={progress.doneM}
+                highlight={selected ? { fromM: selected.startM, toM: selected.cumulativeM } : null}
+                peekM={null}
+              />
+            </Reveal>
+          </Stack>
+        )}
+        {section === 'explore' && explore}
+        {section === 'goals' && <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />}
+        {section === 'log' && (
+          <ActivityLog
+            journey={journey}
+            progress={progress}
+            selectedKey={selected?.key}
+            onSelect={(e) => {
+              setSelected(e);
+              if (e) {
+                setSection('overview');
+                setTimeout(() => mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350);
+              }
+            }}
           />
         )}
-      </Box>
-
-      <ActivityLog journey={journey} progress={progress} selectedKey={selected?.key} onSelect={(e) => {
-        setSelected(e);
-        if (e) mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }} />
-      <Typography variant="caption" color="text.secondary">
+      </PageTransition>
+      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
         Route: {journey.route.provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{me?.features.mapillary ? ', Mapillary' : ''}. Weather: Open-Meteo.
       </Typography>
       <JourneySettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} journey={journey} />
     </Stack>
+  );
+}
+
+function Pop({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+    >
+      {children}
+    </motion.div>
   );
 }

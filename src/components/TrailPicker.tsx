@@ -142,7 +142,7 @@ export default function TrailPicker({ onRoute, onName }: Props) {
             )}
             <List dense disablePadding sx={{ maxHeight: 320, overflowY: 'auto' }}>
               {results.map((r) => (
-                <ListItemButton key={r.osmId} onClick={() => load(r, picked?.reverse ?? false)} sx={{ borderRadius: 2 }}>
+                <ListItemButton key={r.osmId} onClick={() => load(r, picked?.reverse ?? false)} sx={{ borderRadius: '12px' }}>
                   <ListItemIcon sx={{ minWidth: 36 }}>
                     <HikingIcon color="primary" />
                   </ListItemIcon>
