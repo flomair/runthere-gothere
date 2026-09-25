@@ -112,6 +112,8 @@ function client(k: ResolvedKey) {
   });
 }
 
+const requestId = (e: InstanceType<typeof Anthropic.APIError>) => (e.requestID ? ` (request ${e.requestID})` : '');
+
 /** Human-readable explanation of an API failure, naming which key was used. */
 export function explainError(e: unknown, k: ResolvedKey): string {
   const who = `your key (${k.masked})`;
@@ -125,17 +127,37 @@ export function explainError(e: unknown, k: ResolvedKey): string {
     return `${who} is an organization-level key. Enter your Workspace ID in the narrator settings (Console → Settings → Workspaces), or create a key inside a workspace.`;
   }
   if (e instanceof Anthropic.BadRequestError && /credit balance/i.test(e.message)) {
-    return `The Anthropic account behind ${who} has no credits left. Add credits at console.anthropic.com → Settings → Billing.`;
+    // Anthropic bills per organization (and workspace), so "I have credit" usually means credit elsewhere.
+    return [
+      `Anthropic says the organization behind ${who} has no usable API credit${k.workspaceId ? ` (workspace ${k.workspaceId})` : ''}.`,
+      'If you do have credit, check:',
+      '1) the key was created in the same Console organization that holds the credit (organization switcher top left in console.anthropic.com);',
+      '2) it is API credit (Console → Settings → Billing) – a Claude Pro/Max subscription on claude.ai does not pay for API calls;',
+      '3) the workspace of the key has no used-up spend limit (Console → Settings → Workspaces → Limits);',
+      '4) credit bought in the last few minutes can take a moment to become active.',
+      `Details: ${e.message}${requestId(e)}`,
+    ].join(' ');
   }
-  if (e instanceof Anthropic.BadRequestError) return `Anthropic refused the request for ${who}: ${e.message}`;
-  if (e instanceof Anthropic.APIError) return `AI error ${e.status ?? ''} with ${who}: ${e.message}`;
+  if (e instanceof Anthropic.BadRequestError) return `Anthropic refused the request for ${who}: ${e.message}${requestId(e)}`;
+  if (e instanceof Anthropic.APIError) return `AI error ${e.status ?? ''} with ${who}: ${e.message}${requestId(e)}`;
   return String(e);
 }
 
-/** Cheap check that a key works and can use the narrator model (no tokens spent). */
+/**
+ * Checks that a key works: it must see the narrator model, and a minimal real request must go
+ * through (1 output token, a fraction of a cent) – the only way to catch billing problems such as
+ * an empty credit balance before the first story fails.
+ */
 export async function checkKey(k: ResolvedKey): Promise<{ ok: true; model: string } | { ok: false; error: string }> {
   try {
-    const m = await client(k).models.retrieve(NARRATOR_MODEL);
+    const c = client(k);
+    const m = await c.models.retrieve(NARRATOR_MODEL);
+    await c.messages.create({
+      model: NARRATOR_MODEL,
+      max_tokens: 1,
+      thinking: { type: 'disabled' },
+      messages: [{ role: 'user', content: 'Reply with OK.' }],
+    });
     return { ok: true, model: m.display_name ?? m.id };
   } catch (e) {
     return { ok: false, error: explainError(e, k) };

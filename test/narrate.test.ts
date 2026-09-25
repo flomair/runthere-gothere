@@ -68,7 +68,24 @@ describe('AI key (per user, encrypted)', () => {
     vi.stubGlobal('fetch', vi.fn(async () => apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.')));
     const api = await import('../routes/ai-key');
     const r = (await (await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: 'sk-ant-api03-x1' } }))).json()) as { error: string };
-    expect(r.error).toMatch(/no credits left/);
+    expect(r.error).toMatch(/no usable API credit/);
+    expect(r.error).toMatch(/Claude Pro\/Max subscription/);
+  });
+
+  it('catches billing problems when the key can list models but not run them', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes('/v1/models/')) return new Response(JSON.stringify({ id: 'claude-sonnet-5', display_name: 'Claude Sonnet 5', type: 'model' }), { status: 200, headers: { 'content-type': 'application/json' } });
+      return apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const api = await import('../routes/ai-key');
+    const r = (await (await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: 'sk-ant-api03-x2' } }))).json()) as { ok?: boolean; error?: string };
+    expect(r.ok).not.toBe(true);
+    expect(r.error).toMatch(/no usable API credit/);
+    const messageCall = fetchMock.mock.calls.find(([u]) => String(u instanceof Request ? u.url : u).includes('/v1/messages'));
+    expect(messageCall).toBeTruthy();
+    expect(JSON.parse(String(messageCall![1]?.body))).toMatchObject({ max_tokens: 1 });
   });
 });
 
