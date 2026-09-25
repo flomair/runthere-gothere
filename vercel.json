@@ -4,7 +4,14 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/narrate.ts": { "maxDuration": 60 },
-    "api/route.ts": { "maxDuration": 60 }
+    "api/narrate.ts": {
+      "maxDuration": 60
+    },
+    "api/route.ts": {
+      "maxDuration": 60
+    },
+    "api/trails/route.ts": {
+      "maxDuration": 60
+    }
   }
 }

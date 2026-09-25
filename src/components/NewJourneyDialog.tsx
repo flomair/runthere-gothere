@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import BikeIcon from '@mui/icons-material/DirectionsBike';
+import HikingIcon from '@mui/icons-material/Hiking';
 import RunIcon from '@mui/icons-material/DirectionsRun';
 import CloseIcon from '@mui/icons-material/Close';
 import StraightIcon from '@mui/icons-material/Straighten';
@@ -32,9 +33,10 @@ import { finalizeClientRoute } from '../lib/gpx';
 import { planRoute } from '../lib/api';
 import { formatKm, todayIso } from '../lib/format';
 import { journeyStore, newId } from '../lib/storage';
-import { type GeoResult, type Journey, type PlannedRoute, type RouteMode, SPORT_TYPES } from '../lib/types';
+import { type GeoResult, type Journey, type PlannedRoute, type RouteMode, SPORT_TYPES, type TrailRoute } from '../lib/types';
 import PlaceField from './PlaceField';
 import RouteSketch from './RouteSketch';
+import TrailPicker from './TrailPicker';
 
 export interface JourneyPreset {
   name: string;
@@ -52,7 +54,7 @@ interface Props {
 export default function NewJourneyDialog({ open, onClose, preset, stravaConnected }: Props) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  const [tab, setTab] = useState<'plan' | 'gpx'>('plan');
+  const [tab, setTab] = useState<'plan' | 'trail' | 'gpx'>('plan');
   const [name, setName] = useState('');
   const [from, setFrom] = useState<GeoResult | null>(null);
   const [to, setTo] = useState<GeoResult | null>(null);
@@ -61,7 +63,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
   const [startDate, setStartDate] = useState(todayIso());
   const [sportTypes, setSportTypes] = useState<string[]>(['Run', 'TrailRun']);
   const [useStrava, setUseStrava] = useState(true);
-  const [route, setRoute] = useState<(PlannedRoute & { mode: Journey['mode'] }) | null>(null);
+  const [route, setRoute] = useState<(PlannedRoute & { mode: Journey['mode']; trail?: TrailRoute }) | null>(null);
   const [gpxName, setGpxName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,13 +124,16 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
   const create = () => {
     if (!route) return;
     const pts = route.points;
+    const endpoints = (a: string, b: string) => [
+      { name: a, lat: pts[0][0], lon: pts[0][1] },
+      { name: b, lat: pts[pts.length - 1][0], lon: pts[pts.length - 1][1] },
+    ];
     const wps =
       route.mode === 'gpx'
-        ? [
-            { name: 'Start', lat: pts[0][0], lon: pts[0][1] },
-            { name: 'Finish', lat: pts[pts.length - 1][0], lon: pts[pts.length - 1][1] },
-          ]
-        : waypoints.map((w) => ({ name: w.name, lat: w.lat, lon: w.lon }));
+        ? endpoints('Start', 'Finish')
+        : route.mode === 'trail' && route.trail
+          ? endpoints(route.trail.startName, route.trail.endName)
+          : waypoints.map((w) => ({ name: w.name, lat: w.lat, lon: w.lon }));
     const j: Journey = {
       id: newId(),
       name: name.trim() || 'My journey',
@@ -140,6 +145,15 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
       excludedActivityIds: [],
       waypoints: wps,
       mode: route.mode,
+      trail: route.trail
+        ? {
+            osmId: route.trail.trail.osmId,
+            name: route.trail.trail.name,
+            ref: route.trail.trail.ref,
+            website: route.trail.trail.website,
+            wikipedia: route.trail.trail.wikipedia,
+          }
+        : undefined,
       route: { points: route.points, totalM: route.totalM, provider: route.provider },
     };
     journeyStore.add(j);
@@ -159,6 +173,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
         <Stack spacing={2.5}>
           <Tabs value={tab} onChange={(_, v) => { setTab(v); setRoute(null); }} variant="fullWidth">
             <Tab value="plan" label="From A to B" />
+            <Tab value="trail" label="Classic trail" />
             <Tab value="gpx" label="Upload GPX" />
           </Tabs>
 
@@ -191,17 +206,35 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
                 </Typography>
                 <ToggleButtonGroup exclusive value={mode} onChange={(_, v) => v && setMode(v)} size="small" fullWidth>
                   <ToggleButton value="foot">
-                    <RunIcon fontSize="small" sx={{ mr: 1 }} /> Footpaths
+                    <RunIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Footpaths</Box>
+                  </ToggleButton>
+                  <ToggleButton value="hike">
+                    <HikingIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Hiking trails</Box>
                   </ToggleButton>
                   <ToggleButton value="bike">
-                    <BikeIcon fontSize="small" sx={{ mr: 1 }} /> Bike routes
+                    <BikeIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Bike routes</Box>
                   </ToggleButton>
                   <ToggleButton value="direct">
-                    <StraightIcon fontSize="small" sx={{ mr: 1 }} /> Straight line
+                    <StraightIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Straight</Box>
                   </ToggleButton>
                 </ToggleButtonGroup>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                  {
+                    {
+                      foot: 'Shortest walkable way on paths, tracks and quiet roads.',
+                      hike: 'Prefers waymarked hiking routes and paths. Slower to plan, long routes are planned in sections.',
+                      bike: 'Follows cycle routes; good for very long journeys.',
+                      direct: 'As the crow flies.',
+                    }[mode]
+                  }
+                </Typography>
               </Box>
             </Stack>
+          ) : tab === 'trail' ? (
+            <TrailPicker
+              onRoute={(r) => setRoute(r ? { ...r, mode: 'trail', trail: r } : null)}
+              onName={(n) => setName((cur) => cur || n)}
+            />
           ) : (
             <Box>
               <Button component="label" variant="outlined" startIcon={<UploadIcon />} fullWidth sx={{ py: 2, borderStyle: 'dashed' }}>

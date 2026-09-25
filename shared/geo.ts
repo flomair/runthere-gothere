@@ -158,3 +158,94 @@ export function formatKm(meters: number, digits = 1): string {
   const km = meters / 1000;
   return `${km.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: km < 100 ? digits : 0 })} km`;
 }
+
+/** Fast approximate distance (m) for nearest-neighbour searches; fine for short gaps. */
+function approxDist(a: LatLon, b: LatLon): number {
+  const k = Math.cos(((a[0] + b[0]) / 2) * (Math.PI / 180));
+  const dx = (b[1] - a[1]) * k;
+  const dy = b[0] - a[0];
+  return Math.sqrt(dx * dx + dy * dy) * 111_195;
+}
+
+export interface ChainResult {
+  points: LatLon[];
+  /** Number of input pieces that ended up in the chain. */
+  used: number;
+  /** Length of pieces left out (variants, spurs, disconnected bits). */
+  skippedM: number;
+  /** Largest gap bridged between two pieces. */
+  maxGapM: number;
+}
+
+interface Piece {
+  pts: LatLon[];
+  len: number;
+  count: number;
+}
+
+/**
+ * Greedily grow chains: seed with the longest unused piece, then keep attaching the unused piece
+ * whose nearest end is closest to either chain end (reversing it as needed) while within `tolM`.
+ */
+function growChains(pieces: Piece[], tolM: number): (Piece & { maxGap: number })[] {
+  const order = pieces.slice().sort((a, b) => b.len - a.len);
+  const used = new Uint8Array(order.length);
+  const out: (Piece & { maxGap: number })[] = [];
+  for (let seed = 0; seed < order.length; seed++) {
+    if (used[seed]) continue;
+    used[seed] = 1;
+    let chain = order[seed].pts.slice();
+    let len = order[seed].len;
+    let count = order[seed].count;
+    let maxGap = 0;
+    for (const side of ['tail', 'head'] as const) {
+      for (;;) {
+        const end = side === 'tail' ? chain[chain.length - 1] : chain[0];
+        let best = -1;
+        let bestD = Infinity;
+        let bestRev = false;
+        for (let i = 0; i < order.length; i++) {
+          if (used[i]) continue;
+          const p = order[i].pts;
+          const dStart = approxDist(end, p[0]);
+          const dEnd = approxDist(end, p[p.length - 1]);
+          const d = Math.min(dStart, dEnd);
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+            // tail: the piece must start at the chain end; head: it must end at the chain head
+            bestRev = side === 'tail' ? dEnd < dStart : dStart < dEnd;
+          }
+        }
+        if (best === -1 || bestD > tolM) break;
+        used[best] = 1;
+        len += order[best].len;
+        count += order[best].count;
+        maxGap = Math.max(maxGap, bestD);
+        const p = bestRev ? order[best].pts.slice().reverse() : order[best].pts;
+        const touching = bestD < 1;
+        if (side === 'tail') chain = chain.concat(touching ? p.slice(1) : p);
+        else chain = (touching ? p.slice(0, -1) : p).concat(chain);
+      }
+    }
+    out.push({ pts: chain, len, count, maxGap });
+  }
+  return out;
+}
+
+/**
+ * Join the unordered, arbitrarily oriented ways of an OSM route relation into one continuous line.
+ * Pass 1 links pieces that actually touch (≤ 30 m) into connected sections; pass 2 bridges real
+ * gaps (≤ `maxGapM`) between those sections. The longest resulting line wins, so alternative
+ * variants and side trips are left out instead of being stitched in backwards.
+ */
+export function chainLines(lines: LatLon[][], maxGapM = 5000): ChainResult {
+  const pieces: Piece[] = lines
+    .filter((l) => l.length >= 2)
+    .map((l) => ({ pts: l, len: cumulativeDistances(l).at(-1)!, count: 1 }));
+  if (!pieces.length) return { points: [], used: 0, skippedM: 0, maxGapM: 0 };
+  const total = pieces.reduce((s, p) => s + p.len, 0);
+  const sections = growChains(pieces, 30);
+  const joined = growChains(sections, maxGapM).sort((a, b) => b.len - a.len)[0];
+  return { points: joined.pts, used: joined.count, skippedM: Math.max(0, total - joined.len), maxGapM: joined.maxGap };
+}

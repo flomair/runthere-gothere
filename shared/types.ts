@@ -29,7 +29,7 @@ export interface PlaceName {
   countryCode?: string;
 }
 
-export type RouteMode = 'foot' | 'bike' | 'direct';
+export type RouteMode = 'foot' | 'hike' | 'bike' | 'direct';
 
 export interface PlannedRoute {
   points: LatLon[];
@@ -128,4 +128,29 @@ export interface NarrateRequest {
   /** Set when narrating a look-ahead point rather than the current position. */
   peek?: { aheadM: number };
   photoTitles?: string[];
+}
+
+export interface TrailSearchResult {
+  /** OSM relation id. */
+  osmId: number;
+  name: string;
+  ref?: string;
+  /** International / National / Regional / Local */
+  network?: string;
+  itinerary?: string;
+  source: 'waymarked' | 'nominatim';
+}
+
+export interface TrailRoute extends PlannedRoute {
+  trail: {
+    osmId: number;
+    name: string;
+    ref?: string;
+    from?: string;
+    to?: string;
+    website?: string;
+    wikipedia?: string;
+  };
+  startName: string;
+  endName: string;
 }

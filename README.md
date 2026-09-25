@@ -9,6 +9,7 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **the surroundings**: live weather at your virtual position, nearby Wikipedia articles and top-rated places with Google reviews
 - **an AI travel narrator** (Claude). It combines all of that with your progress into a travelogue entry, including an *excursus*, a book-style digression into the local history or culture. You can have it read aloud.
 - **what's coming**: preview any point further along the route
+- **classic trails**: pick a famous hiking trail (Rennsteig, West Highland Way, Camino Francés, E5, Pacific Crest Trail…) from the recommendations or search any waymarked route in OpenStreetMap
 - **your stats**: km covered and remaining, weekly pace, estimated arrival date, and a logbook of the activities that got you there
 
 Once you arrive, go there for real. 🏁
@@ -23,7 +24,8 @@ Once you arrive, go there for real. 🏁
 api/            Vercel functions (thin handlers)
   auth/         Strava OAuth: login, callback, logout
   activities.ts Strava activities since a date
-  route.ts      route planning (OSRM foot/bike → BRouter → great circle fallback)
+  route.ts      route planning (OSRM foot/bike, BRouter hiking trails, great circle fallback)
+  trails/       classic trails: search (Waymarked Trails / Nominatim) and route geometry (Overpass)
   geocode.ts    place search (Nominatim)
   photos.ts     Mapillary + Wikimedia Commons photos near a point
   surroundings.ts  place name, weather, Wikipedia, Google places
@@ -39,7 +41,8 @@ test/           Vitest unit tests (external APIs are mocked)
 | What | Source | Key needed |
 | --- | --- | --- |
 | Activities | Strava API | Strava API app (required for syncing) |
-| Routing | [routing.openstreetmap.de](https://routing.openstreetmap.de) (OSRM foot/bike), [BRouter](https://brouter.de) fallback | no |
+| Routing | [routing.openstreetmap.de](https://routing.openstreetmap.de) (OSRM foot/bike), [BRouter](https://brouter.de) (hiking trails) | no |
+| Classic trails | [Waymarked Trails](https://hiking.waymarkedtrails.org) search, [Overpass API](https://overpass-api.de) for the OSM relation geometry | no |
 | Place search / names | OpenStreetMap Nominatim | no (set `CONTACT_EMAIL` as their policy asks) |
 | Weather | [Open-Meteo](https://open-meteo.com) | no |
 | Wikipedia | Wikipedia geosearch (in your browser language, English fallback) | no |
@@ -79,6 +82,19 @@ npm run dev                  # http://localhost:5173, the /api functions run ins
 - `MAPILLARY_TOKEN`: recent street-level photos along the route.
 - `GOOGLE_PLACES_API_KEY`: top-rated cafés, sights and parks with a review snippet. Without it the app links to Google Maps searches.
 - `ANTHROPIC_API_KEY`: turns on the AI narrator for everyone using the deployment. Alternatively, each user can paste **their own Anthropic key** in the narrator settings. It stays in their browser, is sent only with narration requests (`x-anthropic-key` header) and is never stored on the server.
+
+## Route options
+
+When planning **From A to B** you choose how the route is drawn:
+
+- **Footpaths** (default): the shortest walkable way on paths, tracks and quiet roads (OSRM foot).
+- **Hiking trails**: BRouter's hiking profile, which prefers waymarked hiking routes and paths. Routes longer than 120 km are planned in sections in parallel. A section BRouter can't solve falls back to footpaths, and the app says so.
+- **Bike routes**: cycle routes (OSRM bike), good for very long journeys.
+- **Straight line**: as the crow flies.
+
+The **Classic trail** tab follows an official waymarked trail exactly. It loads the OpenStreetMap route relation (including sub-relations of long trails such as the E-paths) and joins its pieces into one line. First it links pieces that touch, then it bridges small mapping gaps (≤ 5 km). Alternative variants and side trips are left out, and the app tells you how many km that was. **Reverse direction** flips the trail if you want to walk it the other way.
+
+You can also **upload a GPX** from Komoot, Strava routes, Garmin or waymarkedtrails.org.
 
 ## AI narrator
 

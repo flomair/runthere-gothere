@@ -129,6 +129,14 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           </Typography>
           <Typography color="text.secondary" variant="body2" sx={{ overflowWrap: 'anywhere' }}>
             {journey.waypoints.map((w) => w.name).join(' → ')} · {formatKm(journey.route.totalM, 0)} · counting since {formatDate(journey.startDate)}
+            {journey.trail && (
+              <>
+                {' · '}
+                <a href={`https://hiking.waymarkedtrails.org/#route?id=${journey.trail.osmId}`} target="_blank" rel="noopener" style={{ color: 'inherit' }}>
+                  {journey.trail.ref ? `${journey.trail.ref} · ` : ''}trail info
+                </a>
+              </>
+            )}
           </Typography>
         </Box>
         {connected && journey.useStrava && (

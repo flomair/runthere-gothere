@@ -29,7 +29,9 @@ export interface Journey {
   manualEntries: ManualEntry[];
   excludedActivityIds: number[];
   waypoints: Waypoint[];
-  mode: RouteMode | 'gpx';
+  mode: RouteMode | 'gpx' | 'trail';
+  /** Set for journeys along a named OSM trail. */
+  trail?: { osmId: number; name: string; ref?: string; website?: string; wikipedia?: string };
   route: { points: LatLon[]; totalM: number; provider: string };
   /** Progress when the journey was last opened – used for the "since last time" banner. */
   lastSeen?: { doneM: number; at: string };
