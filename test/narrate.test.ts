@@ -69,3 +69,38 @@ describe('narrate', () => {
     expect(prompt).toMatch(/excursus/i);
   });
 });
+
+describe('key handling', () => {
+  it('cleans pasted keys and prefers the user key', async () => {
+    const { cleanKey, resolveKey } = await import('../server/narrate');
+    expect(cleanKey(' "sk-ant-api03-abc​def"\n')).toBe('sk-ant-api03-abcdef');
+    process.env.ANTHROPIC_API_KEY = "'sk-ant-api03-server1234'";
+    expect(resolveKey('')).toMatchObject({ source: 'server', key: 'sk-ant-api03-server1234', masked: 'sk-ant-api03-…1234' });
+    expect(resolveKey('sk-ant-api03-mine9999')).toMatchObject({ source: 'yours', masked: 'sk-ant-api03-…9999' });
+    delete process.env.ANTHROPIC_API_KEY;
+  });
+
+  it('reports which key Anthropic rejected', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+        expect(String(input)).toContain('/v1/models/claude-opus-5');
+        const h = new Headers(init?.headers);
+        expect(h.get('x-api-key')).toBe('sk-ant-api03-bad0');
+        expect(h.get('authorization')).toBeNull();
+        return new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }),
+    );
+    const { POST } = await import('../api/ai-check');
+    const r = (await (await POST(new Request('http://x/api/ai-check', { method: 'POST', headers: { 'x-anthropic-key': ' sk-ant-api03-bad0 ' } }))).json()) as {
+      ok: boolean;
+      error: string;
+    };
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('your key (sk-ant-api03-…bad0)');
+    expect(r.error).toContain('invalid x-api-key');
+  });
+});

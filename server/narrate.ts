@@ -75,15 +75,67 @@ async function gather(req: NarrateRequest) {
 }
 
 /** Streams the narration as plain UTF-8 text. */
+/** Remove whitespace, quotes and invisible characters that sneak in when keys are pasted. */
+export function cleanKey(raw: string | undefined | null): string {
+  return (raw ?? '').replace(/[\s"'`\u200B-\u200D\u2060\uFEFF]/g, '');
+}
+
+export interface ResolvedKey {
+  key: string;
+  source: 'yours' | 'server';
+  /** Safe to show: prefix and last 4 characters. */
+  masked: string;
+}
+
+export function resolveKey(userKey: string | undefined | null): ResolvedKey | null {
+  const mine = cleanKey(userKey);
+  const server = cleanKey(process.env.ANTHROPIC_API_KEY);
+  const key = mine || server;
+  if (!key) return null;
+  const prefix = /^sk-ant-[a-z]+\d*-/.exec(key)?.[0] ?? key.slice(0, 7);
+  return { key, source: mine ? 'yours' : 'server', masked: `${prefix}…${key.slice(-4)}` };
+}
+
+function client(k: ResolvedKey) {
+  // authToken: null so a stray ANTHROPIC_AUTH_TOKEN in the environment can't interfere
+  return new Anthropic({ apiKey: k.key, authToken: null });
+}
+
+/** Human-readable explanation of an API failure, naming which key was used. */
+export function explainError(e: unknown, k: ResolvedKey): string {
+  const who = k.source === 'yours' ? `your key (${k.masked})` : `the server's ANTHROPIC_API_KEY (${k.masked})`;
+  if (e instanceof Anthropic.AuthenticationError) {
+    return `Anthropic rejected ${who}: ${e.message}. Check that it is an API key from console.anthropic.com (starts with "sk-ant-api"), that it hasn't been disabled, and that it was copied completely.`;
+  }
+  if (e instanceof Anthropic.PermissionDeniedError) return `${who} is not allowed to use ${NARRATOR_MODEL}: ${e.message}`;
+  if (e instanceof Anthropic.NotFoundError) return `${NARRATOR_MODEL} is not available for ${who}: ${e.message}`;
+  if (e instanceof Anthropic.RateLimitError) return 'The AI is rate-limited right now. Try again in a minute.';
+  if (e instanceof Anthropic.BadRequestError) return `Anthropic refused the request for ${who}: ${e.message}`;
+  if (e instanceof Anthropic.APIError) return `AI error ${e.status ?? ''} with ${who}: ${e.message}`;
+  return String(e);
+}
+
+/** Cheap check that a key works and can use the narrator model (no tokens spent). */
+export async function checkKey(userKey: string | undefined | null) {
+  const k = resolveKey(userKey);
+  if (!k) return { ok: false as const, error: 'No key: add one here or set ANTHROPIC_API_KEY on the server.' };
+  try {
+    const m = await client(k).models.retrieve(NARRATOR_MODEL);
+    return { ok: true as const, source: k.source, masked: k.masked, model: m.display_name ?? m.id };
+  } catch (e) {
+    return { ok: false as const, source: k.source, masked: k.masked, error: explainError(e, k) };
+  }
+}
+
 export async function narrate(req: NarrateRequest, apiKey: string | undefined): Promise<ReadableStream<Uint8Array>> {
-  const key = apiKey || process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new HttpError(400, 'No AI key configured. Add your Anthropic API key in the narrator settings, or set ANTHROPIC_API_KEY on the server.');
+  const resolved = resolveKey(apiKey);
+  if (!resolved) throw new HttpError(400, 'No AI key configured. Add your Anthropic API key in the narrator settings, or set ANTHROPIC_API_KEY on the server.');
 
   const gathered = await gather(req);
-  const client = new Anthropic({ apiKey: key });
+  const anthropic = client(resolved);
   const languageName = new Intl.DisplayNames(['en'], { type: 'language' }).of(req.language) ?? req.language;
 
-  const stream = client.beta.messages.stream({
+  const stream = anthropic.beta.messages.stream({
     model: NARRATOR_MODEL,
     max_tokens: 4000,
     betas: ['server-side-fallback-2026-07-01'],
@@ -108,14 +160,7 @@ export async function narrate(req: NarrateRequest, apiKey: string | undefined): 
         if (final.stop_reason === 'refusal') controller.enqueue(enc.encode('\n\n[The narrator declined to describe this place.]'));
         controller.close();
       } catch (e) {
-        const msg =
-          e instanceof Anthropic.AuthenticationError
-            ? 'The AI key was rejected. Check it in the narrator settings.'
-            : e instanceof Anthropic.RateLimitError
-              ? 'The AI is rate-limited right now. Try again in a minute.'
-              : e instanceof Anthropic.APIError
-                ? `AI error ${e.status}: ${e.message}`
-                : String(e);
+        const msg = explainError(e, resolved);
         controller.enqueue(enc.encode(`\n\n[${msg}]`));
         controller.close();
       }

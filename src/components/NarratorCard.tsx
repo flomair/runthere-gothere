@@ -71,7 +71,27 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
   const s = useNarratorSettings();
   const voices = useVoices();
   const [key, setKey] = useState(s.apiKey);
-  useEffect(() => setKey(s.apiKey), [s.apiKey, open]);
+  const [test, setTest] = useState<{ busy: boolean; ok?: boolean; text?: string }>({ busy: false });
+  useEffect(() => {
+    setKey(s.apiKey);
+    setTest({ busy: false });
+  }, [s.apiKey, open]);
+
+  const runTest = async () => {
+    setTest({ busy: true });
+    try {
+      const k = key.trim();
+      const res = await fetch('/api/ai-check', { method: 'POST', headers: k ? { 'x-anthropic-key': k } : {} });
+      const r = (await res.json()) as { ok: boolean; source?: string; masked?: string; model?: string; error?: string };
+      setTest({
+        busy: false,
+        ok: r.ok,
+        text: r.ok ? `Works: ${r.source === 'yours' ? 'your key' : "the server's key"} (${r.masked}) can use ${r.model}.` : r.error,
+      });
+    } catch (e) {
+      setTest({ busy: false, ok: false, text: e instanceof Error ? e.message : String(e) });
+    }
+  };
   const preferred = voices.filter((v) => v.lang.toLowerCase().startsWith(lang()));
   const list = preferred.length ? [...preferred, ...voices.filter((v) => !preferred.includes(v))] : voices;
 
@@ -89,10 +109,20 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
             autoComplete="off"
             helperText={
               serverKey
-                ? 'Optional: this deployment already has a key. Add yours to use your own account.'
+                ? 'Optional: this deployment already has a key. Add yours to use your own account. Leave empty to use the server key.'
                 : 'Stored only in this browser. It is sent along with narration requests and never saved on the server. Get a key at console.anthropic.com.'
             }
           />
+          <Box>
+            <Button size="small" variant="outlined" onClick={runTest} loading={test.busy} disabled={!key.trim() && !serverKey}>
+              {key.trim() ? 'Test this key' : "Test the server's key"}
+            </Button>
+            {test.text && (
+              <Alert severity={test.ok ? 'success' : 'error'} sx={{ mt: 1.5, wordBreak: 'break-word' }}>
+                {test.text}
+              </Alert>
+            )}
+          </Box>
           <TextField select label="Style" value={s.style} onChange={(e) => saveNarratorSettings({ style: e.target.value as NarrationStyle })}>
             {Object.entries(STYLE_LABELS).map(([v, l]) => (
               <MenuItem key={v} value={v}>
