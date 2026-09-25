@@ -33,6 +33,7 @@ import type { Progress, ProgressEntry } from '../lib/progress';
 import { journeyStore, newId } from '../lib/storage';
 import type { Journey } from '../lib/types';
 import { fromUnit, getUnit, toUnit } from '../lib/units';
+import { locale, t } from '../lib/i18n';
 
 function AddEntryDialog({ open, onClose, journey }: { open: boolean; onClose: () => void; journey: Journey }) {
   const [date, setDate] = useState(todayIso());
@@ -65,11 +66,11 @@ function AddEntryDialog({ open, onClose, journey }: { open: boolean; onClose: ()
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Add a run</DialogTitle>
+      <DialogTitle>{t('Add a run')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <Button component="label" variant="outlined" startIcon={<UploadIcon />} sx={{ borderStyle: 'dashed', py: 1.5 }}>
-            {file ? file.fileName : 'Import a GPX, TCX or FIT file'}
+            {file ? file.fileName : t('Import a GPX, TCX or FIT file')}
             <input
               hidden
               type="file"
@@ -84,21 +85,21 @@ function AddEntryDialog({ open, onClose, journey }: { open: boolean; onClose: ()
           {file && (
             <Typography variant="caption" color="text.secondary">
               {[file.movingTimeS && formatDuration(file.movingTimeS), file.elevationGainM != null && `↑ ${file.elevationGainM} m`].filter(Boolean).join(' · ') ||
-                'Read from file'}
+                t('Read from file')}
             </Typography>
           )}
           {error && <Alert severity="error">{error}</Alert>}
-          <TextField label={getUnit() === 'mi' ? 'Miles' : 'Kilometres'} value={dist} onChange={(e) => setDist(e.target.value)} inputMode="decimal" />
+          <TextField label={getUnit() === 'mi' ? t('Miles') : t('Kilometres')} value={dist} onChange={(e) => setDist(e.target.value)} inputMode="decimal" />
           <TextField
-            label="Date"
+            label={t('Date')}
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
             error={date < journey.startDate}
-            helperText={date < journey.startDate ? 'Before the journey started' : undefined}
+            helperText={date < journey.startDate ? t('Before the journey started') : undefined}
           />
-          <TextField label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Treadmill, forgot my watch…" />
+          <TextField label={t('Note (optional)')} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('Treadmill, forgot my watch…')} />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -108,7 +109,7 @@ function AddEntryDialog({ open, onClose, journey }: { open: boolean; onClose: ()
             onClose();
           }}
         >
-          Cancel
+          {t('Cancel')}
         </Button>
         <Button
           variant="contained"
@@ -132,7 +133,7 @@ function AddEntryDialog({ open, onClose, journey }: { open: boolean; onClose: ()
             onClose();
           }}
         >
-          Add
+          {t('Add')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -162,20 +163,20 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
       <CardContent>
         <Stack direction="row" sx={{ alignItems: 'center', mb: 1 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6">Logbook</Typography>
+            <Typography variant="h6">{t('Logbook')}</Typography>
             {rows.length > 0 && (
               <Typography variant="caption" color="text.secondary">
-                Tap a run to see the stretch it covered on the map.
+                {t('Tap a run to see the stretch it covered on the map.')}
               </Typography>
             )}
           </Box>
           <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={() => setAdding(true)} sx={{ flexShrink: 0 }}>
-            Add run
+            {t('Add run')}
           </Button>
         </Stack>
         {rows.length === 0 ? (
           <Typography color="text.secondary" variant="body2">
-            No activities yet since {formatDate(journey.startDate)}. Go for a run, and it will show up here once it's on Strava.
+            {t("No activities yet since {date}. Go for a run, and it will show up here once it's on Strava.", { date: formatDate(journey.startDate) })}
           </Typography>
         ) : isMobile ? (
           <Stagger gap={0.03} sx={{ display: 'grid', gap: 1 }}>
@@ -214,15 +215,15 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
                     >
                       <Typography sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1 }}>{new Date(e.date.length === 10 ? `${e.date}T12:00:00` : e.date).getDate()}</Typography>
                       <Typography variant="caption" sx={{ fontSize: '0.65rem', textTransform: 'uppercase', lineHeight: 1 }}>
-                        {new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(e.date.length === 10 ? `${e.date}T12:00:00` : e.date))}
+                        {new Intl.DateTimeFormat(locale(), { month: 'short' }).format(new Date(e.date.length === 10 ? `${e.date}T12:00:00` : e.date))}
                       </Typography>
                     </Box>
                     <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                       <Typography sx={{ fontWeight: 600 }} noWrap>
-                        {e.label}
+                        {e.label === 'Manual entry' ? t('Manual entry') : e.label}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap component="div">
-                        {[e.source === 'manual' ? 'manual' : e.sportType, e.movingTimeS && formatDuration(e.movingTimeS), e.elevationGainM ? `↑ ${Math.round(e.elevationGainM)} m` : null]
+                        {[e.source === 'manual' ? t('manual') : e.sportType, e.movingTimeS && formatDuration(e.movingTimeS), e.elevationGainM ? `↑ ${Math.round(e.elevationGainM)} m` : null]
                           .filter(Boolean)
                           .join(' · ')}
                       </Typography>
@@ -230,7 +231,7 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
                     <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
                       <Typography sx={{ fontWeight: 800 }}>{formatKm(e.distanceM)}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        at {formatKm(e.cumulativeM, 0)}
+                        {t('at {km}', { km: formatKm(e.cumulativeM, 0) })}
                       </Typography>
                     </Box>
                     {e.activityId != null && (
@@ -259,14 +260,14 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox">
-                    <Tooltip title="Counts toward the journey">
+                    <Tooltip title={t('Counts toward the journey')}>
                       <span>✓</span>
                     </Tooltip>
                   </TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Activity</TableCell>
-                  <TableCell align="right">Distance</TableCell>
-                  <TableCell align="right">Along route</TableCell>
+                  <TableCell>{t('Date')}</TableCell>
+                  <TableCell>{t('Activity')}</TableCell>
+                  <TableCell align="right">{t('Distance')}</TableCell>
+                  <TableCell align="right">{t('Along route')}</TableCell>
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -288,12 +289,12 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
                       <TableCell>
                         {e.activityId != null ? (
                           <a href={`https://www.strava.com/activities/${e.activityId}`} target="_blank" rel="noopener" style={{ color: 'inherit' }} onClick={(ev) => ev.stopPropagation()}>
-                            {e.label}
+                            {e.label === 'Manual entry' ? t('Manual entry') : e.label}
                           </a>
                         ) : (
-                          e.label
+                          e.label === 'Manual entry' ? t('Manual entry') : e.label
                         )}{' '}
-                        <Chip size="small" label={e.source === 'manual' ? 'manual' : e.sportType} variant="outlined" sx={{ ml: 0.5, height: 20 }} />
+                        <Chip size="small" label={e.source === 'manual' ? t('manual') : e.sportType} variant="outlined" sx={{ ml: 0.5, height: 20 }} />
                         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                           {[e.movingTimeS && formatDuration(e.movingTimeS), e.elevationGainM ? `↑ ${Math.round(e.elevationGainM)} m` : null].filter(Boolean).join(' · ')}
                         </Typography>
@@ -302,7 +303,7 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
                         {formatKm(e.distanceM)}
                         {e.countedM > e.distanceM + 1 && (
                           <Typography variant="caption" color="text.secondary" component="div">
-                            counts {formatKm(e.countedM)}
+                            {t('counts {km}', { km: formatKm(e.countedM) })}
                           </Typography>
                         )}
                       </TableCell>

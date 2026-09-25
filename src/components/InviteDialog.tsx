@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useGroupActions } from '../lib/groups';
 import { navigate } from '../lib/nav';
 import type { GroupMode, Journey } from '../lib/types';
+import { t } from '../lib/i18n';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -32,16 +33,15 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <GroupsIcon color="primary" /> Run this route with friends
+        <GroupsIcon color="primary" /> {t('Run this route with friends')}
       </DialogTitle>
       <DialogContent>
         {done ? (
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <Alert severity="success">Invitations sent. Your friends see them when they open the app.</Alert>
+            <Alert severity="success">{t('Invitations sent. Your friends see them when they open the app.')}</Alert>
             {done.notAllowed.length > 0 && (
               <Alert severity="warning">
-                {done.notAllowed.join(', ')} {done.notAllowed.length === 1 ? "isn't" : "aren't"} on the app's guest list yet. Ask the owner to add{' '}
-                {done.notAllowed.length === 1 ? 'them' : 'these addresses'} on the Admin page.
+                {t("{emails}: not on the app's guest list yet. Ask the owner to add them on the Admin page.", { emails: done.notAllowed.join(', ') })}
               </Alert>
             )}
           </Stack>
@@ -49,19 +49,19 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
           <Stack spacing={2.5} sx={{ pt: 1 }}>
             <ToggleButtonGroup exclusive fullWidth value={mode} onChange={(_, v) => v && setMode(v)}>
               <ToggleButton value="race" sx={{ flexDirection: 'column', py: 1.5 }}>
-                <Typography sx={{ fontWeight: 700 }}>🏁 Race</Typography>
+                <Typography sx={{ fontWeight: 700 }}>{t('🏁 Race')}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Everyone runs the whole route. Who arrives first?
+                  {t('Everyone runs the whole route. Who arrives first?')}
                 </Typography>
               </ToggleButton>
               <ToggleButton value="relay" sx={{ flexDirection: 'column', py: 1.5 }}>
-                <Typography sx={{ fontWeight: 700 }}>🤝 Relay</Typography>
+                <Typography sx={{ fontWeight: 700 }}>{t('🤝 Relay')}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  All kilometres add up. Get there as a team.
+                  {t('All kilometres add up. Get there as a team.')}
                 </Typography>
               </ToggleButton>
             </ToggleButtonGroup>
-            <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <TextField label={t('Name')} value={name} onChange={(e) => setName(e.target.value)} />
             <Autocomplete
               multiple
               freeSolo
@@ -76,12 +76,12 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
               }}
               onChange={(_, v) => setEmails((v as string[]).filter((e) => EMAIL.test(e)).map((e) => e.toLowerCase()))}
               renderValue={(value, getItemProps) => value.map((e, i) => <Chip label={e} size="small" {...getItemProps({ index: i })} key={e} />)}
-              renderInput={(params) => <TextField {...params} label="Friends' Google addresses" placeholder="friend@gmail.com, then Enter" helperText="They sign in with this Google account." />}
+              renderInput={(params) => <TextField {...params} label={t("Friends' Google addresses")} placeholder={t('friend@gmail.com, then Enter')} helperText={t('They sign in with this Google account.')} />}
             />
             {error && <Alert severity="error">{error}</Alert>}
             <Box>
               <Typography variant="caption" color="text.secondary">
-                The route, start date ({journey.startDate}) and counted sports are copied from this journey. Everyone's runs from Strava count automatically.
+                {t("The route, start date ({date}) and counted sports are copied from this journey. Everyone's runs from Strava count automatically.", { date: journey.startDate })}
               </Typography>
             </Box>
           </Stack>
@@ -90,7 +90,7 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
       <DialogActions sx={{ px: 3, pb: 2 }}>
         {done ? (
           <>
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose}>{t('Close')}</Button>
             <Button
               variant="contained"
               onClick={() => {
@@ -98,12 +98,12 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
                 navigate(`/g/${done.id}`);
               }}
             >
-              Open shared journey
+              {t('Open shared journey')}
             </Button>
           </>
         ) : (
           <>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t('Cancel')}</Button>
             <Button
               variant="contained"
               loading={busy}
@@ -120,7 +120,7 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
                 }
               }}
             >
-              Invite {all.length || ''}
+              {t('Invite')} {all.length || ''}
             </Button>
           </>
         )}

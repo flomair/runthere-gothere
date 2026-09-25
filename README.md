@@ -19,6 +19,8 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **the real trip**: save places while exploring, then plan the trip to the finish (race countdown, transport and stay links, KML export)
 - **an app on your phone**: install it to the home screen (Android: *Install*; iPhone: Share → *Add to Home Screen*). It opens full screen and keeps working on a patchy connection
 
+- **English or German**: the app follows your browser language; switch any time in the account menu. Stories, coach plans and notifications follow the choice
+
 Once you arrive, go there for real. 🏁
 
 ## Stack

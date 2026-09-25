@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LatLon } from '../../shared/geo';
 import { idToken } from './firebase';
 import type { Activity, Bookmark, CoachPlan, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
+import { getLang } from './i18n';
 
 export class ApiError extends Error {
   constructor(
@@ -40,7 +41,8 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
   return body as T;
 }
 
-export const lang = () => (typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en') || 'en';
+/** Language for AI texts: the UI language when it's German, else the browser's (stories can be in any language). */
+export const lang = () => (getLang() === 'de' ? 'de' : (typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en') || 'en');
 
 /** Round coordinates so nearby look-ups share a cache entry (~100 m). */
 const r3 = (n: number) => n.toFixed(3);

@@ -26,6 +26,7 @@ import { formatDate, formatKm, formatPace, todayIso } from '../lib/format';
 import type { Progress } from '../lib/progress';
 import { journeyStore, newId } from '../lib/storage';
 import type { Journey } from '../lib/types';
+import { locale, t } from '../lib/i18n';
 
 function Tile({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
@@ -68,9 +69,14 @@ function ChallengeDialog({
 }) {
   const ahead = waypointDist.filter((w) => w.m > progress.doneM + 500);
   const suggestions = [
-    ...ahead.slice(0, 3).map((w) => ({ title: `Reach ${w.name} by the end of the month`, targetM: w.m, deadline: endOfMonth() })),
-    { title: `Run ${formatKm(50_000, 0)} in the next 2 weeks`, targetM: progress.doneM + 50_000, deadline: inDays(14) },
-    { title: `Run ${formatKm(100_000, 0)} in the next 30 days`, targetM: progress.doneM + 100_000, deadline: inDays(30) },
+    ...ahead.slice(0, 3).map((w) => ({
+      title: t('Reach {place} by the end of the month', { place: w.name }),
+      final: (d: string) => t('Reach {place} by {date}', { place: w.name, date: formatDate(d) }),
+      targetM: w.m,
+      deadline: endOfMonth(),
+    })),
+    { title: t('Run {km} in the next 2 weeks', { km: formatKm(50_000, 0) }), final: (d: string) => t('Run {km} by {date}', { km: formatKm(50_000, 0), date: formatDate(d) }), targetM: progress.doneM + 50_000, deadline: inDays(14) },
+    { title: t('Run {km} in the next 30 days', { km: formatKm(100_000, 0) }), final: (d: string) => t('Run {km} by {date}', { km: formatKm(100_000, 0), date: formatDate(d) }), targetM: progress.doneM + 100_000, deadline: inDays(30) },
   ].filter((s) => s.targetM <= progress.totalM);
   const [pick, setPick] = useState(0);
   const [deadline, setDeadline] = useState('');
@@ -78,11 +84,11 @@ function ChallengeDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>New challenge</DialogTitle>
+      <DialogTitle>{t('New challenge')}</DialogTitle>
       <DialogContent>
         {suggestions.length ? (
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField select label="Challenge" value={pick} onChange={(e) => setPick(Number(e.target.value))}>
+            <TextField select label={t('Challenge')} value={pick} onChange={(e) => setPick(Number(e.target.value))}>
               {suggestions.map((s, i) => (
                 <MenuItem key={s.title} value={i}>
                   {s.title}
@@ -91,7 +97,7 @@ function ChallengeDialog({
             </TextField>
             <TextField
               type="date"
-              label="Deadline"
+              label={t('Deadline')}
               value={deadline || chosen.deadline}
               onChange={(e) => setDeadline(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
@@ -99,11 +105,11 @@ function ChallengeDialog({
             />
           </Stack>
         ) : (
-          <Typography color="text.secondary">You're almost at the finish, so there's nothing left to challenge yourself with on this route.</Typography>
+          <Typography color="text.secondary">{t("You're almost at the finish, so there's nothing left to challenge yourself with on this route.")}</Typography>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('Cancel')}</Button>
         <Button
           variant="contained"
           disabled={!chosen}
@@ -112,14 +118,14 @@ function ChallengeDialog({
             journeyStore.update(journey.id, (j) => ({
               challenges: [
                 ...(j.challenges ?? []),
-                { id: newId(), title: chosen.title.replace(/by the end of the month|in the next \d+ (weeks|days)/, `by ${formatDate(d)}`), targetM: chosen.targetM, deadline: d, createdAt: todayIso() },
+                { id: newId(), title: chosen.final(d), targetM: chosen.targetM, deadline: d, createdAt: todayIso() },
               ],
             }));
             setDeadline('');
             onClose();
           }}
         >
-          Accept challenge
+          {t('Accept challenge')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -142,16 +148,16 @@ function RaceEditor({ journey }: { journey: Journey }) {
             icon={<span style={{ fontSize: 22 }}>🏅</span>}
             action={
               <Button color="inherit" size="small" onClick={() => setEditing(true)}>
-                Edit
+                {t('Edit')}
               </Button>
             }
           >
-            <strong>{ev.url ? <a href={ev.url} target="_blank" rel="noopener" style={{ color: 'inherit' }}>{ev.name}</a> : ev.name}</strong> on {formatDate(ev.date)}
-            {daysTo > 0 ? ` · ${daysTo} days to go` : daysTo === 0 ? ' · today!' : ' · done'}. The journey is your build-up: arrive before the start line.
+            <strong>{ev.url ? <a href={ev.url} target="_blank" rel="noopener" style={{ color: 'inherit' }}>{ev.name}</a> : ev.name}</strong> {t('on {date}', { date: formatDate(ev.date) })}
+            {daysTo > 0 ? ` · ${t('{n} days to go', { n: daysTo })}` : daysTo === 0 ? ` · ${t('today!')}` : ` · ${t('done')}`}. {t('The journey is your build-up: arrive before the start line.')}
           </Alert>
         ) : (
           <Button size="small" onClick={() => setEditing(true)}>
-            🏅 Finish at a real race
+            {t('🏅 Finish at a real race')}
           </Button>
         )}
       </Box>
@@ -159,11 +165,11 @@ function RaceEditor({ journey }: { journey: Journey }) {
   }
   return (
     <Stack spacing={1.5} sx={{ mb: 2, p: 2, borderRadius: '16px', bgcolor: 'action.hover' }}>
-      <Typography variant="subtitle2">A real race at the destination</Typography>
-      <TextField size="small" label="Race" placeholder="Vienna City Marathon" value={name} onChange={(e) => setName(e.target.value)} />
+      <Typography variant="subtitle2">{t('A real race at the destination')}</Typography>
+      <TextField size="small" label={t('Race')} placeholder="Vienna City Marathon" value={name} onChange={(e) => setName(e.target.value)} />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-        <TextField size="small" type="date" label="Race day" value={date} onChange={(e) => setDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
-        <TextField size="small" fullWidth label="Website (optional)" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <TextField size="small" type="date" label={t('Race day')} value={date} onChange={(e) => setDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
+        <TextField size="small" fullWidth label={t('Website (optional)')} placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
       </Stack>
       <Stack direction="row" spacing={1}>
         <Button
@@ -178,7 +184,7 @@ function RaceEditor({ journey }: { journey: Journey }) {
             setEditing(false);
           }}
         >
-          Save (also sets the arrival goal)
+          {t('Save (also sets the arrival goal)')}
         </Button>
         {journey.event && (
           <Button
@@ -189,11 +195,11 @@ function RaceEditor({ journey }: { journey: Journey }) {
               setEditing(false);
             }}
           >
-            Remove
+            {t('Remove')}
           </Button>
         )}
         <Button size="small" onClick={() => setEditing(false)}>
-          Cancel
+          {t('Cancel')}
         </Button>
       </Stack>
     </Stack>
@@ -210,7 +216,7 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
         <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 2 }}>
           <EmojiEventsIcon color="primary" />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Goals &amp; records
+            {t('Goals & records')}
           </Typography>
         </Stack>
 
@@ -219,7 +225,7 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
           <TextField
             type="date"
             size="small"
-            label="Arrive by"
+            label={t('Arrive by')}
             value={journey.goalDate ?? ''}
             onChange={(e) => journeyStore.update(journey.id, { goalDate: e.target.value || undefined })}
             slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: todayIso() } }}
@@ -232,13 +238,13 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
               sx={{ flexGrow: 1, py: 0 }}
             >
               {goal.daysLeft === 0
-                ? 'The goal date has passed. Pick a new one.'
-                : `${formatKm(goal.requiredWeeklyM)} per week needed for the next ${goal.daysLeft} days. You average ${formatKm(progress.weeklyAvgM)}: ${goal.onTrack ? 'on track 👍' : 'time to add a run or two'}.`}
+                ? t('The goal date has passed. Pick a new one.')
+                : t('{km} per week needed for the next {n} days. You average {avg}: {verdict}.', { km: formatKm(goal.requiredWeeklyM), n: goal.daysLeft, avg: formatKm(progress.weeklyAvgM), verdict: goal.onTrack ? t('on track 👍') : t('time to add a run or two') })}
             </Alert>
           ) : (
             !progress.finished && (
               <Typography variant="body2" color="text.secondary">
-                Set a date and see the weekly distance you need.
+                {t('Set a date and see the weekly distance you need.')}
               </Typography>
             )
           )}
@@ -258,11 +264,11 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
                     {c.title}
                   </Typography>
                   {c.achieved ? (
-                    <Chip size="small" color="success" label={`done${c.achievedOn ? ` ${formatDate(c.achievedOn)}` : ''}`} />
+                    <Chip size="small" color="success" label={`${t('done')}${c.achievedOn ? ` ${formatDate(c.achievedOn)}` : ''}`} />
                   ) : c.expired ? (
-                    <Chip size="small" label="missed" />
+                    <Chip size="small" label={t('missed')} />
                   ) : (
-                    <Chip size="small" variant="outlined" label={`${formatKm(c.remainingM)} · ${c.daysLeft} d left`} />
+                    <Chip size="small" variant="outlined" label={`${formatKm(c.remainingM)} · ${t('{n} d left', { n: c.daysLeft })}`} />
                   )}
                   <IconButton
                     size="small"
@@ -279,7 +285,7 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
           {!progress.finished && (
             <Box>
               <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(true)}>
-                Add a challenge
+                {t('Add a challenge')}
               </Button>
             </Box>
           )}
@@ -288,26 +294,26 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
         {/* streaks & records */}
         <Stagger sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(5, 1fr)' } }}>
           <Tile
-            label="Streak"
-            value={<CountUp value={streaks.weeks} format={(n) => `${Math.round(n)} week${Math.round(n) === 1 ? '' : 's'}`} />}
-            sub={streaks.days > 1 ? `🔥 ${streaks.days} days in a row` : `best: ${streaks.bestWeeks} weeks`}
+            label={t('Streak')}
+            value={<CountUp value={streaks.weeks} format={(n) => (Math.round(n) === 1 ? t('1 week') : t('{n} weeks', { n: Math.round(n) }))} />}
+            sub={streaks.days > 1 ? `🔥 ${t('{n} days in a row', { n: streaks.days })}` : (streaks.bestWeeks === 1 ? t('best: 1 week') : t('best: {n} weeks', { n: streaks.bestWeeks }))}
           />
-          <Tile label="Longest run" value={records.longest ? formatKm(records.longest.distanceM) : '—'} sub={records.longest ? formatDate(records.longest.date) : undefined} />
+          <Tile label={t('Longest run')} value={records.longest ? formatKm(records.longest.distanceM) : '—'} sub={records.longest ? formatDate(records.longest.date) : undefined} />
           <Tile
-            label="Fastest pace"
+            label={t('Fastest pace')}
             value={records.fastestPace ? formatPace(records.fastestPace.secPerKm) : '—'}
-            sub={records.fastestPace ? `${records.fastestPace.label.slice(0, 22)}` : 'runs ≥ 3 km with time'}
+            sub={records.fastestPace ? `${records.fastestPace.label.slice(0, 22)}` : t('runs ≥ 3 km with time')}
           />
-          <Tile label="Best week" value={records.bestWeek ? formatKm(records.bestWeek.distanceM) : '—'} sub={records.bestWeek ? `from ${formatDate(records.bestWeek.weekStart)}` : undefined} />
+          <Tile label={t('Best week')} value={records.bestWeek ? formatKm(records.bestWeek.distanceM) : '—'} sub={records.bestWeek ? t('from {date}', { date: formatDate(records.bestWeek.weekStart) }) : undefined} />
           <Tile
-            label="Climbed"
-            value={<CountUp value={records.climbedM} format={(n) => `${Math.round(n).toLocaleString()} m`} />}
-            sub={journey.countElevation ? `+${formatKm(records.climbedM * 10, 0)} effort` : `${((records.climbedM / 8849) * 100).toFixed(0)}% of Everest`}
+            label={t('Climbed')}
+            value={<CountUp value={records.climbedM} format={(n) => `${Math.round(n).toLocaleString(locale())} m`} />}
+            sub={journey.countElevation ? t('+{km} effort', { km: formatKm(records.climbedM * 10, 0) }) : t('{pct}% of Everest', { pct: ((records.climbedM / 8849) * 100).toFixed(0) })}
           />
         </Stagger>
         {streaks.weeks >= 4 && (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-            <LocalFireDepartmentIcon fontSize="inherit" color="warning" /> {streaks.weeks} weeks in a row. Keep it going!
+            <LocalFireDepartmentIcon fontSize="inherit" color="warning" /> {t('{n} weeks in a row. Keep it going!', { n: streaks.weeks })}
           </Typography>
         )}
       </CardContent>

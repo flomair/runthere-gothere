@@ -37,6 +37,7 @@ import { type GeoResult, type Journey, type PlannedRoute, type RouteMode, SPORT_
 import PlaceField from './PlaceField';
 import RouteSketch from './RouteSketch';
 import TrailPicker from './TrailPicker';
+import { t } from '../lib/i18n';
 
 export interface JourneyPreset {
   name: string;
@@ -130,13 +131,13 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
     ];
     const wps =
       route.mode === 'gpx'
-        ? endpoints('Start', 'Finish')
+        ? endpoints(t('Start'), t('Finish'))
         : route.mode === 'trail' && route.trail
           ? endpoints(route.trail.startName, route.trail.endName)
           : waypoints.map((w) => ({ name: w.name, lat: w.lat, lon: w.lon }));
     const j: Journey = {
       id: newId(),
-      name: name.trim() || 'My journey',
+      name: name.trim() || t('My journey'),
       createdAt: new Date().toISOString(),
       startDate,
       sportTypes,
@@ -168,7 +169,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
       <DialogTitle sx={{ pr: 6 }}>
-        Plan a new journey
+        {t('Plan a new journey')}
         <IconButton onClick={onClose} sx={{ position: 'absolute', right: 12, top: 12 }} aria-label="close">
           <CloseIcon />
         </IconButton>
@@ -176,19 +177,19 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
       <DialogContent dividers>
         <Stack spacing={2.5}>
           <Tabs value={tab} onChange={(_, v) => { setTab(v); setRoute(null); }} variant="fullWidth">
-            <Tab value="plan" label="From A to B" />
-            <Tab value="trail" label="Classic trail" />
-            <Tab value="gpx" label="Upload GPX" />
+            <Tab value="plan" label={t('From A to B')} />
+            <Tab value="trail" label={t('Classic trail')} />
+            <Tab value="gpx" label={t('Upload GPX')} />
           </Tabs>
 
           {tab === 'plan' ? (
             <Stack spacing={2}>
-              <PlaceField key={`from-${preset?.from}`} label="Start" value={from} onChange={setFrom} initialQuery={preset?.from} autoFocus={!preset} />
+              <PlaceField key={`from-${preset?.from}`} label={t('Start')} value={from} onChange={setFrom} initialQuery={preset?.from} autoFocus={!preset} />
               {vias.map((v, i) => (
                 <Stack key={v.key} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
                   <Box sx={{ flexGrow: 1 }}>
                     <PlaceField
-                      label={`Via ${i + 1}`}
+                      label={t('Via {n}', { n: i + 1 })}
                       value={v.place}
                       onChange={(place) => setVias((vs) => vs.map((x) => (x.key === v.key ? { ...x, place } : x)))}
                     />
@@ -198,39 +199,39 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
                   </IconButton>
                 </Stack>
               ))}
-              <PlaceField key={`to-${preset?.to}`} label="Destination" value={to} onChange={setTo} initialQuery={preset?.to} />
+              <PlaceField key={`to-${preset?.to}`} label={t('Destination')} value={to} onChange={setTo} initialQuery={preset?.to} />
               <Box>
                 <Button size="small" startIcon={<AddIcon />} onClick={() => setVias((vs) => [...vs, { key: newId(), place: null }])} disabled={vias.length >= 10}>
-                  Add a stop on the way
+                  {t('Add a stop on the way')}
                 </Button>
               </Box>
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
-                  Route along
+                  {t('Route along')}
                 </Typography>
                 <ToggleButtonGroup exclusive value={mode} onChange={(_, v) => v && setMode(v)} size="small" fullWidth>
                   <ToggleButton value="foot">
-                    <RunIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Footpaths</Box>
+                    <RunIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{t('Footpaths')}</Box>
                   </ToggleButton>
                   <ToggleButton value="hike">
-                    <HikingIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Hiking trails</Box>
+                    <HikingIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{t('Hiking trails')}</Box>
                   </ToggleButton>
                   <ToggleButton value="bike">
-                    <BikeIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Bike routes</Box>
+                    <BikeIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{t('Bike routes')}</Box>
                   </ToggleButton>
                   <ToggleButton value="direct">
-                    <StraightIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Straight</Box>
+                    <StraightIcon fontSize="small" sx={{ mr: { sm: 1 } }} /> <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>{t('Straight')}</Box>
                   </ToggleButton>
                 </ToggleButtonGroup>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
-                  {
+                  {t(
                     {
                       foot: 'Shortest walkable way on paths, tracks and quiet roads.',
                       hike: 'Prefers waymarked hiking routes and paths. Slower to plan, long routes are planned in sections.',
                       bike: 'Follows cycle routes; good for very long journeys.',
                       direct: 'As the crow flies.',
-                    }[mode]
-                  }
+                    }[mode],
+                  )}
                 </Typography>
               </Box>
             </Stack>
@@ -242,7 +243,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
           ) : (
             <Box>
               <Button component="label" variant="outlined" startIcon={<UploadIcon />} fullWidth sx={{ py: 2, borderStyle: 'dashed' }}>
-                {gpxName ?? 'Choose a .gpx file (e.g. exported from Komoot, Strava routes, Garmin)'}
+                {gpxName ?? t('Choose a .gpx file (e.g. exported from Komoot, Strava routes, Garmin)')}
                 <input
                   hidden
                   type="file"
@@ -270,7 +271,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
                     {formatKm(route.totalM, 0)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    via {route.provider}
+                    {t('via {provider}', { provider: route.provider })}
                   </Typography>
                 </Box>
               </Stack>
@@ -282,18 +283,18 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
             </Box>
           )}
 
-          <TextField label="Journey name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Berlin → Vienna" />
+          <TextField label={t('Journey name')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Berlin → Vienna" />
           <TextField
-            label="Count activities from"
+            label={t('Count activities from')}
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
-            helperText="Your Strava activities from this day on move you forward. Pick a past date to count runs you've already done."
+            helperText={t("Your Strava activities from this day on move you forward. Pick a past date to count runs you've already done.")}
           />
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              Activities that count
+              {t('Activities that count')}
             </Typography>
             <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
               {SPORT_TYPES.map((s) => {
@@ -301,7 +302,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
                 return (
                   <Chip
                     key={s.value}
-                    label={s.label}
+                    label={t(s.label)}
                     color={on ? 'primary' : 'default'}
                     variant={on ? 'filled' : 'outlined'}
                     onClick={() => setSportTypes((cur) => (on ? cur.filter((x) => x !== s.value) : [...cur, s.value]))}
@@ -312,19 +313,19 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
           </Box>
           <FormControlLabel
             control={<Switch checked={useStrava} onChange={(e) => setUseStrava(e.target.checked)} />}
-            label={stravaConnected ? 'Use my Strava activities' : 'Use Strava activities (connect Strava to sync)'}
+            label={stravaConnected ? t('Use my Strava activities') : t('Use Strava activities (connect Strava to sync)')}
           />
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('Cancel')}</Button>
         {tab === 'plan' && !route ? (
           <Button variant="contained" onClick={calculate} disabled={!canPlan || busy} loading={busy}>
-            Calculate route
+            {t('Calculate route')}
           </Button>
         ) : (
           <Button variant="contained" onClick={create} disabled={!route || !sportTypes.length}>
-            Start journey
+            {t('Start journey')}
           </Button>
         )}
       </DialogActions>

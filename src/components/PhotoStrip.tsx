@@ -4,6 +4,7 @@ import { Box, Chip, Dialog, IconButton, Link, Skeleton, Stack, ToggleButton, Tog
 import { useState } from 'react';
 import { formatDate, formatKm } from '../lib/format';
 import type { Photo } from '../lib/types';
+import { t } from '../lib/i18n';
 
 export default function PhotoStrip({ photos: recent, historic, loading }: { photos: Photo[] | undefined; historic?: Photo[]; loading: boolean }) {
   const [open, setOpen] = useState<Photo | null>(null);
@@ -11,8 +12,8 @@ export default function PhotoStrip({ photos: recent, historic, loading }: { phot
   const photos = era === 'then' && historic?.length ? historic : recent;
   const eraSwitch = historic && historic.length > 0 && (
     <ToggleButtonGroup size="small" exclusive value={era} onChange={(_, v) => v && setEra(v)} sx={{ mb: 1.5 }}>
-      <ToggleButton value="now">Today</ToggleButton>
-      <ToggleButton value="then">Then ({historic.length} historic)</ToggleButton>
+      <ToggleButton value="now">{t('Today')}</ToggleButton>
+      <ToggleButton value="then">{t('Then ({n} historic)', { n: historic.length })}</ToggleButton>
     </ToggleButtonGroup>
   );
 
@@ -28,7 +29,7 @@ export default function PhotoStrip({ photos: recent, historic, loading }: { phot
   if (!photos?.length) {
     return (
       <Typography color="text.secondary" variant="body2">
-        No geotagged photos within 10 km. Try the satellite layer on the map or Street View.
+        {t('No geotagged photos within 10 km. Try the satellite layer on the map or Street View.')}
       </Typography>
     );
   }
@@ -72,13 +73,13 @@ export default function PhotoStrip({ photos: recent, historic, loading }: { phot
                 {p.title}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                {p.takenAt ? formatDate(p.takenAt, { year: 'numeric', month: 'short' }) : 'date unknown'} ·{' '}
-                {formatKm(p.distanceM)} away
+                {p.takenAt ? formatDate(p.takenAt, { year: 'numeric', month: 'short' }) : t('date unknown')} ·{' '}
+                {t('{km} away', { km: formatKm(p.distanceM) })}
               </Typography>
             </Box>
             <Chip
               size="small"
-              label={p.source === 'mapillary' ? 'Street level' : 'Wikimedia'}
+              label={p.source === 'mapillary' ? t('Street level') : 'Wikimedia'}
               sx={{ position: 'absolute', top: 8, left: 8, bgcolor: 'rgb(0 0 0 / 55%)', color: '#fff', height: 22 }}
             />
           </Box>
@@ -97,10 +98,10 @@ export default function PhotoStrip({ photos: recent, historic, loading }: { phot
                 {open.title}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {[open.takenAt && formatDate(open.takenAt), open.author && `by ${open.author}`, open.license].filter(Boolean).join(' · ')}
+                {[open.takenAt && formatDate(open.takenAt), open.author && t('by {author}', { author: open.author }), open.license].filter(Boolean).join(' · ')}
               </Typography>
               <Link href={open.pageUrl} target="_blank" rel="noopener" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
-                View on {open.source === 'mapillary' ? 'Mapillary' : 'Wikimedia Commons'} <OpenInNewIcon fontSize="inherit" />
+                {t('View on {site}', { site: open.source === 'mapillary' ? 'Mapillary' : 'Wikimedia Commons' })} <OpenInNewIcon fontSize="inherit" />
               </Link>
             </Box>
           </Box>

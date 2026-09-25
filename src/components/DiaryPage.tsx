@@ -9,6 +9,8 @@ import { navigate } from '../lib/nav';
 import { computeProgress } from '../lib/progress';
 import type { Journey, Milestone } from '../lib/types';
 import { Reveal } from './motion';
+import { getLang, locale, t } from '../lib/i18n';
+import { milestoneTitle } from '../../shared/milestoneTitle';
 
 const KIND_ICON: Record<Milestone['kind'], string> = { waypoint: '📍', distance: '🏃', halfway: '⚖️', border: '🛂', finish: '🏁' };
 
@@ -46,7 +48,7 @@ function MilestoneChapter({ m, canWrite }: { m: Milestone; canWrite: boolean }) 
         </Typography>
         <Typography variant="h5" component="h2" sx={{ mb: 0.5 }}>
           {m.kind === 'border' && m.countryCode ? `${flag(m.countryCode)} ` : ''}
-          {m.title}
+          {milestoneTitle(m, getLang())}
         </Typography>
         {m.place && (
           <Typography color="text.secondary" sx={{ mb: 2 }}>
@@ -80,7 +82,7 @@ function MilestoneChapter({ m, canWrite }: { m: Milestone; canWrite: boolean }) 
                 }
               }}
             >
-              {canWrite ? 'Write the postcard' : 'Add your AI key to get postcards'}
+              {canWrite ? t('Write the postcard') : t('Add your AI key to get postcards')}
             </Button>
           </Box>
         )}
@@ -115,8 +117,8 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
 
   const countries = milestones.data?.countries ?? [];
   const reachedCountries = new Set([countries[0], ...(milestones.data?.milestones ?? []).filter((m) => m.kind === 'border').map((m) => m.countryCode)]);
-  const from = journey.waypoints[0]?.name ?? 'Start';
-  const to = journey.waypoints[journey.waypoints.length - 1]?.name ?? 'Finish';
+  const from = journey.waypoints[0]?.name ?? t('Start');
+  const to = journey.waypoints[journey.waypoints.length - 1]?.name ?? t('Finish');
 
   return (
     <Stack spacing={3} className="diary">
@@ -125,29 +127,29 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Travel diary
+          {t('Travel diary')}
         </Typography>
         <Button variant="contained" startIcon={<PrintIcon />} onClick={() => window.print()}>
-          Print / save as PDF
+          {t('Print / save as PDF')}
         </Button>
       </Stack>
 
       <Box sx={{ textAlign: 'center', py: { xs: 2, sm: 4 } }}>
         <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
-          A virtual journey on foot
+          {t('A virtual journey on foot')}
         </Typography>
         <Typography variant="h3" component="h1" sx={{ fontSize: { xs: '2rem', sm: '3rem' } }}>
           {journey.name}
         </Typography>
         <Typography color="text.secondary" sx={{ mt: 1 }}>
-          {from} → {to} · {formatKm(journey.route.totalM, 0)} · since {formatDate(journey.startDate)}
+          {from} → {to} · {formatKm(journey.route.totalM, 0)} · {t('since {date}', { date: formatDate(journey.startDate) })}
         </Typography>
         {countries.length > 0 && (
           <Stack direction="row" sx={{ justifyContent: 'center', gap: 1, mt: 2, flexWrap: 'wrap' }}>
             {countries.map((c) => (
               <Chip
                 key={c}
-                label={`${flag(c)} ${new Intl.DisplayNames([navigator.language], { type: 'region' }).of(c) ?? c}`}
+                label={`${flag(c)} ${new Intl.DisplayNames([locale() ?? navigator.language], { type: 'region' }).of(c) ?? c}`}
                 variant={reachedCountries.has(c) ? 'filled' : 'outlined'}
                 sx={{ opacity: reachedCountries.has(c) ? 1 : 0.5 }}
               />
@@ -155,8 +157,8 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
           </Stack>
         )}
         <Typography sx={{ mt: 2 }}>
-          <strong>{formatKm(progress.doneM, 0)}</strong> covered in <strong>{progress.entries.filter((e) => !e.excluded).length}</strong> runs
-          {progress.finished && progress.finishedOn ? `, arrived ${formatDate(progress.finishedOn)}` : ''}.
+          {t('{km} covered in {n} runs', { km: formatKm(progress.doneM, 0), n: progress.entries.filter((e) => !e.excluded).length })}
+          {progress.finished && progress.finishedOn ? `, ${t('arrived {date}', { date: formatDate(progress.finishedOn) })}` : ''}.
         </Typography>
       </Box>
 
@@ -165,7 +167,7 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
       ) : items.length === 0 ? (
         <Card sx={{ p: 4, textAlign: 'center', borderStyle: 'dashed' }}>
           <Typography color="text.secondary">
-            The first chapter is written when you reach your first milestone: the next town on the route, 100 km, or a border.
+            {t('The first chapter is written when you reach your first milestone: the next town on the route, 100 km, or a border.')}
           </Typography>
         </Card>
       ) : (
@@ -180,7 +182,7 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
               <Card variant="outlined" sx={{ breakInside: 'avoid', bgcolor: 'action.hover' }}>
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">
-                    📖 Story · {formatDate(it.at)}
+                    📖 {t('Story')} · {formatDate(it.at)}
                   </Typography>
                   <Divider sx={{ mb: 1.5 }} />
                   <Prose text={it.text} />

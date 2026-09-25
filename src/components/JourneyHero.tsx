@@ -12,6 +12,7 @@ import type { Progress } from '../lib/progress';
 import type { Journey } from '../lib/types';
 import { toUnit } from '../lib/units';
 import { CountUp } from './motion';
+import { locale, t } from '../lib/i18n';
 
 function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
   const reduce = useReducedMotion();
@@ -45,10 +46,10 @@ function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
       <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
         <Box>
           <Typography sx={{ fontFamily: 'var(--display, inherit)', fontWeight: 800, fontSize: size > 110 ? '1.9rem' : '1.4rem', lineHeight: 1 }}>
-            <CountUp value={fraction * 100} format={(n) => `${n.toFixed(fraction < 0.1 ? 1 : 0)}%`} />
+            <CountUp value={fraction * 100} format={(n) => `${n.toLocaleString(locale(), { maximumFractionDigits: fraction < 0.1 ? 1 : 0, minimumFractionDigits: fraction < 0.1 ? 1 : 0 })}%`} />
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.85 }}>
-            done
+            {t('done')}
           </Typography>
         </Box>
       </Box>
@@ -121,16 +122,16 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="overline" sx={{ opacity: 0.9, flexGrow: 1, lineHeight: 1.2 }} noWrap>
-          {journey.trail ? `Trail${journey.trail.ref ? ` · ${journey.trail.ref}` : ''}` : 'Journey'} · since {formatDate(journey.startDate)}
+          {journey.trail ? `${t('Trail')}${journey.trail.ref ? ` · ${journey.trail.ref}` : ''}` : t('Journey')} · {t('since {date}', { date: formatDate(journey.startDate) })}
         </Typography>
         {onSync && (
-          <Tooltip title="Sync Strava">
+          <Tooltip title={t('Sync Strava')}>
             <IconButton onClick={onSync} disabled={syncing} aria-label="sync strava" sx={{ color: 'inherit' }}>
               <RefreshIcon sx={{ animation: syncing ? 'spin 1s linear infinite' : undefined, '@keyframes spin': { to: { transform: 'rotate(360deg)' } } }} />
             </IconButton>
           </Tooltip>
         )}
-        <Tooltip title="Travel diary">
+        <Tooltip title={t('Travel diary')}>
           <IconButton onClick={() => navigate(`/j/${journey.id}/diary`)} aria-label="travel diary" sx={{ color: 'inherit' }}>
             <Badge badgeContent={unseen} invisible={!unseen} sx={{ '& .MuiBadge-badge': { bgcolor: '#fff', color: '#d9345f', fontWeight: 800 } }}>
               <AutoStoriesIcon />
@@ -167,7 +168,7 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
               🏅 {journey.event.name} ·{' '}
               {(() => {
                 const d = Math.ceil((new Date(`${journey.event.date}T09:00:00`).getTime() - Date.now()) / 86_400_000);
-                return d > 0 ? `${d} days` : d === 0 ? 'today!' : 'done';
+                return d > 0 ? t('{n} days', { n: d }) : d === 0 ? t('today!') : t('done');
               })()}
             </Box>
           )}
@@ -196,16 +197,16 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
           backdropFilter: 'blur(6px)',
         }}
       >
-        <Stat label="Covered">
-          <CountUp value={toUnit(progress.doneM)} format={(n) => `${n.toFixed(n < 100 ? 1 : 0)} ${unitLabel}`} />
+        <Stat label={t('Covered')}>
+          <CountUp value={toUnit(progress.doneM)} format={(n) => `${n.toLocaleString(locale(), { minimumFractionDigits: n < 100 ? 1 : 0, maximumFractionDigits: n < 100 ? 1 : 0 })} ${unitLabel}`} />
         </Stat>
-        <Stat label="To go">
-          <CountUp value={toUnit(progress.remainingM)} format={(n) => `${n.toFixed(n < 100 ? 1 : 0)} ${unitLabel}`} />
+        <Stat label={t('To go')}>
+          <CountUp value={toUnit(progress.remainingM)} format={(n) => `${n.toLocaleString(locale(), { minimumFractionDigits: n < 100 ? 1 : 0, maximumFractionDigits: n < 100 ? 1 : 0 })} ${unitLabel}`} />
         </Stat>
-        <Stat label="Weekly pace">
-          <CountUp value={toUnit(progress.weeklyAvgM)} format={(n) => `${n.toFixed(1)} ${unitLabel}`} />
+        <Stat label={t('Weekly pace')}>
+          <CountUp value={toUnit(progress.weeklyAvgM)} format={(n) => `${n.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${unitLabel}`} />
         </Stat>
-        <Stat label={progress.finished ? 'Arrived' : 'Arrival at pace'}>
+        <Stat label={progress.finished ? t('Arrived') : t('Arrival at pace')}>
           {progress.finished ? (progress.finishedOn ? formatDate(progress.finishedOn) : '🎉') : progress.eta ? formatDate(progress.eta) : '—'}
         </Stat>
       </Box>

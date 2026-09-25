@@ -3,6 +3,7 @@ import { Autocomplete, Box, CircularProgress, TextField, Typography } from '@mui
 import { useEffect, useState } from 'react';
 import { geocode } from '../lib/api';
 import type { GeoResult } from '../lib/types';
+import { t } from '../lib/i18n';
 
 interface Props {
   label: string;
@@ -68,7 +69,7 @@ export default function PlaceField({ label, value, onChange, initialQuery, autoF
       getOptionKey={(o) => `${o.lat},${o.lon},${o.displayName}`}
       isOptionEqualToValue={(a, b) => a.lat === b.lat && a.lon === b.lon}
       loading={loading}
-      noOptionsText={input.trim().length < 2 ? 'Type a city, address or landmark' : 'No matches'}
+      noOptionsText={input.trim().length < 2 ? t('Type a city, address or landmark') : t('No matches')}
       renderOption={({ key, ...props }, o) => (
         <li key={key} {...props}>
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', minWidth: 0 }}>

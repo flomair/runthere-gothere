@@ -26,6 +26,7 @@ import { AnimatedBar, Stagger, StaggerItem } from './motion';
 import SharedJourneys from './SharedJourneys';
 import StravaButton from './StravaButton';
 import { InstallBanner } from './InstallPrompt';
+import { t } from '../lib/i18n';
 
 const PRESETS: JourneyPreset[] = [
   { name: 'Berlin → Vienna', from: 'Berlin', to: 'Vienna' },
@@ -58,14 +59,14 @@ function JourneyCard({ journey, connected, newPostcards }: { journey: Journey; c
             </Box>
             <Stack direction="row" sx={{ gap: 0.5 }}>
               {newPostcards > 0 && <Chip label={`📮 ${newPostcards}`} size="small" color="secondary" />}
-              {p.finished ? <Chip label="Arrived 🎉" color="success" size="small" /> : <Chip label={pct(p.fraction)} size="small" color="primary" />}
+              {p.finished ? <Chip label={t('Arrived 🎉')} color="success" size="small" /> : <Chip label={pct(p.fraction)} size="small" color="primary" />}
             </Stack>
           </Stack>
           <Box sx={{ my: 1.5 }}>
             <AnimatedBar value={p.fraction * 100} height={8} />
           </Box>
           <Typography variant="body2" color="text.secondary">
-            {formatKm(p.doneM, 0)} of {formatKm(p.totalM, 0)} · since {formatDate(journey.startDate)}
+            {t('{done} of {total} · since {date}', { done: formatKm(p.doneM, 0), total: formatKm(p.totalM, 0), date: formatDate(journey.startDate) })}
           </Typography>
         </CardContent>
       </CardActionArea>
@@ -97,11 +98,11 @@ export default function JourneyList() {
     try {
       const data = JSON.parse(await f.text());
       const list = (Array.isArray(data) ? data : [data]) as Journey[];
-      if (!list.every((j) => j.id && j.route?.points?.length)) throw new Error('Not a journey export');
+      if (!list.every((j) => j.id && j.route?.points?.length)) throw new Error(t('Not a journey export'));
       await journeyStore.import(list);
       setImportError(null);
     } catch (e) {
-      setImportError(`Import failed: ${e instanceof Error ? e.message : e}`);
+      setImportError(t('Import failed: {error}', { error: e instanceof Error ? e.message : String(e) }));
     }
   };
 
@@ -184,8 +185,7 @@ export default function JourneyList() {
             transition={{ delay: 0.5, duration: 0.6 }}
             sx={{ mt: 2, maxWidth: 560, fontSize: { xs: '1rem', sm: '1.15rem' }, lineHeight: 1.6 }}
           >
-            Pick a real route, like Berlin to Vienna. Every Strava run moves you along it. See where you'd be now, what it looks like there, and
-            what's nearby. When you arrive, go there for real.
+            {t("Pick a real route, like Berlin to Vienna. Every Strava run moves you along it. See where you'd be now, what it looks like there, and what's nearby. When you arrive, go there for real.")}
           </Typography>
           <Stack
             component={motion.div}
@@ -204,7 +204,7 @@ export default function JourneyList() {
               onClick={() => setDialog({ open: true })}
               sx={{ bgcolor: '#fff', color: '#d9345f', fontWeight: 700, px: 3, boxShadow: '0 10px 24px -10px rgba(0,0,0,0.35)', '&:hover': { bgcolor: '#fff4ee' } }}
             >
-              Plan a journey
+              {t('Plan a journey')}
             </Button>
             {me?.features.strava && !connected && (
               <StravaButton size="large" sx={{ bgcolor: 'rgb(0 0 0 / 22%)', color: '#fff', backgroundImage: 'none', boxShadow: 'none', '&:hover': { bgcolor: 'rgb(0 0 0 / 32%)' } }} />
@@ -229,8 +229,7 @@ export default function JourneyList() {
 
       {me && !me.features.strava && (
         <Alert severity="info">
-          Strava isn't configured on this deployment yet (set <code>STRAVA_CLIENT_ID</code> and{' '}
-          <code>STRAVA_CLIENT_SECRET</code>). You can still add distances manually.
+          {t("Strava isn't configured on this deployment yet (set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET). You can still add distances manually.")}
         </Alert>
       )}
       {importError && (
@@ -244,16 +243,16 @@ export default function JourneyList() {
       <Box>
         <Stack direction="row" sx={{ alignItems: 'center', mb: 2, gap: 1 }}>
           <Typography variant="h5" sx={{ flexGrow: 1 }} noWrap>
-            Your journeys
+            {t('Your journeys')}
           </Typography>
           <Button size="small" startIcon={<UploadIcon />} onClick={() => fileRef.current?.click()} aria-label="import journeys">
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-              Import
+              {t('Import')}
             </Box>
           </Button>
           <Button size="small" startIcon={<DownloadIcon />} onClick={exportAll} disabled={!journeys.length} aria-label="export journeys">
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-              Export
+              {t('Export')}
             </Box>
           </Button>
           <input
@@ -282,7 +281,7 @@ export default function JourneyList() {
               })}
             />
             <Typography color="text.secondary">
-              No journeys yet. Plan one above, or pick one of the suggestions.
+              {t('No journeys yet. Plan one above, or pick one of the suggestions.')}
             </Typography>
           </Card>
         ) : (
@@ -295,7 +294,7 @@ export default function JourneyList() {
           </Stagger>
         )}
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-          Journeys are saved in your account and available on every device you sign in on.
+          {t('Journeys are saved in your account and available on every device you sign in on.')}
         </Typography>
       </Box>
 

@@ -41,6 +41,8 @@ import ShareDialog from './ShareDialog';
 import { PageTransition, Reveal } from './motion';
 import SectionNav, { type Section } from './SectionNav';
 import StravaButton from './StravaButton';
+import { getLang, locale, t } from '../lib/i18n';
+import { milestoneTitle } from '../../shared/milestoneTitle';
 
 function downloadGpx(j: Journey) {
   const pts = j.route.points.map(([la, lo]) => `<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"/>`).join('');
@@ -196,27 +198,27 @@ export default function JourneyView({ journey }: { journey: Journey }) {
 
   const menuEl = (
     <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
-      <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}>📤 Share card &amp; public link</MenuItem>
-      <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}>👥 Invite friends (race or relay)</MenuItem>
-      <MenuItem onClick={() => { setMenu(null); navigate(`/j/${journey.id}/trip`); }}>🧳 Plan the real trip</MenuItem>
-      <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>Settings</MenuItem>
-      <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>Download route as GPX</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}>{t('📤 Share card & public link')}</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}>{t('👥 Invite friends (race or relay)')}</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); navigate(`/j/${journey.id}/trip`); }}>{t('🧳 Plan the real trip')}</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>{t('Settings')}</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>{t('Download route as GPX')}</MenuItem>
       {journey.trail && (
         <MenuItem component="a" href={`https://hiking.waymarkedtrails.org/#route?id=${journey.trail.osmId}`} target="_blank" onClick={() => setMenu(null)}>
-          Trail info (Waymarked Trails)
+          {t('Trail info (Waymarked Trails)')}
         </MenuItem>
       )}
       <MenuItem
         sx={{ color: 'error.main' }}
         onClick={() => {
           setMenu(null);
-          if (confirm(`Delete "${journey.name}"? This can't be undone.`)) {
+          if (confirm(t('Delete "{name}"? This can\'t be undone.', { name: journey.name }))) {
             journeyStore.remove(journey.id);
             navigate('/');
           }
         }}
       >
-        Delete journey
+        {t('Delete journey')}
       </MenuItem>
     </Menu>
   );
@@ -226,29 +228,30 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       {journey.useStrava && me?.features.strava && !connected && (
         <Pop key="connect">
           <Alert severity="info" action={<StravaButton size="small" />}>
-            Connect Strava so your runs move you along this route.
+            {t('Connect Strava so your runs move you along this route.')}
           </Alert>
         </Pop>
       )}
       {syncError && (
         <Pop key="syncerr">
           <Alert severity="error" onClose={() => setSyncError(null)}>
-            Strava sync failed: {syncError}
+            {t('Strava sync failed: {error}', { error: syncError })}
           </Alert>
         </Pop>
       )}
       {activitiesQ.error && (
         <Pop key="acterr">
-          <Alert severity="error">Could not load activities: {activitiesQ.error.message}</Alert>
+          <Alert severity="error">{t('Could not load activities: {error}', { error: activitiesQ.error.message })}</Alert>
         </Pop>
       )}
       {progress.finished && (
         <Pop key="finished">
           <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>
-            <AlertTitle>You've arrived in {journey.waypoints[journey.waypoints.length - 1]?.name ?? 'your destination'}!</AlertTitle>
-            {formatKm(progress.totalM, 0)} done{progress.finishedOn ? ` on ${formatDate(progress.finishedOn)}` : ''}. Time to go there for real?{' '}
+            <AlertTitle>{t("You've arrived in {place}!", { place: journey.waypoints[journey.waypoints.length - 1]?.name ?? t('your destination') })}</AlertTitle>
+            {progress.finishedOn ? t('{km} done on {date}.', { km: formatKm(progress.totalM, 0), date: formatDate(progress.finishedOn) }) : t('{km} done.', { km: formatKm(progress.totalM, 0) })}{' '}
+            {t('Time to go there for real?')}{' '}
             <Button size="small" color="inherit" variant="outlined" onClick={() => navigate(`/j/${journey.id}/trip`)} sx={{ ml: 0.5 }}>
-              Plan the real trip
+              {t('Plan the real trip')}
             </Button>
           </Alert>
         </Pop>
@@ -256,7 +259,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       {sinceLast && !progress.finished && (
         <Pop key="since">
           <Alert severity="success" icon={<span style={{ fontSize: 22 }}>🏃</span>} onClose={() => setSinceLast(null)}>
-            Since your last visit ({formatDate(sinceLast.at)}) you've moved <strong>{formatKm(sinceLast.m)}</strong> further along the route.
+            {t('Since your last visit ({date}) you have moved', { date: formatDate(sinceLast.at) })} <strong>{formatKm(sinceLast.m)}</strong> {t('further along the route.')}
           </Alert>
         </Pop>
       )}
@@ -275,11 +278,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             }
             action={
               <Button color="inherit" onClick={() => navigate(`/j/${journey.id}/diary`)}>
-                Open diary
+                {t('Open diary')}
               </Button>
             }
           >
-            {unseen.length === 1 ? `New postcard: ${unseen[0].title}` : `${unseen.length} new postcards, latest: ${unseen[unseen.length - 1].title}`}
+            {unseen.length === 1 ? t('New postcard: {title}', { title: milestoneTitle(unseen[0], getLang()) }) : t('{n} new postcards, latest: {title}', { n: unseen.length, title: milestoneTitle(unseen[unseen.length - 1], getLang()) })}
           </Alert>
         </Pop>
       )}
@@ -311,7 +314,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         onClick={() => setFly((f) => ({ token: f.token + 1, target: here }))}
         sx={{ position: 'absolute', zIndex: 1000, left: { xs: '50%', sm: 12 }, top: { xs: 12, sm: 'auto' }, bottom: { sm: 12 }, transform: { xs: 'translateX(-50%)', sm: 'none' } }}
       >
-        Where am I?
+        {t('Where am I?')}
       </Button>
       <Button
         variant="contained"
@@ -346,9 +349,9 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const explore = (
     <Stack spacing={2}>
       <ToggleButtonGroup exclusive value={tab} onChange={(_, v) => v && setTab(v)} fullWidth sx={{ bgcolor: 'background.paper', borderRadius: 999, '& .MuiToggleButton-root': { border: 0, borderRadius: '999px !important', py: 1 }, '& .Mui-selected': { bgcolor: 'action.selected' } }}>
-        <ToggleButton value="here">📍 Where I am</ToggleButton>
+        <ToggleButton value="here">{t('📍 Where I am')}</ToggleButton>
         <ToggleButton value="ahead" disabled={progress.finished}>
-          👀 Look ahead
+          {t('👀 Look ahead')}
         </ToggleButton>
       </ToggleButtonGroup>
       <AnimatePresence mode="wait" initial={false}>
@@ -357,7 +360,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             {tab === 'ahead' && (
               <Card sx={{ p: 2 }}>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Preview any point on the route: drag the slider, tap a chip, or tap the line on the map.
+                  {t('Preview any point on the route: drag the slider, tap a chip, or tap the line on the map.')}
                 </Typography>
                 <Slider
                   value={peekM}
@@ -367,7 +370,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
                   onChange={(_, v) => setPeekM(v as number)}
                   valueLabelDisplay="auto"
                   valueLabelFormat={(v) => formatKm(v, 0)}
-                  marks={[{ value: progress.doneM, label: 'you' }]}
+                  marks={[{ value: progress.doneM, label: t('you') }]}
                 />
                 <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
                   {quickPeeks.map((m) => (
@@ -384,7 +387,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
                 key="here"
                 journeyId={journey.id}
                 point={here}
-                eyebrow={progress.finished ? 'You have arrived' : `You are here · ${getUnit()} ${toUnit(progress.doneM).toFixed(1)}`}
+                eyebrow={progress.finished ? t('You have arrived') : `${t('You are here')} · ${getUnit()} ${toUnit(progress.doneM).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`}
                 narrate={narrateBase(progress.doneM)}
                 onSlideshow={() => setSlideshow(true)}
               />
@@ -395,8 +398,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
                 point={peekPoint}
                 eyebrow={
                   peekM > progress.doneM
-                    ? `In ${formatKm(peekM - progress.doneM, 0)} · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
-                    : `Behind you · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
+                    ? `${t('In {km}', { km: formatKm(peekM - progress.doneM, 0) })} · ${getUnit()} ${toUnit(peekM).toLocaleString(locale(), { maximumFractionDigits: 0 })}`
+                    : `${t('Behind you')} · ${getUnit()} ${toUnit(peekM).toLocaleString(locale(), { maximumFractionDigits: 0 })}`
                 }
                 narrate={{ ...narrateBase(peekM), peek: { aheadM: peekM - progress.doneM } }}
               />
@@ -461,7 +464,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         )}
       </PageTransition>
       <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-        Route: {journey.route.provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{me?.features.mapillary ? ', Mapillary' : ''}. Weather: Open-Meteo.
+        {t('Route: {provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{mly}. Weather: Open-Meteo.', { provider: journey.route.provider, mly: me?.features.mapillary ? ', Mapillary' : '' })}
       </Typography>
       {slideshow && (
         <Suspense fallback={null}>

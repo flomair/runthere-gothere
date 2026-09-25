@@ -5,6 +5,7 @@ import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
 import { PageTransition } from './components/motion';
 import JourneyList from './components/JourneyList';
+import { t, useLang } from './lib/i18n';
 import { journeyStore, useJourneyState } from './lib/storage';
 
 const JourneyView = lazy(() => import('./components/JourneyView'));
@@ -37,9 +38,9 @@ function useStravaFlash() {
   const [msg, setMsg] = useState<{ severity: 'success' | 'error'; text: string } | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    if (p.get('strava') === 'connected') setMsg({ severity: 'success', text: 'Strava connected. Your runs now move you forward, and new ones arrive automatically.' });
+    if (p.get('strava') === 'connected') setMsg({ severity: 'success', text: t('Strava connected. Your runs now move you forward, and new ones arrive automatically.') });
     else if (p.get('strava_error'))
-      setMsg({ severity: 'error', text: `Strava connection failed: ${p.get('strava_error')}` });
+      setMsg({ severity: 'error', text: t('Strava connection failed: {error}', { error: p.get('strava_error') ?? '' }) });
     if (p.has('strava') || p.has('strava_error')) {
       window.history.replaceState(null, '', window.location.pathname + window.location.hash);
     }
@@ -99,17 +100,19 @@ function Main() {
 
 export default function App() {
   const { shareToken } = useHashRoute();
+  const lang = useLang();
   // public share links work without signing in
   if (shareToken) {
     return (
       <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
-        <PublicView token={shareToken} />
+        <PublicView key={lang} token={shareToken} />
       </Suspense>
     );
   }
+  // switching the language re-renders the whole app with the new strings
   return (
     <AuthGate>
-      <Main />
+      <Main key={lang} />
     </AuthGate>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import { firebaseApp, vapidKey } from './firebase';
-import { getLang } from './i18n';
+import { getLang, t } from './i18n';
 import { isIos, isStandalone } from './pwa';
 
 const KEY = 'rtgt.pushToken';
@@ -38,12 +38,12 @@ async function registration() {
 
 async function enable(): Promise<void> {
   const perm = await Notification.requestPermission();
-  if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked in the browser settings.' : 'Permission was not granted.');
+  if (perm !== 'granted') throw new Error(perm === 'denied' ? t('Notifications are blocked in the browser settings.') : t('Permission was not granted.'));
   const reg = await registration();
   await navigator.serviceWorker.ready;
   const { getMessaging, getToken } = await import('firebase/messaging');
   const token = await getToken(getMessaging(firebaseApp()), { vapidKey, serviceWorkerRegistration: reg });
-  if (!token) throw new Error('The browser did not return a push token.');
+  if (!token) throw new Error(t('The browser did not return a push token.'));
   await api('/api/push', { method: 'POST', json: { token, lang: getLang() } });
   localStorage.setItem(KEY, token);
 }

@@ -21,6 +21,7 @@ import { describeWeatherCode } from '../../shared/weather';
 import { formatKm } from '../lib/format';
 import type { SurroundingsResponse } from '../lib/types';
 import BookmarkButton from './BookmarkButton';
+import { locale, t } from '../lib/i18n';
 
 const km = (m: number) => (m < 1000 ? `${Math.round(m)} m` : formatKm(m));
 
@@ -38,11 +39,11 @@ export function WeatherBadge({ data }: { data: SurroundingsResponse['weather'] }
           {Math.round(data.temperatureC)}°C
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {w.label} · feels {Math.round(data.apparentC)}° · wind {Math.round(data.windKmh)} km/h
+          {t(w.label)} · {t('feels {c}°', { c: Math.round(data.apparentC) })} · {t('wind {v} km/h', { v: Math.round(data.windKmh) })}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Local time {localTime}
-          {data.today ? ` · ${Math.round(data.today.minC)}–${Math.round(data.today.maxC)}°C today` : ''}
+          {t('Local time {time}', { time: localTime })}
+          {data.today ? ` · ${t('{min}–{max}°C today', { min: Math.round(data.today.minC), max: Math.round(data.today.maxC) })}` : ''}
         </Typography>
       </Box>
     </Stack>
@@ -51,7 +52,7 @@ export function WeatherBadge({ data }: { data: SurroundingsResponse['weather'] }
 
 export function WikipediaList({ items, loading, journeyId }: { items: SurroundingsResponse['wikipedia'] | undefined; loading: boolean; journeyId?: string }) {
   if (loading) return <Skeleton variant="rounded" height={160} />;
-  if (!items?.length) return <Typography color="text.secondary" variant="body2">No Wikipedia articles within 10 km.</Typography>;
+  if (!items?.length) return <Typography color="text.secondary" variant="body2">{t('No Wikipedia articles within 10 km.')}</Typography>;
   return (
     <List dense disablePadding>
       {items.slice(0, 6).map((a) => (
@@ -110,12 +111,12 @@ export function PlacesList({
     return (
       <Stack spacing={1}>
         <Typography variant="body2" color="text.secondary">
-          Set <code>GOOGLE_PLACES_API_KEY</code> to see top-rated places with reviews here. Until then, browse on Google Maps:
+          {t('Set GOOGLE_PLACES_API_KEY to see top-rated places with reviews here. Until then, browse on Google Maps:')}
         </Typography>
         <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
           {['Sights', 'Cafés', 'Restaurants', 'Bakeries'].map((q) => (
             <Button key={q} size="small" variant="outlined" href={mapsSearch(q)} target="_blank" endIcon={<OpenInNewIcon fontSize="small" />}>
-              {q}
+              {t(q)}
             </Button>
           ))}
         </Stack>
@@ -123,7 +124,7 @@ export function PlacesList({
     );
   }
   if (loading) return <Skeleton variant="rounded" height={160} />;
-  if (!items?.length) return <Typography color="text.secondary" variant="body2">No rated places nearby.</Typography>;
+  if (!items?.length) return <Typography color="text.secondary" variant="body2">{t('No rated places nearby.')}</Typography>;
   return (
     <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
       {items.map((p) => (
@@ -143,7 +144,7 @@ export function PlacesList({
                 <Stack direction="row" sx={{ alignItems: 'center', gap: 0.25 }}>
                   <StarIcon sx={{ color: '#f4b400', fontSize: 18 }} />
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {p.rating.toFixed(1)}
+                    {p.rating.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     ({p.ratingCount ?? 0})

@@ -10,6 +10,7 @@ import NarratorCard from './NarratorCard';
 import { Reveal } from './motion';
 import PhotoStrip from './PhotoStrip';
 import { PlacesList, WeatherBadge, WikipediaList } from './SurroundingsPanel';
+import { t } from '../lib/i18n';
 
 function Section({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -73,7 +74,7 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate, o
           </Box>
           <Stack direction="row" sx={{ gap: 1, mt: 2, flexWrap: 'wrap' }}>
             <Button size="small" variant="outlined" target="_blank" href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`} endIcon={<OpenInNewIcon fontSize="small" />}>
-              Street View
+              {t('Street View')}
             </Button>
             <Button size="small" variant="outlined" target="_blank" href={`https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=16`} endIcon={<OpenInNewIcon fontSize="small" />}>
               Mapillary
@@ -87,11 +88,11 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate, o
 
       <Reveal>
       <Section
-        title="What it looks like"
+        title={t('What it looks like')}
         action={
           onSlideshow && (
             <Button size="small" variant="contained" startIcon={<SlideshowIcon />} onClick={onSlideshow}>
-              Slideshow
+              {t('Slideshow')}
             </Button>
           )
         }
@@ -103,16 +104,16 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate, o
       <Reveal>
       <NarratorCard
         journeyId={journeyId}
-        title={`The story of ${place?.name ?? 'this place'}`}
+        title={t('The story of {place}', { place: place?.name ?? t('this place') })}
         request={{ ...narrate, lat, lon, photoTitles: photos.data?.photos.map((p) => p.title) }}
       />
       </Reveal>
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>
-        <Section title="Wikipedia nearby">
+        <Section title={t('Wikipedia nearby')}>
           <WikipediaList items={env.data?.wikipedia} loading={env.isLoading} journeyId={journeyId} />
         </Section>
-        <Section title="Top places around">
+        <Section title={t('Top places around')}>
           <PlacesList items={env.data?.places} loading={env.isLoading} enabled={!!me?.features.googlePlaces} point={point} journeyId={journeyId} />
         </Section>
       </Box>

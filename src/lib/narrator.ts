@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { api, authHeaders } from './api';
 import type { NarrateRequest, NarrationStyle } from './types';
+import { t } from './i18n';
 
 /** Per-device preferences (voices differ per device). The API key lives encrypted on the server. */
 export interface NarratorSettings {
@@ -67,7 +68,7 @@ export async function streamNarration(
   });
   if (!res.ok || !res.body) {
     const body = await res.json().catch(() => null);
-    throw new Error((body as { error?: string } | null)?.error ?? `Narrator failed (${res.status})`);
+    throw new Error((body as { error?: string } | null)?.error ?? t('Narrator failed ({status})', { status: res.status }));
   }
   const reader = res.body.getReader();
   const dec = new TextDecoder();

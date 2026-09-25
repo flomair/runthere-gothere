@@ -27,6 +27,7 @@ import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
 import type { Bookmark, Journey } from '../lib/types';
 import { Reveal, Stagger, StaggerItem } from './motion';
+import { t } from '../lib/i18n';
 
 const KIND_ICON: Record<Bookmark['kind'], string> = { wiki: '📖', place: '⭐', spot: '📍' };
 
@@ -92,7 +93,7 @@ export default function TripPage({ journey }: { journey: Journey }) {
   const bm = useBookmarks(journey.id);
   const bookmarks = bm.data ?? [];
   const dest = journey.waypoints[journey.waypoints.length - 1];
-  const destName = dest?.name ?? 'your destination';
+  const destName = dest?.name ?? t('your destination');
   const [dlat, dlon] = dest ? [dest.lat, dest.lon] : journey.route.points[journey.route.points.length - 1];
   const event = journey.event;
   // arrive the day before the race and leave the day after; otherwise a weekend four weeks out
@@ -110,10 +111,10 @@ export default function TripPage({ journey }: { journey: Journey }) {
         </IconButton>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
-            Go there
+            {t('Go there')}
           </Typography>
           <Typography variant="h4" component="h1" sx={{ lineHeight: 1.1 }}>
-            Plan the real trip to {destName}
+            {t('Plan the real trip to {place}', { place: destName })}
           </Typography>
         </Box>
       </Stack>
@@ -124,27 +125,27 @@ export default function TripPage({ journey }: { journey: Journey }) {
             <Card>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 1 }}>
-                  {event ? '🏅 The race' : '🗓️ When'}
+                  {event ? t('🏅 The race') : t('🗓️ When')}
                 </Typography>
                 {event ? (
                   <Stack spacing={1}>
                     <Typography sx={{ fontWeight: 700, fontSize: '1.2rem' }}>{event.name}</Typography>
                     <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                       <Chip label={formatDate(event.date)} />
-                      {daysUntil(event.date) >= 0 && <Chip color="primary" label={daysUntil(event.date) === 0 ? 'Race day!' : `in ${daysUntil(event.date)} days`} />}
+                      {daysUntil(event.date) >= 0 && <Chip color="primary" label={daysUntil(event.date) === 0 ? t('Race day!') : t('in {n} days', { n: daysUntil(event.date) })} />}
                     </Stack>
                     {event.url && (
                       <Box>
-                        <LinkButton href={event.url}>Race website</LinkButton>
+                        <LinkButton href={event.url}>{t('Race website')}</LinkButton>
                       </Box>
                     )}
                     <Typography variant="body2" color="text.secondary">
-                      Stay suggestion: {formatDate(checkin)} – {formatDate(checkout)}
+                      {t('Stay suggestion: {from} – {to}', { from: formatDate(checkin), to: formatDate(checkout) })}
                     </Typography>
                   </Stack>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No race set. Add one under <b>Goals</b> to see a countdown and matching travel dates. The links below use a weekend four weeks from now.
+                    {t('No race set. Add one under Goals to see a countdown and matching travel dates. The links below use a weekend four weeks from now.')}
                   </Typography>
                 )}
               </CardContent>
@@ -155,11 +156,11 @@ export default function TripPage({ journey }: { journey: Journey }) {
             <Card>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 1.5 }}>
-                  🚆 Getting there & staying
+                  {t('🚆 Getting there & staying')}
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
-                  <LinkButton href={`https://www.google.com/maps/dir/?api=1&destination=${dlat},${dlon}&travelmode=transit`}>Train & bus</LinkButton>
-                  <LinkButton href={`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${destName} on ${checkin}`)}`}>Flights</LinkButton>
+                  <LinkButton href={`https://www.google.com/maps/dir/?api=1&destination=${dlat},${dlon}&travelmode=transit`}>{t('Train & bus')}</LinkButton>
+                  <LinkButton href={`https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${destName} on ${checkin}`)}`}>{t('Flights')}</LinkButton>
                   <LinkButton href={`https://www.booking.com/searchresults.html?ss=${q}&checkin=${checkin}&checkout=${checkout}&group_adults=1`}>Booking.com</LinkButton>
                   <LinkButton href={`https://www.airbnb.com/s/${q}/homes?checkin=${checkin}&checkout=${checkout}&adults=1`}>Airbnb</LinkButton>
                 </Box>
@@ -174,10 +175,10 @@ export default function TripPage({ journey }: { journey: Journey }) {
           <CardContent sx={{ pb: 1 }}>
             <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                🔖 Saved places {bookmarks.length > 0 && <Chip size="small" label={bookmarks.length} sx={{ ml: 0.5 }} />}
+                🔖 {t('Saved places')} {bookmarks.length > 0 && <Chip size="small" label={bookmarks.length} sx={{ ml: 0.5 }} />}
               </Typography>
               <Button startIcon={<DownloadIcon />} onClick={() => download(`${journey.name.replace(/[^\w-]+/g, '_')}.kml`, buildKml(journey, bookmarks), 'application/vnd.google-earth.kml+xml')}>
-                KML for Google My Maps
+                {t('KML for Google My Maps')}
               </Button>
             </Stack>
           </CardContent>
@@ -194,12 +195,12 @@ export default function TripPage({ journey }: { journey: Journey }) {
             ))}
           </MapContainer>
           <CardContent>
-            {bm.error && <Alert severity="error">Could not load saved places: {bm.error.message}</Alert>}
+            {bm.error && <Alert severity="error">{t('Could not load saved places: {error}', { error: bm.error.message })}</Alert>}
             {bm.isLoading ? (
               <Skeleton variant="rounded" height={120} />
             ) : bookmarks.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
-                Nothing saved yet. In <b>Explore</b>, tap the bookmark icon next to a place, a Wikipedia article or the spot itself, and it appears here for the real trip.
+                {t('Nothing saved yet. In Explore, tap the bookmark icon next to a place, a Wikipedia article or the spot itself, and it appears here for the real trip.')}
               </Typography>
             ) : (
               <List dense disablePadding>

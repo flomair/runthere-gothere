@@ -6,6 +6,7 @@ import { api, lang, realLocation, useCoachPlan, useMe } from '../lib/api';
 import { formatDate } from '../lib/format';
 import type { CoachPlan, WorkoutType } from '../lib/types';
 import { CountUp, Stagger, StaggerItem } from './motion';
+import { t } from '../lib/i18n';
 
 const LOOK: Record<WorkoutType, { emoji: string; color: string; label: string }> = {
   easy: { emoji: '🙂', color: '#2a9d8f', label: 'Easy' },
@@ -46,17 +47,17 @@ export default function CoachCard({ journeyId }: { journeyId: string }) {
           <SportsIcon color="primary" />
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
-              Your coach
+              {t('Your coach')}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {plan ? `Week of ${formatDate(plan.weekOf)} · written ${formatDate(plan.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}` : 'A weekly plan from your recent runs, your goal and the weather where you are.'}
+              {plan ? t('Week of {week} · written {when}', { week: formatDate(plan.weekOf), when: formatDate(plan.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) }) : t('A weekly plan from your recent runs, your goal and the weather where you are.')}
             </Typography>
           </Box>
           <Button variant={plan ? 'outlined' : 'contained'} onClick={generate} loading={busy} disabled={!me?.ai}>
-            {plan ? 'New plan' : 'Plan my week'}
+            {plan ? t('New plan') : t('Plan my week')}
           </Button>
         </Stack>
-        {!me?.ai && <Alert severity="info">Add your Anthropic API key in the narrator settings (Explore → story card → ⚙︎) to get weekly plans.</Alert>}
+        {!me?.ai && <Alert severity="info">{t('Add your Anthropic API key in the narrator settings (Explore → story card → ⚙︎) to get weekly plans.')}</Alert>}
         {error && (
           <Alert severity="error" sx={{ mb: 1.5 }}>
             {error}
@@ -68,7 +69,7 @@ export default function CoachCard({ journeyId }: { journeyId: string }) {
               <Typography sx={{ fontWeight: 800, fontSize: '1.8rem' }}>
                 <CountUp value={plan.targetKm} format={(n) => `${n.toFixed(0)} km`} />
               </Typography>
-              <Typography color="text.secondary">this week</Typography>
+              <Typography color="text.secondary">{t('this week')}</Typography>
             </Stack>
             <Typography sx={{ mb: 2 }}>{plan.summary}</Typography>
             <Stagger gap={0.05} sx={{ display: 'grid', gap: 1, gridTemplateColumns: { xs: '1fr', sm: 'repeat(7, 1fr)' } }}>
@@ -92,13 +93,13 @@ export default function CoachCard({ journeyId }: { journeyId: string }) {
                     <Stack direction={{ xs: 'row', sm: 'column' }} sx={{ gap: { xs: 1.5, sm: 0.5 }, alignItems: { xs: 'center', sm: 'flex-start' } }}>
                       <Box sx={{ minWidth: { xs: 44, sm: 0 } }}>
                         <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', color: today ? 'primary.main' : 'text.secondary' }}>
-                          {d.day.slice(0, 3)}
-                          {today ? ' · today' : ''}
+                          {formatDate(new Date(2024, 0, 1 + i), { weekday: 'short' })}
+                          {today ? ` · ${t('today')}` : ''}
                         </Typography>
                         <Typography sx={{ fontSize: 22, lineHeight: 1.2 }}>{look.emoji}</Typography>
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
-                        <Chip size="small" label={d.type === 'rest' ? 'Rest' : `${look.label} · ${d.distanceKm} km`} sx={{ bgcolor: look.color, color: '#fff', height: 22, mb: 0.5 }} />
+                        <Chip size="small" label={d.type === 'rest' ? t('Rest') : `${t(look.label)} · ${d.distanceKm} km`} sx={{ bgcolor: look.color, color: '#fff', height: 22, mb: 0.5 }} />
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {d.title}
                         </Typography>

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { LayersControl, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { type LatLon, haversine, positionAt, sliceRoute, splitRoute } from '../../shared/geo';
 import type { Waypoint } from '../lib/types';
+import { t } from '../lib/i18n';
 
 const icon = (cls: string, html = '') =>
   L.divIcon({ className: '', html: `<div class="rtgt-marker ${cls}">${html}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
@@ -90,21 +91,21 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
   return (
     <MapContainer center={start} zoom={6} style={{ height, width: '100%' }} scrollWheelZoom worldCopyJump>
       <LayersControl position="topright">
-        <LayersControl.BaseLayer checked name="Map">
+        <LayersControl.BaseLayer checked name={t('Map')}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
         </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Satellite">
+        <LayersControl.BaseLayer name={t('Satellite')}>
           <TileLayer
             attribution="Imagery &copy; Esri, Maxar, Earthstar Geographics"
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             maxZoom={19}
           />
         </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="Terrain">
+        <LayersControl.BaseLayer name={t('Terrain')}>
           <TileLayer
             attribution='Map data &copy; OpenStreetMap contributors, SRTM | Style &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
             url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
@@ -119,7 +120,7 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
       {hl.length >= 2 && <FitHighlight line={hl} />}
 
       <Marker position={start} icon={ICONS.start}>
-        <Tooltip>{waypoints[0]?.name ?? 'Start'}</Tooltip>
+        <Tooltip>{waypoints[0]?.name ?? t('Start')}</Tooltip>
       </Marker>
       {waypoints.slice(1, -1).map((w) => (
         <Marker key={`${w.lat},${w.lon}`} position={[w.lat, w.lon]} icon={ICONS.via}>
@@ -127,17 +128,17 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
         </Marker>
       ))}
       <Marker position={goal} icon={ICONS.goal}>
-        <Tooltip>{waypoints[waypoints.length - 1]?.name ?? 'Finish'}</Tooltip>
+        <Tooltip>{waypoints[waypoints.length - 1]?.name ?? t('Finish')}</Tooltip>
       </Marker>
       {peek && (
         <Marker position={peek} icon={ICONS.peek} zIndexOffset={500}>
-          <Tooltip>Look-ahead point</Tooltip>
+          <Tooltip>{t('Look-ahead point')}</Tooltip>
         </Marker>
       )}
       {me && (
         <Marker position={me} icon={ICONS.me} zIndexOffset={1000}>
           <Tooltip permanent direction="top" offset={[0, -18]}>
-            You are here
+            {t('You are here')}
           </Tooltip>
         </Marker>
       )}

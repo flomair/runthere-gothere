@@ -33,6 +33,8 @@ import { useFeed, useGroupActions, useStandings } from '../lib/groups';
 import { navigate } from '../lib/nav';
 import type { FeedItem, Standing } from '../lib/types';
 import { AnimatedBar, CountUp, Stagger, StaggerItem } from './motion';
+import { getLang, t } from '../lib/i18n';
+import { milestoneTitle } from '../../shared/milestoneTitle';
 
 const COLORS = ['#fc4c02', '#1d3557', '#2a9d8f', '#8e44ad', '#e9c46a', '#e76f51', '#457b9d', '#6a994e'];
 const initials = (n: string) => n.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
@@ -66,11 +68,11 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
             </Typography>
             <Typography sx={{ fontWeight: item.type === 'milestone' ? 700 : 400, fontSize: item.type === 'milestone' ? '1.1rem' : '1rem', mt: 0.25 }}>
               <span style={{ marginRight: 6 }}>{icon}</span>
-              {item.type === 'join' ? `${item.name} ${item.text}` : item.text}
+              {item.type === 'join' ? `${item.name} ${t(item.text)}` : item.milestone ? milestoneTitle(item.milestone, getLang()) : item.text}
             </Typography>
             {item.milestone && (
               <Typography variant="caption" color="text.secondary">
-                at {formatKm(item.milestone.atM, 0)}
+                {t('at {km}', { km: formatKm(item.milestone.atM, 0) })}
               </Typography>
             )}
             <Stack direction="row" spacing={1} sx={{ mt: 1, alignItems: 'center' }}>
@@ -87,7 +89,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
                 {item.kudos.length || ''}
               </Button>
               <Button size="small" startIcon={<ChatBubbleOutlineIcon fontSize="small" />} onClick={() => setOpen((o) => !o)} sx={{ color: 'text.secondary' }}>
-                {item.comments.length || 'Comment'}
+                {item.comments.length || t('Comment')}
               </Button>
               {item.kudos.length > 0 && (
                 <Typography variant="caption" color="text.secondary" noWrap>
@@ -108,7 +110,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
                 {open && (
                   <TextField
                     size="small"
-                    placeholder="Write a comment…"
+                    placeholder={t('Write a comment…')}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={async (e) => {
@@ -162,7 +164,7 @@ export default function GroupView({ id }: { id: string }) {
   }, [st.data]);
 
   if (st.isLoading) return <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />;
-  if (st.error || !st.data) return <Alert severity="error">{st.error?.message ?? 'This shared journey is not available.'}</Alert>;
+  if (st.error || !st.data) return <Alert severity="error">{st.error?.message ?? t('This shared journey is not available.')}</Alert>;
 
   const { group: g, standings, team } = st.data;
   const race = g.mode === 'race';
@@ -184,7 +186,7 @@ export default function GroupView({ id }: { id: string }) {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="overline" sx={{ flexGrow: 1, opacity: 0.9 }}>
-            {race ? '🏁 Race' : '🤝 Relay'} · since {formatDate(g.startDate)}
+            {race ? t('🏁 Race') : t('🤝 Relay')} · {t('since {date}', { date: formatDate(g.startDate) })}
           </Typography>
           <IconButton onClick={() => setInviteOpen(true)} sx={{ color: 'inherit' }} aria-label="invite friends">
             <PersonAddIcon />
@@ -206,11 +208,11 @@ export default function GroupView({ id }: { id: string }) {
           </AvatarGroup>
           {race && leader ? (
             <Typography sx={{ fontWeight: 700 }}>
-              👑 {nameOf(leader.uid)} leads with <CountUp value={leader.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />
+              👑 {t('{name} leads with', { name: nameOf(leader.uid) })} <CountUp value={leader.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />
             </Typography>
           ) : team ? (
             <Typography sx={{ fontWeight: 700 }}>
-              Team: <CountUp value={team.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} /> of {formatKm(g.route.totalM, 0)}
+              {t('Team:')} <CountUp value={team.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} /> {t('of {km}', { km: formatKm(g.route.totalM, 0) })}
             </Typography>
           ) : null}
         </Stack>
@@ -223,7 +225,7 @@ export default function GroupView({ id }: { id: string }) {
 
       {g.invitedEmails.length > 0 && (
         <Typography variant="body2" color="text.secondary">
-          Invited, not joined yet: {g.invitedEmails.join(', ')}
+          {t('Invited, not joined yet: {emails}', { emails: g.invitedEmails.join(', ') })}
         </Typography>
       )}
 
@@ -243,7 +245,7 @@ export default function GroupView({ id }: { id: string }) {
               : team && (
                   <Marker position={team.point} icon={L.divIcon({ className: '', html: '<div class="rtgt-marker me">🤝</div>', iconSize: [34, 34], iconAnchor: [17, 17] })}>
                     <Tooltip permanent direction="top" offset={[0, -18]}>
-                      Team
+                      {t('Team')}
                     </Tooltip>
                   </Marker>
                 )}
@@ -253,7 +255,7 @@ export default function GroupView({ id }: { id: string }) {
         <Card>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 1.5 }}>
-              {race ? 'Leaderboard' : 'Who carried the team'}
+              {race ? t('Leaderboard') : t('Who carried the team')}
             </Typography>
             <Stagger sx={{ display: 'grid', gap: 1.5 }}>
               {standings.map((s, i) => (
@@ -267,7 +269,7 @@ export default function GroupView({ id }: { id: string }) {
                       <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1 }}>
                         <Typography sx={{ fontWeight: 700 }} noWrap>
                           {s.name}
-                          {s.uid === me?.user.uid ? ' (you)' : ''}
+                          {s.uid === me?.user.uid ? ` (${t('you')})` : ''}
                         </Typography>
                         <Typography sx={{ fontWeight: 800 }}>{formatKm(race ? s.doneM : s.distanceM, 0)}</Typography>
                       </Stack>
@@ -277,8 +279,8 @@ export default function GroupView({ id }: { id: string }) {
                         color={`linear-gradient(90deg, ${colorOf(s.uid)}, ${colorOf(s.uid)}cc)`}
                       />
                       <Typography variant="caption" color="text.secondary">
-                        {s.finishedOn ? `🏁 arrived ${formatDate(s.finishedOn)}` : `${formatKm(s.weeklyAvgM)} / week`}
-                        {s.lastActivity ? ` · last run ${formatDate(s.lastActivity)}` : ''}
+                        {s.finishedOn ? `🏁 ${t('arrived {date}', { date: formatDate(s.finishedOn) })}` : t('{km} / week', { km: formatKm(s.weeklyAvgM) })}
+                        {s.lastActivity ? ` · ${t('last run {date}', { date: formatDate(s.lastActivity) })}` : ''}
                       </Typography>
                     </Box>
                   </Stack>
@@ -291,14 +293,14 @@ export default function GroupView({ id }: { id: string }) {
 
       <Box>
         <Typography variant="h5" sx={{ mb: 1.5 }}>
-          Feed
+          {t('Feed')}
         </Typography>
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ pb: '16px !important' }}>
             <TextField
               fullWidth
               size="small"
-              placeholder="Cheer the others on…"
+              placeholder={t('Cheer the others on…')}
               value={post}
               onChange={(e) => setPost(e.target.value)}
               onKeyDown={async (e) => {
@@ -342,22 +344,22 @@ export default function GroupView({ id }: { id: string }) {
         color="error"
         sx={{ alignSelf: 'center' }}
         onClick={async () => {
-          if (!confirm(`Leave "${g.name}"?`)) return;
+          if (!confirm(t('Leave "{name}"?', { name: g.name }))) return;
           await actions.leave(id);
           navigate('/');
         }}
       >
-        Leave this shared journey
+        {t('Leave this shared journey')}
       </Button>
 
       <Dialog open={inviteOpen} onClose={() => setInviteOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Invite more friends</DialogTitle>
+        <DialogTitle>{t('Invite more friends')}</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
             autoFocus
             sx={{ mt: 1 }}
-            label="Google addresses"
+            label={t('Google addresses')}
             placeholder="anna@gmail.com, ben@gmail.com"
             value={inviteText}
             onChange={(e) => setInviteText(e.target.value)}
@@ -369,7 +371,7 @@ export default function GroupView({ id }: { id: string }) {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setInviteOpen(false)}>Close</Button>
+          <Button onClick={() => setInviteOpen(false)}>{t('Close')}</Button>
           <Button
             variant="contained"
             disabled={!inviteText.trim()}
@@ -377,10 +379,10 @@ export default function GroupView({ id }: { id: string }) {
               const emails = inviteText.split(/[\s,;]+/).filter(Boolean);
               const r = await actions.invite(id, emails);
               setInviteText('');
-              setInviteMsg(r.notAllowed.length ? `Invited. ${r.notAllowed.join(', ')} still need to be added to the guest list by the owner.` : 'Invited!');
+              setInviteMsg(r.notAllowed.length ? t('Invited. {emails} still need to be added to the guest list by the owner.', { emails: r.notAllowed.join(', ') }) : t('Invited!'));
             }}
           >
-            Invite
+            {t('Invite')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { ApiError, useMe } from '../lib/api';
 import { firebaseConfigured, signInWithGoogle, signOutUser, useAuthUser } from '../lib/firebase';
 import { journeyStore } from '../lib/storage';
+import { t } from '../lib/i18n';
 
 function Screen({ children }: { children: ReactNode }) {
   return (
@@ -40,7 +41,7 @@ function Login() {
   return (
     <Screen>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Turn your Strava runs into a journey between real places. Sign in to continue.
+        {t('Turn your Strava runs into a journey between real places. Sign in to continue.')}
       </Typography>
       {error && (
         <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
@@ -64,7 +65,7 @@ function Login() {
           }
         }}
       >
-        Sign in with Google
+        {t('Sign in with Google')}
       </Button>
     </Screen>
   );
@@ -74,16 +75,16 @@ function NotAllowed({ email }: { email: string }) {
   return (
     <Screen>
       <Typography sx={{ mb: 1 }}>
-        <strong>{email}</strong> isn't on the guest list yet.
+        <strong>{email}</strong> {t("isn't on the guest list yet.")}
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        This app is invite-only. Ask the owner to add your Google address, then reload this page.
+        {t('This app is invite-only. Ask the owner to add your Google address, then reload this page.')}
       </Typography>
       <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
         <Button variant="contained" onClick={() => window.location.reload()}>
-          Try again
+          {t('Try again')}
         </Button>
-        <Button onClick={() => signOutUser()}>Use another account</Button>
+        <Button onClick={() => signOutUser()}>{t('Use another account')}</Button>
       </Stack>
     </Screen>
   );
@@ -127,7 +128,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     );
   }
   if (!user) return <Login />;
-  if (me.error instanceof ApiError && me.error.status === 403) return <NotAllowed email={user.email ?? 'This account'} />;
+  if (me.error instanceof ApiError && me.error.status === 403) return <NotAllowed email={user.email ?? t('This account')} />;
   if (me.error) {
     return (
       <Screen>
@@ -135,10 +136,10 @@ export default function AuthGate({ children }: { children: ReactNode }) {
           {me.error.message}
           <br />
           <a href="/api/health" target="_blank" rel="noopener">
-            Open the configuration check
+            {t('Open the configuration check')}
           </a>
         </Alert>
-        <Button onClick={() => me.refetch()}>Retry</Button> <Button onClick={() => signOutUser()}>Sign out</Button>
+        <Button onClick={() => me.refetch()}>{t('Retry')}</Button> <Button onClick={() => signOutUser()}>{t('Sign out')}</Button>
       </Screen>
     );
   }

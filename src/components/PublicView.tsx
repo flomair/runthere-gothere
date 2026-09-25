@@ -8,6 +8,7 @@ import { formatDate, formatKm } from '../lib/format';
 import { loadPublic } from '../lib/groups';
 import type { PublicJourney } from '../lib/types';
 import { AnimatedBar, CountUp } from './motion';
+import { t } from '../lib/i18n';
 
 /** Read-only journey page for public share links (no sign-in). */
 export default function PublicView({ token }: { token: string }) {
@@ -32,7 +33,7 @@ export default function PublicView({ token }: { token: string }) {
           <Stack spacing={2.5} component={motion.div} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <Box sx={{ borderRadius: { xs: '26px', sm: '32px' }, p: { xs: 2.5, sm: 4 }, color: '#fff', background: 'linear-gradient(135deg, #ff7a3d 0%, #fc4c02 38%, #d9345f 72%, #1d3557 130%)' }}>
               <Typography variant="overline" sx={{ opacity: 0.9 }}>
-                {data.ownerFirstName} is running
+                {t('{name} is running', { name: data.ownerFirstName })}
               </Typography>
               <Typography variant="h3" component="h1" sx={{ fontSize: { xs: '1.8rem', sm: '2.6rem' } }}>
                 {data.from} → {data.to}
@@ -40,22 +41,22 @@ export default function PublicView({ token }: { token: string }) {
               <Typography sx={{ fontWeight: 800, fontSize: { xs: '2.2rem', sm: '3rem' }, mt: 1 }}>
                 <CountUp value={data.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />{' '}
                 <Box component="span" sx={{ fontSize: '1rem', fontWeight: 600, opacity: 0.85 }}>
-                  of {formatKm(data.totalM, 0)}
+                  {t('of {km}', { km: formatKm(data.totalM, 0) })}
                 </Box>
               </Typography>
               <Box sx={{ my: 1.5 }}>
                 <AnimatedBar value={(data.doneM / data.totalM) * 100} color="linear-gradient(90deg, #ffd3b8, #fff)" />
               </Box>
-              {data.place && <Typography sx={{ opacity: 0.92 }}>📍 Now near {data.place}</Typography>}
+              {data.place && <Typography sx={{ opacity: 0.92 }}>📍 {t('Now near {place}', { place: data.place })}</Typography>}
             </Box>
             <Card sx={{ overflow: 'hidden', p: 0 }}>
               <PublicMap data={data} />
             </Card>
             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-              Updated {formatDate(data.updatedAt, { dateStyle: 'medium', timeStyle: 'short' })} · Map © OpenStreetMap contributors
+              {t('Updated {when} · Map © OpenStreetMap contributors', { when: formatDate(data.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) })}
             </Typography>
             <Button variant="contained" href="/" sx={{ alignSelf: 'center' }}>
-              Start your own journey
+              {t('Start your own journey')}
             </Button>
           </Stack>
         )}

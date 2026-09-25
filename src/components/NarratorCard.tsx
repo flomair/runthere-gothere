@@ -36,6 +36,7 @@ import {
   useNarratorSettings,
 } from '../lib/narrator';
 import type { NarrateRequest, NarrationStyle } from '../lib/types';
+import { t } from '../lib/i18n';
 
 function useVoices() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -99,24 +100,24 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Narrator settings</DialogTitle>
+      <DialogTitle>{t('Narrator settings')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
           <Box>
-            <Typography variant="subtitle2">Your Anthropic API key</Typography>
+            <Typography variant="subtitle2">{t('Your Anthropic API key')}</Typography>
             <Typography variant="body2" color="text.secondary">
               {stored ? (
                 <>
-                  Saved: <code>{stored.masked}</code>
-                  {stored.workspaceId ? ` · workspace ${stored.workspaceId}` : ''}. Stored encrypted in your account and used only for your stories.
+                  {t('Saved:')} <code>{stored.masked}</code>
+                  {stored.workspaceId ? ` · workspace ${stored.workspaceId}` : ''}. {t('Stored encrypted in your account and used only for your stories.')}
                 </>
               ) : (
-                'Each person uses their own key (console.anthropic.com → API Keys). It is checked, then stored encrypted in your account.'
+                t('Each person uses their own key (console.anthropic.com → API Keys). It is checked, then stored encrypted in your account.')
               )}
             </Typography>
           </Box>
           <TextField
-            label={stored ? 'Replace with a new key' : 'API key'}
+            label={stored ? t('Replace with a new key') : t('API key')}
             type="password"
             value={key}
             onChange={(e) => setKey(e.target.value)}
@@ -124,26 +125,26 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
             autoComplete="off"
           />
           <TextField
-            label="Workspace ID (only for organization-level keys)"
+            label={t('Workspace ID (only for organization-level keys)')}
             value={workspace}
             onChange={(e) => setWorkspace(e.target.value)}
             placeholder="wrkspc_…"
             autoComplete="off"
             size="small"
-            helperText="Leave empty unless Anthropic says the key is not scoped to a workspace."
+            helperText={t('Leave empty unless Anthropic says the key is not scoped to a workspace.')}
           />
           <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
               loading={result.busy}
               disabled={!key.trim()}
-              onClick={() => run(() => saveAiKey(key, workspace), (m) => `Saved. The key works with ${m}.`)}
+              onClick={() => run(() => saveAiKey(key, workspace), (m) => t('Saved. The key works with {model}.', { model: m }))}
             >
-              Check &amp; save key
+              {t('Check & save key')}
             </Button>
             {stored && (
-              <Button variant="outlined" disabled={result.busy} onClick={() => run(testAiKey, (m) => `Your saved key works with ${m}.`)}>
-                Test saved key
+              <Button variant="outlined" disabled={result.busy} onClick={() => run(testAiKey, (m) => t('Your saved key works with {model}.', { model: m }))}>
+                {t('Test saved key')}
               </Button>
             )}
             {stored && (
@@ -151,13 +152,13 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
                 color="error"
                 disabled={result.busy}
                 onClick={async () => {
-                  if (!confirm('Remove your saved API key?')) return;
+                  if (!confirm(t('Remove your saved API key?'))) return;
                   await deleteAiKey();
                   setResult({ busy: false });
                   await qc.invalidateQueries({ queryKey: ['me'] });
                 }}
               >
-                Remove key
+                {t('Remove key')}
               </Button>
             )}
           </Stack>
@@ -166,16 +167,16 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
               {result.text}
             </Alert>
           )}
-          <TextField select label="Style" value={s.style} onChange={(e) => saveNarratorSettings({ style: e.target.value as NarrationStyle })}>
+          <TextField select label={t('Style')} value={s.style} onChange={(e) => saveNarratorSettings({ style: e.target.value as NarrationStyle })}>
             {Object.entries(STYLE_LABELS).map(([v, l]) => (
               <MenuItem key={v} value={v}>
-                {l}
+                {t(l)}
               </MenuItem>
             ))}
           </TextField>
           {list.length > 0 && (
-            <TextField select label="Voice for reading aloud (this device)" value={s.voiceURI ?? ''} onChange={(e) => saveNarratorSettings({ voiceURI: e.target.value || null })}>
-              <MenuItem value="">Browser default</MenuItem>
+            <TextField select label={t('Voice for reading aloud (this device)')} value={s.voiceURI ?? ''} onChange={(e) => saveNarratorSettings({ voiceURI: e.target.value || null })}>
+              <MenuItem value="">{t('Browser default')}</MenuItem>
               {list.map((v) => (
                 <MenuItem key={v.voiceURI} value={v.voiceURI}>
                   {v.name} ({v.lang})
@@ -185,7 +186,7 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
           )}
           <Box>
             <Typography variant="body2" gutterBottom>
-              Speaking rate: {s.rate.toFixed(1)}×
+              {t('Speaking rate: {rate}×', { rate: s.rate.toFixed(1) })}
             </Typography>
             <Slider min={0.6} max={1.6} step={0.1} value={s.rate} onChange={(_, v) => saveNarratorSettings({ rate: v as number })} />
           </Box>
@@ -193,7 +194,7 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
       </DialogContent>
       <DialogActions>
         <Button variant="contained" onClick={onClose}>
-          Done
+          {t('Done')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -296,10 +297,10 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
               {title}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {STYLE_LABELS[settings.style]} · written by Claude from live weather, Wikipedia{me?.features.googlePlaces ? ', Google places' : ''} and your progress
+              {t(STYLE_LABELS[settings.style])} · {me?.features.googlePlaces ? t('written by Claude from live weather, Wikipedia, Google places and your progress') : t('written by Claude from live weather, Wikipedia and your progress')}
             </Typography>
           </Box>
-          <Tooltip title="Narrator settings">
+          <Tooltip title={t('Narrator settings')}>
             <IconButton onClick={() => setSettingsOpen(true)} aria-label="narrator settings">
               <SettingsIcon />
             </IconButton>
@@ -312,8 +313,8 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
           </Alert>
         )}
         {!canRun && (
-          <Alert severity="info" sx={{ mb: 2 }} action={<Button onClick={() => setSettingsOpen(true)}>Add key</Button>}>
-            Add your Anthropic API key to get a written or spoken description of where you are.
+          <Alert severity="info" sx={{ mb: 2 }} action={<Button onClick={() => setSettingsOpen(true)}>{t('Add key')}</Button>}>
+            {t('Add your Anthropic API key to get a written or spoken description of where you are.')}
           </Alert>
         )}
 
@@ -325,23 +326,23 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
         ) : (
           canRun && (
             <Typography color="text.secondary" sx={{ mb: 1 }}>
-              Let the narrator describe this spot: what you'd see, the weather right now, and a detour into its history.
+              {t("Let the narrator describe this spot: what you'd see, the weather right now, and a detour into its history.")}
             </Typography>
           )
         )}
 
         <Stack direction="row" sx={{ gap: 1, mt: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
           <Button variant="contained" onClick={generate} loading={busy} startIcon={<AutoStoriesIcon />}>
-            {text ? 'Tell it again' : 'Tell me about this place'}
+            {text ? t('Tell it again') : t('Tell me about this place')}
           </Button>
           {text && !busy && 'speechSynthesis' in window && (
             <Button variant="outlined" onClick={speak} startIcon={speaking ? <StopIcon /> : <VolumeUpIcon />}>
-              {speaking ? 'Stop' : 'Read aloud'}
+              {speaking ? t('Stop') : t('Read aloud')}
             </Button>
           )}
           {savedAt && !busy && (
             <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
-              Written {formatDate(savedAt, { dateStyle: 'medium', timeStyle: 'short' })}
+              {t('Written {when}', { when: formatDate(savedAt, { dateStyle: 'medium', timeStyle: 'short' }) })}
             </Typography>
           )}
         </Stack>

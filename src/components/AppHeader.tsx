@@ -32,6 +32,8 @@ import { useInstallAction } from './InstallPrompt';
 import { usePush } from '../lib/push';
 import { vapidKey } from '../lib/firebase';
 import NotificationsIcon from '@mui/icons-material/NotificationsOutlined';
+import TranslateIcon from '@mui/icons-material/Translate';
+import { getLang, setLang, t } from '../lib/i18n';
 import StravaButton from './StravaButton';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 
@@ -90,7 +92,7 @@ export default function AppHeader() {
           </Typography>
         </Link>
 
-        <Tooltip title={effective === 'dark' ? 'Light mode' : 'Dark mode'}>
+        <Tooltip title={effective === 'dark' ? t('Light mode') : t('Dark mode')}>
           <IconButton onClick={() => setMode(effective === 'dark' ? 'light' : 'dark')} aria-label="toggle color mode">
             {effective === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
@@ -134,21 +136,21 @@ export default function AppHeader() {
                       <SyncIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText
-                      primary={syncing ? 'Syncing…' : 'Sync Strava now'}
-                      secondary={me.strava.lastSyncAt ? `last: ${formatDate(me.strava.lastSyncAt, { dateStyle: 'short', timeStyle: 'short' })}` : undefined}
+                      primary={syncing ? t('Syncing…') : t('Sync Strava now')}
+                      secondary={me.strava.lastSyncAt ? t('last: {when}', { when: formatDate(me.strava.lastSyncAt, { dateStyle: 'short', timeStyle: 'short' }) }) : undefined}
                     />
                   </MenuItem>,
                   <MenuItem
                     key="disconnect"
                     onClick={async () => {
                       close();
-                      if (confirm('Disconnect Strava? Runs already synced stay; new runs stop arriving.')) await strava.disconnect();
+                      if (confirm(t('Disconnect Strava? Runs already synced stay; new runs stop arriving.'))) await strava.disconnect();
                     }}
                   >
                     <ListItemIcon>
                       <LinkOffIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText primary="Disconnect Strava" secondary={[me.strava.athlete.firstname, me.strava.athlete.lastname].filter(Boolean).join(' ')} />
+                    <ListItemText primary={t('Disconnect Strava')} secondary={[me.strava.athlete.firstname, me.strava.athlete.lastname].filter(Boolean).join(' ')} />
                   </MenuItem>,
                 ]
               ) : me.features.strava ? (
@@ -160,7 +162,13 @@ export default function AppHeader() {
                 <ListItemIcon>
                   <StraightenIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText primary={getUnit() === 'km' ? 'Show miles' : 'Show kilometres'} secondary={`currently ${getUnit()}`} />
+                <ListItemText primary={getUnit() === 'km' ? t('Show miles') : t('Show kilometres')} secondary={t('currently {unit}', { unit: getUnit() })} />
+              </MenuItem>
+              <MenuItem onClick={() => setLang(getLang() === 'de' ? 'en' : 'de')}>
+                <ListItemIcon>
+                  <TranslateIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={getLang() === 'de' ? 'Switch to English' : 'Auf Deutsch umstellen'} secondary={getLang() === 'de' ? 'Sprache: Deutsch' : 'Language: English'} />
               </MenuItem>
               {(push.status !== 'unsupported' || me.user.isAdmin) && (
                 <MenuItem
@@ -180,15 +188,15 @@ export default function AppHeader() {
                     <NotificationsIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Notifications"
+                    primary={t('Notifications')}
                     secondary={
                       push.error ??
                       {
-                        on: 'On for this device',
-                        off: 'Milestones, kudos and comments',
-                        denied: 'Blocked in the browser settings',
-                        'needs-install': 'Install the app first (Share → Add to Home Screen)',
-                        unsupported: vapidKey ? 'Not supported in this browser' : 'Needs VITE_FIREBASE_VAPID_KEY (see README)',
+                        on: t('On for this device'),
+                        off: t('Milestones, kudos and comments'),
+                        denied: t('Blocked in the browser settings'),
+                        'needs-install': t('Install the app first (Share → Add to Home Screen)'),
+                        unsupported: vapidKey ? t('Not supported in this browser') : t('Needs VITE_FIREBASE_VAPID_KEY (see README)'),
                       }[push.status]
                     }
                     slotProps={{ secondary: { sx: { whiteSpace: 'normal', color: push.error ? 'error.main' : undefined } } }}
@@ -206,7 +214,7 @@ export default function AppHeader() {
                   <ListItemIcon>
                     <InstallMobileIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText primary="Install app" secondary="Home screen, full screen, works offline" />
+                  <ListItemText primary={t('Install app')} secondary={t('Home screen, full screen, works offline')} />
                 </MenuItem>
               )}
               {me.user.isAdmin && (
@@ -219,7 +227,7 @@ export default function AppHeader() {
                   <ListItemIcon>
                     <AdminIcon fontSize="small" />
                   </ListItemIcon>
-                  <ListItemText primary="Admin" secondary="Who can use the app, Strava sync" />
+                  <ListItemText primary={t('Admin')} secondary={t('Who can use the app, Strava sync')} />
                 </MenuItem>
               )}
               <Divider />
@@ -232,7 +240,7 @@ export default function AppHeader() {
                 <ListItemIcon>
                   <LogoutIcon fontSize="small" />
                 </ListItemIcon>
-                Sign out
+                {t('Sign out')}
               </MenuItem>
             </Menu>
           </>

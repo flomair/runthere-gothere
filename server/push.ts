@@ -1,3 +1,4 @@
+import { milestoneTitle } from '../shared/milestoneTitle.js';
 import type { Milestone } from '../shared/types.js';
 import { messaging } from './firebase.js';
 import { repo } from './repo.js';
@@ -57,14 +58,14 @@ const TEXT = {
   en: {
     one: (m: Milestone) => (m.kind === 'finish' ? 'You made it! Time to go there for real.' : m.place ? `${m.place.name}, ${m.place.context}` : 'A new chapter in your diary.'),
     many: (n: number) => `${n} new milestones in your diary`,
-    manyBody: (ms: Milestone[]) => ms.map((m) => m.title).join(' · '),
+    manyBody: (ms: Milestone[]) => ms.map((m) => milestoneTitle(m, 'en')).join(' · '),
     kudos: (who: string) => `${who} gave you kudos 👏`,
     comment: (who: string) => `${who} commented`,
   },
   de: {
     one: (m: Milestone) => (m.kind === 'finish' ? 'Geschafft! Zeit, wirklich hinzufahren.' : m.place ? `${m.place.name}, ${m.place.context}` : 'Ein neues Kapitel in deinem Tagebuch.'),
     many: (n: number) => `${n} neue Meilensteine in deinem Tagebuch`,
-    manyBody: (ms: Milestone[]) => ms.map((m) => m.title).join(' · '),
+    manyBody: (ms: Milestone[]) => ms.map((m) => milestoneTitle(m, 'de')).join(' · '),
     kudos: (who: string) => `${who} hat dir Kudos gegeben 👏`,
     comment: (who: string) => `${who} hat kommentiert`,
   },
@@ -78,7 +79,7 @@ export async function notifyMilestones(uid: string, created: Milestone[]): Promi
   const last = created[created.length - 1];
   const url = `/#/j/${encodeURIComponent(last.journeyId)}/diary`;
   if (created.length === 1) {
-    await notify(uid, { title: `${ICON[last.kind]} ${last.title}`, body: tx.one(last), url, tag: `ms-${last.journeyId}`, image: last.photo?.url });
+    await notify(uid, { title: `${ICON[last.kind]} ${milestoneTitle(last, tx === TEXT.de ? 'de' : 'en')}`, body: tx.one(last), url, tag: `ms-${last.journeyId}`, image: last.photo?.url });
   } else {
     await notify(uid, { title: `${ICON[last.kind]} ${tx.many(created.length)}`, body: tx.manyBody(created), url, tag: `ms-${last.journeyId}` });
   }

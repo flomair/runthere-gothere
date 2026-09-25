@@ -1,6 +1,7 @@
 import { Button, type ButtonProps } from '@mui/material';
 import { useState } from 'react';
 import { connectStrava } from '../lib/api';
+import { t } from '../lib/i18n';
 
 export default function StravaButton(props: ButtonProps) {
   const [busy, setBusy] = useState(false);
@@ -13,7 +14,7 @@ export default function StravaButton(props: ButtonProps) {
         try {
           await connectStrava();
         } catch (e) {
-          alert(`Could not start the Strava connection: ${e instanceof Error ? e.message : e}`);
+          alert(t('Could not start the Strava connection: {error}', { error: e instanceof Error ? e.message : String(e) }));
           setBusy(false);
         }
       }}
@@ -25,7 +26,7 @@ export default function StravaButton(props: ButtonProps) {
       }
       {...props}
     >
-      {props.children ?? 'Connect with Strava'}
+      {props.children ?? t('Connect with Strava')}
     </Button>
   );
 }

@@ -3,6 +3,7 @@ import { Box, Card, CardContent, Skeleton, Stack, Typography, useTheme } from '@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { profileStats } from '../../shared/geo';
 import { formatKm } from '../lib/format';
+import { locale, t } from '../lib/i18n';
 
 interface Props {
   profile?: { stepM: number; elevations: number[] };
@@ -69,11 +70,11 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
         <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
           <TerrainIcon color="primary" />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Elevation profile
+            {t('Elevation profile')}
           </Typography>
           {geo && (
             <Typography variant="body2" color="text.secondary">
-              ↑ {Math.round(geo.stats.ascentM).toLocaleString()} m · ↓ {Math.round(geo.stats.descentM).toLocaleString()} m · highest {Math.round(geo.stats.maxM)} m
+              ↑ {Math.round(geo.stats.ascentM).toLocaleString(locale())} m · ↓ {Math.round(geo.stats.descentM).toLocaleString(locale())} m · {t('highest {m} m', { m: Math.round(geo.stats.maxM) })}
             </Typography>
           )}
         </Stack>
@@ -81,7 +82,7 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
           <Skeleton variant="rounded" height={160} />
         ) : error ? (
           <Typography color="text.secondary" variant="body2">
-            Elevation data isn't available right now ({error}).
+            {t("Elevation data isn't available right now ({error}).", { error: String(error) })}
           </Typography>
         ) : geo ? (
           <Box ref={boxRef} sx={{ position: 'relative' }}>
@@ -91,7 +92,7 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
               width="100%"
               height={H}
               role="img"
-              aria-label={`Elevation profile: ${Math.round(geo.stats.ascentM)} m of climbing, highest point ${Math.round(geo.stats.maxM)} m`}
+              aria-label={t('Elevation profile: {up} m of climbing, highest point {max} m', { up: Math.round(geo.stats.ascentM), max: Math.round(geo.stats.maxM) })}
               style={{ display: 'block', touchAction: 'none' }}
               onPointerMove={(ev) => {
                 const r = svgRef.current!.getBoundingClientRect();
@@ -118,7 +119,7 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
               <line x1={geo.x(doneM)} x2={geo.x(doneM)} y1={PAD.t} y2={H - PAD.b} stroke="#fc4c02" strokeWidth={2} />
               <circle cx={geo.x(doneM)} cy={geo.y(geo.elevAt(doneM))} r={5} fill="#fc4c02" stroke="#fff" strokeWidth={2} />
               <text x={Math.min(W - 34, geo.x(doneM) + 6)} y={PAD.t + 12} fontSize={12} fill="#fc4c02" fontWeight={700}>
-                you
+                {t('you')}
               </text>
               {peekM != null && (
                 <circle cx={geo.x(peekM)} cy={geo.y(geo.elevAt(peekM))} r={5} fill="#6c5ce7" stroke="#fff" strokeWidth={2} />
@@ -157,7 +158,7 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
                   {Math.round(geo.elevAt(hover))} m
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  at {formatKm(hover)} · {hover > doneM ? `${formatKm(hover - doneM)} ahead` : 'behind you'}
+                  {t('at {km}', { km: formatKm(hover) })} · {hover > doneM ? t('{km} ahead', { km: formatKm(hover - doneM) }) : t('behind you')}
                 </Typography>
               </Box>
             )}

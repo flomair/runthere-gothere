@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from 'react';
 import { journeyStore } from '../lib/storage';
 import { type Journey, SPORT_TYPES } from '../lib/types';
+import { t } from '../lib/i18n';
 
 export default function JourneySettingsDialog({ open, onClose, journey }: { open: boolean; onClose: () => void; journey: Journey }) {
   const [name, setName] = useState(journey.name);
@@ -34,14 +35,14 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Journey settings</DialogTitle>
+      <DialogTitle>{t('Journey settings')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} />
-          <TextField label="Count activities from" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
+          <TextField label={t('Name')} value={name} onChange={(e) => setName(e.target.value)} />
+          <TextField label={t('Count activities from')} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              Activities that count
+              {t('Activities that count')}
             </Typography>
             <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
               {SPORT_TYPES.map((s) => {
@@ -49,7 +50,7 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
                 return (
                   <Chip
                     key={s.value}
-                    label={s.label}
+                    label={t(s.label)}
                     color={on ? 'primary' : 'default'}
                     variant={on ? 'filled' : 'outlined'}
                     onClick={() => setSportTypes((cur) => (on ? cur.filter((x) => x !== s.value) : [...cur, s.value]))}
@@ -58,14 +59,14 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
               })}
             </Stack>
           </Box>
-          <FormControlLabel control={<Switch checked={useStrava} onChange={(e) => setUseStrava(e.target.checked)} />} label="Use my Strava activities" />
+          <FormControlLabel control={<Switch checked={useStrava} onChange={(e) => setUseStrava(e.target.checked)} />} label={t('Use my Strava activities')} />
           <FormControlLabel
             control={<Switch checked={countElevation} onChange={(e) => setCountElevation(e.target.checked)} />}
             label={
               <Box>
-                Count climbing as distance
+                {t('Count climbing as distance')}
                 <Typography variant="caption" color="text.secondary" component="div">
-                  Every 100 m of ascent counts as 1 km extra ("effort km"). Hilly runs get you over the Alps faster.
+                  {t('Every 100 m of ascent counts as 1 km extra ("effort km"). Hilly runs get you over the Alps faster.')}
                 </Typography>
               </Box>
             }
@@ -73,7 +74,7 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('Cancel')}</Button>
         <Button
           variant="contained"
           disabled={!sportTypes.length || !startDate}
@@ -82,7 +83,7 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
             onClose();
           }}
         >
-          Save
+          {t('Save')}
         </Button>
       </DialogActions>
     </Dialog>

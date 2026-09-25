@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { useBookmarks } from '../lib/api';
 import type { Bookmark } from '../lib/types';
+import { t } from '../lib/i18n';
 
 type Item = Omit<Bookmark, 'id' | 'createdAt' | 'journeyId'>;
 
@@ -25,7 +26,7 @@ export default function BookmarkButton({ journeyId, item, size = 'small' }: { jo
     }
   };
   return (
-    <Tooltip title={saved ? 'Saved for the real trip · click to remove' : 'Save for the real trip'}>
+    <Tooltip title={saved ? t('Saved for the real trip · click to remove') : t('Save for the real trip')}>
       <IconButton size={size} onClick={toggle} disabled={busy || bm.isLoading} color={saved ? 'primary' : 'default'} aria-pressed={!!saved} aria-label="Save for the real trip">
         <motion.span key={saved ? 'on' : 'off'} initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 18 }} style={{ display: 'inline-flex' }}>
           {saved ? <BookmarkAddedIcon fontSize="small" /> : <BookmarkAddOutlinedIcon fontSize="small" />}

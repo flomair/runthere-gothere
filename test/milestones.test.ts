@@ -123,3 +123,14 @@ describe('milestone detection', () => {
     expect((await store.listMilestones('owner', 'j1')).every((m) => m.seen)).toBe(true);
   });
 });
+
+describe('milestoneTitle', () => {
+  it('renders stored English titles in German', async () => {
+    const { milestoneTitle } = await import('../shared/milestoneTitle');
+    expect(milestoneTitle({ kind: 'waypoint', title: 'Arrived in Dresden' }, 'de')).toBe('Angekommen in Dresden');
+    expect(milestoneTitle({ kind: 'distance', title: '1000 km on the road' }, 'de')).toBe('1.000 km unterwegs');
+    expect(milestoneTitle({ kind: 'border', title: 'Welcome to Czechia', countryCode: 'CZ' }, 'de')).toBe('Willkommen in Tschechien');
+    expect(milestoneTitle({ kind: 'finish', title: 'You made it to Vienna!' }, 'de')).toBe('Geschafft: Vienna!');
+    expect(milestoneTitle({ kind: 'halfway', title: 'Halfway there' }, 'en')).toBe('Halfway there');
+  });
+});

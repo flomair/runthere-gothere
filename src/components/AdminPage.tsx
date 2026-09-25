@@ -27,6 +27,7 @@ import { api, useMe } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
 import type { AdminUserRow } from '../lib/types';
+import { t } from '../lib/i18n';
 
 interface AllowlistResponse {
   admins: string[];
@@ -61,9 +62,9 @@ function Allowlist() {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6">Who can use the app</Typography>
+        <Typography variant="h6">{t('Who can use the app')}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Add the Google address a friend signs in with. They bring their own Strava account and their own Anthropic key.
+          {t('Add the Google address a friend signs in with. They bring their own Strava account and their own Anthropic key.')}
         </Typography>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -76,7 +77,7 @@ function Allowlist() {
         >
           <TextField size="small" fullWidth type="email" placeholder="friend@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           <Button type="submit" variant="contained" loading={busy} disabled={!email.trim()}>
-            Add
+            {t('Add')}
           </Button>
         </Stack>
         {error && (
@@ -92,7 +93,7 @@ function Allowlist() {
         <List dense sx={{ mt: 1 }}>
           {q.data?.admins.map((a) => (
             <ListItem key={a} secondaryAction={<Chip size="small" label="admin" />}>
-              <ListItemText primary={a} secondary="from ADMIN_EMAILS" />
+              <ListItemText primary={a} secondary={t('from ADMIN_EMAILS')} />
             </ListItem>
           ))}
           {q.data?.allowed.map((a) => (
@@ -103,7 +104,7 @@ function Allowlist() {
                   edge="end"
                   aria-label={`remove ${a.email}`}
                   onClick={async () => {
-                    if (!confirm(`Remove ${a.email}? They will lose access (their data stays).`)) return;
+                    if (!confirm(t('Remove {email}? They will lose access (their data stays).', { email: a.email }))) return;
                     await api(`/api/admin/allowlist?email=${encodeURIComponent(a.email)}`, { method: 'DELETE' });
                     await qc.invalidateQueries({ queryKey: ['allowlist'] });
                   }}
@@ -112,7 +113,7 @@ function Allowlist() {
                 </IconButton>
               }
             >
-              <ListItemText primary={a.email} secondary={`added ${formatDate(a.addedAt)} by ${a.addedBy}`} />
+              <ListItemText primary={a.email} secondary={t('added {date} by {who}', { date: formatDate(a.addedAt), who: a.addedBy })} />
             </ListItem>
           ))}
         </List>
@@ -132,17 +133,16 @@ function StravaWebhook() {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6">Automatic Strava sync</Typography>
+        <Typography variant="h6">{t('Automatic Strava sync')}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Strava notifies the app about new, edited and deleted activities of everyone who connected Strava. One registration covers all users. A daily
-          job catches anything that was missed.
+          {t('Strava notifies the app about new, edited and deleted activities of everyone who connected Strava. One registration covers all users. A daily job catches anything that was missed.')}
         </Typography>
         {q.isLoading ? (
-          <Typography color="text.secondary">Checking…</Typography>
+          <Typography color="text.secondary">{t('Checking…')}</Typography>
         ) : q.error ? (
           <Alert severity="error">{q.error.message}</Alert>
         ) : active ? (
-          <Alert severity="success">Active: Strava sends updates to {active.callback_url}</Alert>
+          <Alert severity="success">{t('Active: Strava sends updates to {url}', { url: active.callback_url })}</Alert>
         ) : (
           <Alert
             severity="warning"
@@ -163,11 +163,11 @@ function StravaWebhook() {
                   }
                 }}
               >
-                {other ? 'Move here' : 'Turn on'}
+                {other ? t('Move here') : t('Turn on')}
               </Button>
             }
           >
-            {other ? `Registered for another URL (${other.callback_url}).` : 'Not registered yet.'}
+            {other ? t('Registered for another URL ({url}).', { url: other.callback_url }) : t('Not registered yet.')}
           </Alert>
         )}
         {error && (
@@ -187,21 +187,21 @@ function Usage() {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6">Users & AI usage</Typography>
+        <Typography variant="h6">{t('Users & AI usage')}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Every AI call runs on that user's own key. {users.length} users · {total('stories')} stories · {total('postcards')} postcards · {total('coachPlans')} coach plans.
+          {t("Every AI call runs on that user's own key. {users} users · {stories} stories · {postcards} postcards · {coach} coach plans.", { users: users.length, stories: total('stories'), postcards: total('postcards'), coach: total('coachPlans') })}
         </Typography>
         {q.error && <Alert severity="error">{q.error.message}</Alert>}
         <TableContainer sx={{ overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>User</TableCell>
-                <TableCell>Last sign-in</TableCell>
+                <TableCell>{t('User')}</TableCell>
+                <TableCell>{t('Last sign-in')}</TableCell>
                 <TableCell>Strava</TableCell>
-                <TableCell>AI key</TableCell>
-                <TableCell align="right">Stories</TableCell>
-                <TableCell align="right">Postcards</TableCell>
+                <TableCell>{t('AI key')}</TableCell>
+                <TableCell align="right">{t('Stories')}</TableCell>
+                <TableCell align="right">{t('Postcards')}</TableCell>
                 <TableCell align="right">Coach</TableCell>
               </TableRow>
             </TableHead>
@@ -218,9 +218,9 @@ function Usage() {
                   </TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>{u.lastLoginAt ? formatDate(u.lastLoginAt) : '—'}</TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    {u.strava ? <Chip size="small" color="success" variant="outlined" label={u.strava.lastSyncAt ? `synced ${formatDate(u.strava.lastSyncAt)}` : 'connected'} /> : '—'}
+                    {u.strava ? <Chip size="small" color="success" variant="outlined" label={u.strava.lastSyncAt ? t('synced {date}', { date: formatDate(u.strava.lastSyncAt) }) : t('connected')} /> : '—'}
                   </TableCell>
-                  <TableCell>{u.hasAiKey ? <Chip size="small" color="success" variant="outlined" label="yes" /> : '—'}</TableCell>
+                  <TableCell>{u.hasAiKey ? <Chip size="small" color="success" variant="outlined" label={t('yes')} /> : '—'}</TableCell>
                   <TableCell align="right">{u.stats.stories ?? 0}</TableCell>
                   <TableCell align="right">{u.stats.postcards ?? 0}</TableCell>
                   <TableCell align="right">{u.stats.coachPlans ?? 0}</TableCell>
@@ -236,7 +236,7 @@ function Usage() {
 
 export default function AdminPage() {
   const { data: me } = useMe();
-  if (!me?.user.isAdmin) return <Alert severity="error">Admins only.</Alert>;
+  if (!me?.user.isAdmin) return <Alert severity="error">{t('Admins only.')}</Alert>;
   return (
     <Stack spacing={3}>
       <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
@@ -244,7 +244,7 @@ export default function AdminPage() {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4" component="h1">
-          Admin
+          {t('Admin')}
         </Typography>
       </Stack>
       <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>

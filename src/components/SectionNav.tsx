@@ -4,6 +4,7 @@ import ListIcon from '@mui/icons-material/FormatListBulleted';
 import MapIcon from '@mui/icons-material/MapOutlined';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import { Badge, BottomNavigation, BottomNavigationAction, Box, Paper, Tab, Tabs } from '@mui/material';
+import { t } from '../lib/i18n';
 
 export type Section = 'overview' | 'explore' | 'goals' | 'log';
 
@@ -33,11 +34,11 @@ export default function SectionNav({ value, onChange, onDiary, unseen }: { value
       >
         <Tabs value={value} onChange={(_, v) => onChange(v)} variant="scrollable" allowScrollButtonsMobile>
           {ITEMS.map((it) => (
-            <Tab key={it.value} value={it.value} label={it.label} icon={it.icon} iconPosition="start" />
+            <Tab key={it.value} value={it.value} label={t(it.label)} icon={it.icon} iconPosition="start" />
           ))}
           <Tab
             value="diary"
-            label="Diary"
+            label={t('Diary')}
             iconPosition="start"
             icon={
               <Badge color="primary" variant="dot" invisible={!unseen}>
@@ -70,14 +71,14 @@ export default function SectionNav({ value, onChange, onDiary, unseen }: { value
           showLabels
           value={value}
           onChange={(_, v) => (v === 'diary' ? onDiary() : onChange(v))}
-          sx={{ bgcolor: 'transparent', height: 62, '& .MuiBottomNavigationAction-root': { minWidth: 0, px: 0.5 }, '& .Mui-selected': { fontWeight: 700 } }}
+          sx={{ bgcolor: 'transparent', height: 62, '& .MuiBottomNavigationAction-root': { minWidth: 0, px: 0.25 }, '& .MuiBottomNavigationAction-label, & .MuiBottomNavigationAction-label.Mui-selected': { fontSize: '0.72rem', whiteSpace: 'nowrap' }, '& .Mui-selected': { fontWeight: 700 } }}
         >
           {ITEMS.map((it) => (
-            <BottomNavigationAction key={it.value} value={it.value} label={it.label} icon={it.icon} />
+            <BottomNavigationAction key={it.value} value={it.value} label={t(it.label)} icon={it.icon} />
           ))}
           <BottomNavigationAction
             value="diary"
-            label="Diary"
+            label={t('Diary')}
             icon={
               <Badge color="primary" badgeContent={unseen} invisible={!unseen}>
                 <AutoStoriesIcon />

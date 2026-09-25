@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { createShare, getShare, revokeShare, shareUrl } from '../lib/groups';
 import { renderShareCard } from '../lib/shareCard';
 import type { Journey } from '../lib/types';
+import { t } from '../lib/i18n';
 
 export default function ShareDialog({ open, onClose, journey, doneM, place }: { open: boolean; onClose: () => void; journey: Journey; doneM: number; place?: string }) {
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
@@ -25,8 +26,8 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
     setCardError(null);
     renderShareCard({
       name: journey.name,
-      from: journey.waypoints[0]?.name ?? 'Start',
-      to: journey.waypoints[journey.waypoints.length - 1]?.name ?? 'Finish',
+      from: journey.waypoints[0]?.name ?? t('Start'),
+      to: journey.waypoints[journey.waypoints.length - 1]?.name ?? t('Finish'),
       points: journey.route.points,
       totalM: journey.route.totalM,
       doneM,
@@ -36,7 +37,7 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
         url = URL.createObjectURL(blob);
         setCard({ blob, url });
       })
-      .catch((e) => setCardError(`Could not draw the share card: ${e instanceof Error ? e.message : e}`));
+      .catch((e) => setCardError(t('Could not draw the share card: {error}', { error: e instanceof Error ? e.message : String(e) })));
     getShare(journey.id).then(setToken).catch(() => setToken(null));
     return () => {
       if (url) URL.revokeObjectURL(url);
@@ -48,7 +49,7 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
-      <DialogTitle>Share your journey</DialogTitle>
+      <DialogTitle>{t('Share your journey')}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5}>
           <Box sx={{ display: 'grid', placeItems: 'center', bgcolor: 'action.hover', borderRadius: '16px', p: 2, minHeight: 280 }}>
@@ -63,7 +64,7 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
           <Stack direction="row" spacing={1}>
             {canShareFile && (
               <Button variant="contained" startIcon={<IosShareIcon />} fullWidth onClick={() => navigator.share({ files: [file!], title: journey.name }).catch(() => undefined)}>
-                Share image
+                {t('Share image')}
               </Button>
             )}
             <Button
@@ -76,17 +77,17 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
                 a.click();
               }}
             >
-              Download
+              {t('Download')}
             </Button>
           </Stack>
 
           <Divider />
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Public link
+              {t('Public link')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Anyone with the link can follow your progress live: route, position and distance. No sign-in needed, and no runs or personal details are shown.
+              {t('Anyone with the link can follow your progress live: route, position and distance. No sign-in needed, and no runs or personal details are shown.')}
             </Typography>
             {error && (
               <Alert severity="error" sx={{ mb: 1 }}>
@@ -106,7 +107,7 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
                       setCopied(true);
                     }}
                   >
-                    {copied ? 'Copied!' : 'Copy link'}
+                    {copied ? t('Copied!') : t('Copy link')}
                   </Button>
                   <Button
                     color="error"
@@ -116,7 +117,7 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
                       setToken(null);
                     }}
                   >
-                    Turn off link
+                    {t('Turn off link')}
                   </Button>
                 </Stack>
               </Stack>
@@ -135,11 +136,11 @@ export default function ShareDialog({ open, onClose, journey, doneM, place }: { 
                   }
                 }}
               >
-                Create public link
+                {t('Create public link')}
               </Button>
             )}
           </Box>
-          <Button onClick={onClose}>Done</Button>
+          <Button onClick={onClose}>{t('Done')}</Button>
         </Stack>
       </DialogContent>
     </Dialog>

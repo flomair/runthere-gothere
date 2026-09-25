@@ -5,6 +5,7 @@ import { formatKm } from '../lib/format';
 import { useGroupActions, useGroups } from '../lib/groups';
 import { navigate } from '../lib/nav';
 import { Stagger, StaggerItem } from './motion';
+import { t } from '../lib/i18n';
 
 /** Invitations and shared journeys on the start page. */
 export default function SharedJourneys() {
@@ -17,7 +18,7 @@ export default function SharedJourneys() {
     <Box>
       <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 2 }}>
         <GroupsIcon color="primary" />
-        <Typography variant="h5">With friends</Typography>
+        <Typography variant="h5">{t('With friends')}</Typography>
       </Stack>
       <Stack spacing={1.5} sx={{ mb: data.groups.length ? 2 : 0 }}>
         {data.invitations.map((inv) => (
@@ -28,7 +29,7 @@ export default function SharedJourneys() {
             action={
               <Stack direction="row" spacing={1}>
                 <Button color="inherit" onClick={() => actions.leave(inv.id)} disabled={busy === inv.id}>
-                  Decline
+                  {t('Decline')}
                 </Button>
                 <Button
                   variant="contained"
@@ -43,12 +44,12 @@ export default function SharedJourneys() {
                     }
                   }}
                 >
-                  Join
+                  {t('Join')}
                 </Button>
               </Stack>
             }
           >
-            <strong>{inv.from}</strong> invited you to a {inv.mode}: <strong>{inv.name}</strong> ({formatKm(inv.totalM, 0)})
+            <strong>{inv.from}</strong> {inv.mode === 'race' ? t('invited you to a race:') : t('invited you to a relay:')} <strong>{inv.name}</strong> ({formatKm(inv.totalM, 0)})
           </Alert>
         ))}
       </Stack>
@@ -60,7 +61,7 @@ export default function SharedJourneys() {
                 <CardActionArea onClick={() => navigate(`/g/${g.id}`)}>
                   <CardContent>
                     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Chip size="small" label={g.mode === 'race' ? '🏁 Race' : '🤝 Relay'} />
+                      <Chip size="small" label={g.mode === 'race' ? t('🏁 Race') : t('🤝 Relay')} />
                       <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: 12 } }}>
                         {g.memberUids.map((u) => (
                           <Avatar key={u} src={g.members[u]?.picture}>

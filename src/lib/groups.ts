@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 import type { FeedItem, Group, GroupMode, GroupStandings, PublicJourney } from './types';
+import { t } from './i18n';
 
 export type GroupSummary = Omit<Group, 'route'> & { totalM: number };
 export interface Invitation {
@@ -83,6 +84,6 @@ export const shareUrl = (token: string) => `${window.location.origin}/#/s/${toke
 export async function loadPublic(token: string): Promise<PublicJourney> {
   const res = await fetch(`/api/public?token=${encodeURIComponent(token)}`);
   const body = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((body as { error?: string } | null)?.error ?? 'This link is not available.');
+  if (!res.ok) throw new Error((body as { error?: string } | null)?.error ?? t('This link is not available.'));
   return body as PublicJourney;
 }

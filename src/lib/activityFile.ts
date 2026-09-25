@@ -1,4 +1,5 @@
 import { haversine } from '../../shared/geo';
+import { t } from './i18n';
 
 export interface ParsedRun {
   /** YYYY-MM-DD (local date of the start) */
@@ -25,7 +26,7 @@ function ascent(elev: number[]): number {
 }
 
 function fromPoints(pts: { lat: number; lon: number; ele?: number; time?: Date }[], name?: string): ParsedRun {
-  if (pts.length < 2) throw new Error('The file contains no track.');
+  if (pts.length < 2) throw new Error(t('The file contains no track.'));
   let dist = 0;
   for (let i = 1; i < pts.length; i++) dist += haversine([pts[i - 1].lat, pts[i - 1].lon], [pts[i].lat, pts[i].lon]);
   const times = pts.map((p) => p.time).filter((t): t is Date => !!t && !Number.isNaN(t.getTime()));
@@ -75,16 +76,16 @@ function parseTcx(doc: Document): ParsedRun {
     const start = laps[0].getAttribute('StartTime');
     return { date: isoLocalDate(start ? new Date(start) : new Date()), distanceM: Math.round(lapDist), movingTimeS: Math.round(lapTime) || undefined };
   }
-  throw new Error('No distance found in this TCX file.');
+  throw new Error(t('No distance found in this TCX file.'));
 }
 
 async function parseFit(buf: ArrayBuffer): Promise<ParsedRun> {
   const { Decoder, Stream } = await import('@garmin/fitsdk');
   const decoder = new Decoder(Stream.fromArrayBuffer(buf));
-  if (!decoder.isFIT()) throw new Error('Not a valid FIT file.');
+  if (!decoder.isFIT()) throw new Error(t('Not a valid FIT file.'));
   const { messages } = decoder.read();
   const s = (messages.sessionMesgs as Record<string, unknown>[] | undefined)?.[0];
-  if (!s || !Number(s.totalDistance)) throw new Error('No activity summary found in this FIT file.');
+  if (!s || !Number(s.totalDistance)) throw new Error(t('No activity summary found in this FIT file.'));
   const start = s.startTime instanceof Date ? s.startTime : new Date();
   return {
     date: isoLocalDate(start),
@@ -100,7 +101,7 @@ export async function parseActivityFile(file: File): Promise<ParsedRun> {
   const lower = file.name.toLowerCase();
   if (lower.endsWith('.fit')) return parseFit(await file.arrayBuffer());
   const doc = new DOMParser().parseFromString(await file.text(), 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length) throw new Error('Could not read this file.');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error(t('Could not read this file.'));
   if (lower.endsWith('.tcx') || doc.getElementsByTagName('TrainingCenterDatabase').length) return parseTcx(doc);
   return parseGpx(doc);
 }

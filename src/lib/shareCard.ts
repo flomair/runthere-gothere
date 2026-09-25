@@ -1,6 +1,7 @@
 import type { LatLon } from '../../shared/geo';
 import { cumulativeDistances, simplifyToMax, splitRoute } from '../../shared/geo';
 import { formatKm } from './format';
+import { t } from './i18n';
 
 export interface CardInput {
   name: string;
@@ -87,7 +88,7 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   ctx.textBaseline = 'alphabetic';
   ctx.font = '700 40px "Plus Jakarta Sans", Inter, sans-serif';
   ctx.globalAlpha = 0.85;
-  ctx.fillText('I’M RUNNING', 90, 150);
+  ctx.fillText(t('I’M RUNNING'), 90, 150);
   ctx.globalAlpha = 1;
   ctx.font = '800 84px "Plus Jakarta Sans", Inter, sans-serif';
   const title = c.name.length > 22 ? `${c.name.slice(0, 21)}…` : c.name;
@@ -97,8 +98,8 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   ctx.fillText(formatKm(c.doneM, 0), 90, 1085);
   ctx.font = '600 44px Inter, sans-serif';
   ctx.globalAlpha = 0.9;
-  ctx.fillText(`${Math.round((c.doneM / c.totalM) * 100)}% of ${c.from} → ${c.to}`, 94, 1150);
-  if (c.place) ctx.fillText(`📍 Now near ${c.place}`.slice(0, 48), 94, 1212);
+  ctx.fillText(t('{pct}% of {from} → {to}', { pct: Math.round((c.doneM / c.totalM) * 100), from: c.from, to: c.to }), 94, 1150);
+  if (c.place) ctx.fillText(`📍 ${t('Now near {place}', { place: c.place })}`.slice(0, 48), 94, 1212);
   ctx.globalAlpha = 1;
 
   try {
