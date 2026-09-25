@@ -3,29 +3,29 @@ body,
 #root {
   min-height: 100%;
 }
-/* colour tokens (see theme.ts): pine = brand, iris = you/progress, mint = destination */
+/* colour tokens (see theme.ts): indigo = brand ink, violet = you/progress, mint = destination */
 :root {
-  --rtgt-brand: #0F3B35;
-  --rtgt-you: #7E57C2;
-  --rtgt-you-strong: #6a45b0;
-  --rtgt-you-text: #5e3ea6;
+  --rtgt-brand: #232862;
+  --rtgt-you: #5B5BF0;
+  --rtgt-you-strong: #4a48d8;
+  --rtgt-you-text: #4543c9;
   --rtgt-dest: #149A80;
-  --rtgt-track: rgb(15 59 53 / 30%);
+  --rtgt-track: rgb(35 40 98 / 30%);
 }
 .dark {
-  --rtgt-brand: #e6efec;
-  --rtgt-you: #8f6fd6;
-  --rtgt-you-strong: #7e5ccb;
-  --rtgt-you-text: #d1c4e9;
+  --rtgt-brand: #E7E9FF;
+  --rtgt-you: #7c73f6;
+  --rtgt-you-strong: #6a62f0;
+  --rtgt-you-text: #C9C6FF;
   --rtgt-dest: #4fd1b5;
-  --rtgt-track: rgb(230 239 236 / 32%);
+  --rtgt-track: rgb(231 233 255 / 32%);
 }
 .leaflet-container {
   font: inherit;
-  background: #e4e9e6;
+  background: #e6e8f0;
 }
 .dark .leaflet-container {
-  background: #17211e;
+  background: #161a2a;
 }
 .rtgt-marker {
   display: grid;
@@ -34,16 +34,16 @@ body,
   height: 34px;
   border-radius: 50%;
   border: 2.5px solid #fff;
-  box-shadow: 0 2px 10px rgb(15 59 53 / 30%);
+  box-shadow: 0 2px 10px rgb(35 40 98 / 30%);
   color: #fff;
   font-size: 16px;
 }
 .rtgt-marker.me {
-  background: #7E57C2;
+  background: #5B5BF0;
   animation: rtgt-pulse 2s infinite;
 }
 .rtgt-marker.start {
-  background: #0F3B35;
+  background: #232862;
   width: 22px;
   height: 22px;
   font-size: 11px;
@@ -59,13 +59,13 @@ body,
 }
 @keyframes rtgt-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgb(126 87 194 / 50%);
+    box-shadow: 0 0 0 0 rgb(91 91 240 / 50%);
   }
   70% {
-    box-shadow: 0 0 0 16px rgb(126 87 194 / 0%);
+    box-shadow: 0 0 0 16px rgb(91 91 240 / 0%);
   }
   100% {
-    box-shadow: 0 0 0 0 rgb(126 87 194 / 0%);
+    box-shadow: 0 0 0 0 rgb(91 91 240 / 0%);
   }
 }
 

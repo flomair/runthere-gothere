@@ -1,15 +1,20 @@
 import { alpha, createTheme } from '@mui/material/styles';
 
 /**
- * Colour concept "Pine & Iris" – deliberately nothing like Strava orange:
- *  - Pine (deep evergreen) carries the brand: buttons, headings, hero surfaces.
- *  - Iris (violet) is reserved for *you*: your position, the covered route, progress.
+ * Colour concept "Widget": taken from the iOS countdown widget look.
+ *  - A blue → violet gradient (SKY → ORCHID) for hero surfaces and main buttons, with white text.
+ *  - Indigo for headings and icons on light backgrounds.
+ *  - Violet (between the two) is reserved for *you*: your position, the covered route, progress.
  *    Violet barely occurs on map tiles, so your route always stands out on the map.
  *  - Mint marks destinations, finishes and success.
- * Neutrals are cool paper tones so photos and maps stay the most colourful thing on screen.
+ * Rounded, heavy numerals (SF Pro Rounded on Apple devices, Nunito elsewhere) like the widget.
  */
-export const PINE = '#0F3B35';
-export const IRIS = '#7E57C2';
+export const SKY = '#3F7CF6';
+export const ORCHID = '#A259E8';
+export const WIDGET_GRADIENT = `linear-gradient(135deg, ${SKY} 0%, #6A67F0 52%, ${ORCHID} 100%)`;
+export const ROUNDED = 'ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, sans-serif';
+export const INDIGO = '#232862';
+export const VIOLET = '#5B5BF0';
 export const MINT = '#149A80';
 /** Selected run / rating stars. */
 export const HIGHLIGHT = '#E8B03A';
@@ -25,10 +30,9 @@ export const C = {
   heroBg: 'var(--rtgt-hero-bg)',
 };
 
-/** Deep pine surface with a faint iris and mint glow – used for the hero cards. */
-export const HERO_SURFACE = `radial-gradient(120% 90% at 100% 0%, ${alpha(IRIS, 0.28)} 0%, transparent 55%), radial-gradient(90% 80% at 0% 100%, ${alpha(MINT, 0.22)} 0%, transparent 60%), ${PINE}`;
+/** The widget gradient with a soft sheen – used for the hero cards. */
+export const HERO_SURFACE = `radial-gradient(90% 70% at 0% 0%, rgba(255,255,255,0.18) 0%, transparent 60%), ${WIDGET_GRADIENT}`;
 
-const SERIF = '"Fraunces", "Iowan Old Style", Georgia, serif';
 const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 export const theme = createTheme({
@@ -36,24 +40,24 @@ export const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: PINE, light: '#1E5249', dark: '#082722', contrastText: '#fff' },
-        secondary: { main: IRIS, light: '#9575CD', dark: '#6A45B0', contrastText: '#fff' },
+        primary: { main: INDIGO, light: '#383E86', dark: '#15183F', contrastText: '#fff' },
+        secondary: { main: VIOLET, light: '#7B7BF4', dark: '#4a48d8', contrastText: '#fff' },
         success: { main: MINT, contrastText: '#fff' },
         info: { main: '#3D6FA8' },
-        background: { default: '#F4F6F4', paper: '#FFFFFF' },
-        text: { primary: '#121A18', secondary: '#5B6763' },
-        divider: 'rgba(15, 59, 53, 0.09)',
-        action: { hover: 'rgba(15, 59, 53, 0.045)', selected: 'rgba(15, 59, 53, 0.08)' },
+        background: { default: '#F4F5FA', paper: '#FFFFFF' },
+        text: { primary: '#14162B', secondary: '#5F6480' },
+        divider: 'rgba(35, 40, 98, 0.09)',
+        action: { hover: 'rgba(35, 40, 98, 0.045)', selected: 'rgba(35, 40, 98, 0.08)' },
       },
     },
     dark: {
       palette: {
-        primary: { main: '#E6EFEC', light: '#FFFFFF', dark: '#C3D2CD', contrastText: '#0B1210' },
-        secondary: { main: '#B39DDB', light: '#D1C4E9', dark: '#9E86D0', contrastText: '#0B1210' },
-        success: { main: '#4FD1B5', contrastText: '#0B1210' },
+        primary: { main: '#E7E9FF', light: '#FFFFFF', dark: '#C5C8F0', contrastText: '#0A0B14' },
+        secondary: { main: '#9A8CFF', light: '#C9C6FF', dark: '#8479F3', contrastText: '#0A0B14' },
+        success: { main: '#4FD1B5', contrastText: '#0A0B14' },
         info: { main: '#7FA7D6' },
-        background: { default: '#0B1210', paper: '#121B18' },
-        text: { primary: '#E9F0ED', secondary: '#93A39E' },
+        background: { default: '#0A0B14', paper: '#141627' },
+        text: { primary: '#EDEEF8', secondary: '#9A9DB8' },
         divider: 'rgba(255, 255, 255, 0.08)',
         action: { hover: 'rgba(255, 255, 255, 0.05)', selected: 'rgba(255, 255, 255, 0.09)' },
       },
@@ -62,12 +66,12 @@ export const theme = createTheme({
   shape: { borderRadius: 14 },
   typography: {
     fontFamily: SANS,
-    h1: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.02em', fontVariationSettings: '"opsz" 144' },
-    h2: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.02em', fontVariationSettings: '"opsz" 144' },
-    h3: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.015em', fontVariationSettings: '"opsz" 96' },
-    h4: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.01em', fontVariationSettings: '"opsz" 72' },
-    h5: { fontWeight: 650, letterSpacing: '-0.015em' },
-    h6: { fontWeight: 650, letterSpacing: '-0.01em', fontSize: '1.1rem' },
+    h1: { fontFamily: ROUNDED, fontWeight: 800, letterSpacing: '-0.025em' },
+    h2: { fontFamily: ROUNDED, fontWeight: 800, letterSpacing: '-0.025em' },
+    h3: { fontFamily: ROUNDED, fontWeight: 800, letterSpacing: '-0.025em' },
+    h4: { fontFamily: ROUNDED, fontWeight: 800, letterSpacing: '-0.025em' },
+    h5: { fontFamily: ROUNDED, fontWeight: 750, letterSpacing: '-0.015em' },
+    h6: { fontFamily: ROUNDED, fontWeight: 750, letterSpacing: '-0.01em', fontSize: '1.1rem' },
     subtitle2: { fontWeight: 650 },
     overline: { fontWeight: 650, letterSpacing: '0.12em', fontSize: '0.7rem' },
     button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0' },
@@ -76,7 +80,7 @@ export const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: { WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale', fontFeatureSettings: '"cv11", "ss01"' },
-        '::selection': { background: alpha(IRIS, 0.22) },
+        '::selection': { background: alpha(VIOLET, 0.22) },
       },
     },
     MuiCard: {
@@ -86,7 +90,7 @@ export const theme = createTheme({
           borderRadius: 20,
           border: '1px solid',
           borderColor: theme.vars ? theme.vars.palette.divider : theme.palette.divider,
-          boxShadow: '0 1px 2px rgba(15, 59, 53, 0.04)',
+          boxShadow: '0 1px 2px rgba(35, 40, 98, 0.04)',
           backgroundImage: 'none',
           transition: 'box-shadow .3s ease, transform .3s ease, border-color .3s ease',
           ...theme.applyStyles('dark', { boxShadow: 'none' }),
@@ -106,14 +110,15 @@ export const theme = createTheme({
             { props: { size: 'small' }, style: { paddingInline: 12 } },
             { props: { size: 'large' }, style: { paddingInline: 24, minHeight: 48 } },
             { props: { variant: 'outlined' }, style: { borderColor: 'var(--mui-palette-divider)', '&:hover': { borderColor: 'currentColor' } } },
-            // main actions wear the avatar's violet: a solid pill with white text
+            // main actions wear the widget gradient: a pill with white text
             {
               props: { variant: 'contained', color: 'primary' },
               style: {
-                backgroundColor: 'var(--rtgt-you)',
+                backgroundImage: WIDGET_GRADIENT,
                 color: '#fff',
-                boxShadow: '0 6px 16px -8px rgb(126 87 194 / 70%)',
-                '&:hover': { backgroundColor: 'var(--rtgt-you-strong)', boxShadow: '0 8px 20px -8px rgb(126 87 194 / 75%)' },
+                boxShadow: '0 8px 18px -10px rgb(91 91 240 / 80%)',
+                '&:hover': { filter: 'brightness(1.06)', boxShadow: '0 10px 22px -10px rgb(91 91 240 / 85%)' },
+                '&.Mui-disabled': { backgroundImage: 'none' },
               },
             },
           ],
@@ -129,9 +134,9 @@ export const theme = createTheme({
           fontWeight: 600,
           borderRadius: 999,
           variants: [
-            // filled chips: soft violet tint, like the avatar
-            { props: { variant: 'filled', color: 'default' }, style: { backgroundColor: 'rgb(126 87 194 / 12%)', color: 'var(--rtgt-you-text)' } },
-            { props: { variant: 'filled', color: 'primary' }, style: { backgroundColor: 'var(--rtgt-you)', color: '#fff' } },
+            // filled chips: soft violet tint
+            { props: { variant: 'filled', color: 'default' }, style: { backgroundColor: 'rgb(91 91 240 / 12%)', color: 'var(--rtgt-you-text)' } },
+            { props: { variant: 'filled', color: 'primary' }, style: { backgroundImage: WIDGET_GRADIENT, color: '#fff' } },
           ],
         },
         outlined: { borderColor: 'var(--mui-palette-divider)' },

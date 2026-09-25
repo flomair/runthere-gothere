@@ -9,7 +9,7 @@ import { loadPublic } from '../lib/groups';
 import type { PublicJourney } from '../lib/types';
 import { AnimatedBar, CountUp } from './motion';
 import { t } from '../lib/i18n';
-import { IRIS, PINE } from '../theme';
+import { ROUNDED, VIOLET, INDIGO } from '../theme';
 import HeroSurface from './HeroSurface';
 
 /** Read-only journey page for public share links (no sign-in). */
@@ -40,7 +40,7 @@ export default function PublicView({ token }: { token: string }) {
               <Typography variant="h3" component="h1" sx={{ fontSize: { xs: '1.8rem', sm: '2.6rem' } }}>
                 {data.from} → {data.to}
               </Typography>
-              <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: { xs: '2.4rem', sm: '3.2rem' }, mt: 1 }}>
+              <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, fontSize: { xs: '2.4rem', sm: '3.2rem' }, mt: 1 }}>
                 <CountUp value={data.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />{' '}
                 <Box component="span" sx={{ fontSize: '1rem', fontWeight: 600, opacity: 0.85 }}>
                   {t('of {km}', { km: formatKm(data.totalM, 0) })}
@@ -74,9 +74,9 @@ function PublicMap({ data }: { data: PublicJourney }) {
   return (
     <MapContainer bounds={L.latLngBounds(data.points)} boundsOptions={{ padding: [30, 30] }} style={{ height: 420, width: '100%' }}>
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <Polyline positions={ahead} pathOptions={{ color: PINE, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
+      <Polyline positions={ahead} pathOptions={{ color: INDIGO, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
       <Polyline positions={done} pathOptions={{ color: '#fff', weight: 8, opacity: 0.9 }} />
-      <Polyline positions={done} pathOptions={{ color: IRIS, weight: 4.5 }} />
+      <Polyline positions={done} pathOptions={{ color: VIOLET, weight: 4.5 }} />
       <Marker position={data.position} icon={L.divIcon({ className: '', html: '<div class="rtgt-marker me">🏃</div>', iconSize: [34, 34], iconAnchor: [17, 17] })}>
         <Tooltip permanent direction="top" offset={[0, -18]}>
           {data.ownerFirstName}

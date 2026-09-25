@@ -10,7 +10,7 @@ import { t } from '../lib/i18n';
 
 const LOOK: Record<WorkoutType, { emoji: string; color: string; label: string }> = {
   easy: { emoji: '🙂', color: '#149A80', label: 'Easy' },
-  long: { emoji: '🛣️', color: '#7E57C2', label: 'Long' },
+  long: { emoji: '🛣️', color: '#5B5BF0', label: 'Long' },
   tempo: { emoji: '⚡', color: '#C2477A', label: 'Tempo' },
   intervals: { emoji: '🔁', color: '#C98F12', label: 'Intervals' },
   recovery: { emoji: '🌿', color: '#5C7A29', label: 'Recovery' },

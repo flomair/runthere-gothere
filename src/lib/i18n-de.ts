@@ -493,4 +493,5 @@ export const DE: Record<string, string> = {
   "Good afternoon": "Guten Tag",
   "Good evening": "Guten Abend",
   "{n} new": "{n} neu",
+  "days": "Tage",
 };

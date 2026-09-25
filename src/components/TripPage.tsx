@@ -28,7 +28,7 @@ import { navigate } from '../lib/nav';
 import type { Bookmark, Journey } from '../lib/types';
 import { Reveal, Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
-import { PINE } from '../theme';
+import { INDIGO } from '../theme';
 
 const KIND_ICON: Record<Bookmark['kind'], string> = { wiki: '📖', place: '⭐', spot: '📍' };
 
@@ -185,7 +185,7 @@ export default function TripPage({ journey }: { journey: Journey }) {
           </CardContent>
           <MapContainer bounds={bounds} boundsOptions={{ padding: [30, 30] }} style={{ height: 380, width: '100%' }} scrollWheelZoom={false}>
             <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Polyline positions={route} pathOptions={{ color: PINE, weight: 3, opacity: 0.7, dashArray: '2 7', lineCap: 'round' }} />
+            <Polyline positions={route} pathOptions={{ color: INDIGO, weight: 3, opacity: 0.7, dashArray: '2 7', lineCap: 'round' }} />
             <Marker position={[dlat, dlon]} icon={GOAL} />
             {bookmarks.map((b) => (
               <Marker key={b.id} position={[b.lat, b.lon]} icon={pin(KIND_ICON[b.kind])}>

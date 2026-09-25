@@ -2,7 +2,7 @@ import type { LatLon } from '../../shared/geo';
 import { cumulativeDistances, simplifyToMax, splitRoute } from '../../shared/geo';
 import { formatKm } from './format';
 import { t } from './i18n';
-import { IRIS, PINE } from '../theme';
+import { ORCHID, SKY } from '../theme';
 
 export interface CardInput {
   name: string;
@@ -32,19 +32,18 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   const ctx = canvas.getContext('2d')!;
   await document.fonts?.ready;
 
-  // ink surface with an ember and a lagoon glow, like the app's hero
-  ctx.fillStyle = PINE;
+  // the widget gradient: sky blue → violet → orchid, with a soft sheen
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, SKY);
+  bg.addColorStop(0.52, '#6A67F0');
+  bg.addColorStop(1, ORCHID);
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  for (const [x, y, r, color] of [
-    [W * 0.95, H * 0.05, W * 0.8, 'rgba(126, 87, 194,0.30)'],
-    [0, H, W * 0.8, 'rgba(20,154,128,0.22)'],
-  ] as const) {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, color);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-  }
+  const sheen = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.9);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.22)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, W, H);
 
   // route
   const pts = simplifyToMax(c.points, 800);
@@ -74,7 +73,7 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
     ctx.setLineDash([]);
   };
   stroke(ahead, 'rgba(255,255,255,0.4)', 8, [2, 20]);
-  stroke(done, IRIS, 12);
+  stroke(done, '#ffffff', 12);
   const me = P(done[done.length - 1]);
   ctx.beginPath();
   ctx.arc(me[0], me[1], 26, 0, Math.PI * 2);
@@ -82,21 +81,21 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   ctx.fill();
   ctx.beginPath();
   ctx.arc(me[0], me[1], 16, 0, Math.PI * 2);
-  ctx.fillStyle = IRIS;
+  ctx.fillStyle = '#5B5BF0';
   ctx.fill();
 
   // text
-  ctx.fillStyle = '#EEF4F1';
+  ctx.fillStyle = '#fff';
   ctx.textBaseline = 'alphabetic';
   ctx.font = '600 34px Inter, sans-serif';
   ctx.globalAlpha = 0.65;
   ctx.fillText(t('I’M RUNNING'), 90, 150);
   ctx.globalAlpha = 1;
-  ctx.font = '600 84px Fraunces, Georgia, serif';
+  ctx.font = '800 84px ui-rounded, "SF Pro Rounded", Nunito, sans-serif';
   const title = c.name.length > 22 ? `${c.name.slice(0, 21)}…` : c.name;
   ctx.fillText(title, 90, 250);
 
-  ctx.font = '600 150px Fraunces, Georgia, serif';
+  ctx.font = '900 150px ui-rounded, "SF Pro Rounded", Nunito, sans-serif';
   ctx.fillText(formatKm(c.doneM, 0), 90, 1085);
   ctx.font = '600 44px Inter, sans-serif';
   ctx.globalAlpha = 0.9;

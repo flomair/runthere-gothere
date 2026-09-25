@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { type LatLon, positionAt, sliceRoute } from '../../shared/geo';
 import { formatKm } from '../lib/format';
 import { useT } from '../lib/i18n';
-import { IRIS } from '../theme';
+import { VIOLET } from '../theme';
 
 export type FlyoverRange = 'last' | 'next' | 'all';
 
@@ -134,7 +134,7 @@ export default function Flyover3D({ open, onClose, points, cum, doneM, title, jo
       map.addSource('ahead', { type: 'geojson', data: line(sliceRoute(points, cum, doneM, totalM)) });
       map.addLayer({ id: 'ahead', type: 'line', source: 'ahead', paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [2, 2] } });
       map.addLayer({ id: 'done-casing', type: 'line', source: 'done', paint: { 'line-color': '#7a2400', 'line-width': 8, 'line-opacity': 0.5 } });
-      map.addLayer({ id: 'done', type: 'line', source: 'done', paint: { 'line-color': IRIS, 'line-width': 5 } });
+      map.addLayer({ id: 'done', type: 'line', source: 'done', paint: { 'line-color': VIOLET, 'line-width': 5 } });
       const el = document.createElement('div');
       el.className = 'rtgt-marker me';
       el.textContent = '🏃';
@@ -250,7 +250,7 @@ export default function Flyover3D({ open, onClose, points, cum, doneM, title, jo
                 }
                 setPlaying((p) => !p);
               }}
-              sx={{ color: '#fff', bgcolor: IRIS, '&:hover': { bgcolor: IRIS, filter: 'brightness(1.08)' } }}
+              sx={{ color: '#fff', bgcolor: VIOLET, '&:hover': { bgcolor: VIOLET, filter: 'brightness(1.08)' } }}
             >
               {playing ? <PauseIcon /> : t01 >= 1 ? <ReplayIcon /> : <PlayArrowIcon />}
             </IconButton>
@@ -274,7 +274,7 @@ export default function Flyover3D({ open, onClose, points, cum, doneM, title, jo
             size="small"
             value={range}
             onChange={(_, v) => v && setRange(v)}
-            sx={{ mt: 0.5, flexWrap: 'wrap', '& .MuiToggleButton-root': { color: 'rgb(255 255 255 / 75%)', borderColor: 'rgb(255 255 255 / 25%)', py: 0.25 }, '& .Mui-selected': { color: '#fff !important', bgcolor: 'rgb(126 87 194 / 55%) !important' } }}
+            sx={{ mt: 0.5, flexWrap: 'wrap', '& .MuiToggleButton-root': { color: 'rgb(255 255 255 / 75%)', borderColor: 'rgb(255 255 255 / 25%)', py: 0.25 }, '& .Mui-selected': { color: '#fff !important', bgcolor: 'rgb(91 91 240 / 55%) !important' } }}
           >
             <ToggleButton value="last" disabled={doneM <= 0}>
               {t('Last 20 km')}
