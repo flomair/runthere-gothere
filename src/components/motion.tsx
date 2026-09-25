@@ -97,7 +97,7 @@ export function AnimatedBar({ value, height = 10, color }: { value: number; heig
         style={{
           height: '100%',
           borderRadius: 99,
-          background: color ?? 'var(--rtgt-ember)',
+          background: color ?? 'var(--rtgt-you)',
         }}
       />
     </Box>

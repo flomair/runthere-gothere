@@ -13,7 +13,7 @@ import type { Journey } from '../lib/types';
 import { toUnit } from '../lib/units';
 import { CountUp } from './motion';
 import HeroSurface from './HeroSurface';
-import { EMBER } from '../theme';
+import { IRIS } from '../theme';
 import { locale, t } from '../lib/i18n';
 
 function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
@@ -29,7 +29,7 @@ function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={EMBER}
+          stroke={IRIS}
           strokeWidth={6}
           strokeLinecap="round"
           strokeDasharray={c}
@@ -99,7 +99,7 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
         )}
         <Tooltip title={t('Travel diary')}>
           <IconButton onClick={() => navigate(`/j/${journey.id}/diary`)} aria-label="travel diary" sx={{ color: 'inherit' }}>
-            <Badge badgeContent={unseen} invisible={!unseen} sx={{ '& .MuiBadge-badge': { bgcolor: EMBER, color: '#fff', fontWeight: 700 } }}>
+            <Badge badgeContent={unseen} invisible={!unseen} sx={{ '& .MuiBadge-badge': { bgcolor: IRIS, color: '#fff', fontWeight: 700 } }}>
               <AutoStoriesIcon />
             </Badge>
           </IconButton>

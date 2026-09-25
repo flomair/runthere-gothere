@@ -9,7 +9,7 @@ import { loadPublic } from '../lib/groups';
 import type { PublicJourney } from '../lib/types';
 import { AnimatedBar, CountUp } from './motion';
 import { t } from '../lib/i18n';
-import { EMBER, INK } from '../theme';
+import { IRIS, PINE } from '../theme';
 import HeroSurface from './HeroSurface';
 
 /** Read-only journey page for public share links (no sign-in). */
@@ -47,7 +47,7 @@ export default function PublicView({ token }: { token: string }) {
                 </Box>
               </Typography>
               <Box sx={{ my: 1.5 }}>
-                <AnimatedBar value={(data.doneM / data.totalM) * 100} color="var(--rtgt-ember)" />
+                <AnimatedBar value={(data.doneM / data.totalM) * 100} color="var(--rtgt-you)" />
               </Box>
               {data.place && <Typography sx={{ opacity: 0.92 }}>📍 {t('Now near {place}', { place: data.place })}</Typography>}
             </HeroSurface>
@@ -74,9 +74,9 @@ function PublicMap({ data }: { data: PublicJourney }) {
   return (
     <MapContainer bounds={L.latLngBounds(data.points)} boundsOptions={{ padding: [30, 30] }} style={{ height: 420, width: '100%' }}>
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <Polyline positions={ahead} pathOptions={{ color: INK, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
+      <Polyline positions={ahead} pathOptions={{ color: PINE, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
       <Polyline positions={done} pathOptions={{ color: '#fff', weight: 8, opacity: 0.9 }} />
-      <Polyline positions={done} pathOptions={{ color: EMBER, weight: 4.5 }} />
+      <Polyline positions={done} pathOptions={{ color: IRIS, weight: 4.5 }} />
       <Marker position={data.position} icon={L.divIcon({ className: '', html: '<div class="rtgt-marker me">🏃</div>', iconSize: [34, 34], iconAnchor: [17, 17] })}>
         <Tooltip permanent direction="top" offset={[0, -18]}>
           {data.ownerFirstName}

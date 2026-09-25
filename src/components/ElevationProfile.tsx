@@ -113,13 +113,13 @@ export default function ElevationProfile({ profile, loading, error, doneM, highl
               ))}
               {/* remaining part: neutral; covered part: ember (you) */}
               <path d={geo.area(0, geo.totalM)} fill={grid} opacity={0.9} />
-              <path d={geo.area(0, doneM)} opacity={0.22} style={{ fill: C.ember }} />
+              <path d={geo.area(0, doneM)} opacity={0.22} style={{ fill: C.you }} />
               {highlight && <path d={geo.area(highlight.fromM, highlight.toM)} fill={HIGHLIGHT} opacity={0.55} />}
               <path d={geo.line} fill="none" stroke={ink} strokeWidth={2} strokeLinejoin="round" opacity={0.7} />
               {/* you */}
-              <line x1={geo.x(doneM)} x2={geo.x(doneM)} y1={PAD.t} y2={H - PAD.b} strokeWidth={1.5} style={{ stroke: C.ember }} />
-              <circle cx={geo.x(doneM)} cy={geo.y(geo.elevAt(doneM))} r={5} strokeWidth={2} style={{ fill: C.ember, stroke: 'var(--mui-palette-background-paper)' }} />
-              <text x={Math.min(W - 34, geo.x(doneM) + 6)} y={PAD.t + 12} fontSize={12} fontWeight={650} style={{ fill: C.ember }}>
+              <line x1={geo.x(doneM)} x2={geo.x(doneM)} y1={PAD.t} y2={H - PAD.b} strokeWidth={1.5} style={{ stroke: C.you }} />
+              <circle cx={geo.x(doneM)} cy={geo.y(geo.elevAt(doneM))} r={5} strokeWidth={2} style={{ fill: C.you, stroke: 'var(--mui-palette-background-paper)' }} />
+              <text x={Math.min(W - 34, geo.x(doneM) + 6)} y={PAD.t + 12} fontSize={12} fontWeight={650} style={{ fill: C.you }}>
                 {t('you')}
               </text>
               {peekM != null && (

@@ -3,25 +3,25 @@ body,
 #root {
   min-height: 100%;
 }
-/* colour tokens (see theme.ts): ink = brand, ember = you/progress, lagoon = destination */
+/* colour tokens (see theme.ts): pine = brand, iris = you/progress, mint = destination */
 :root {
-  --rtgt-ink: #14223a;
-  --rtgt-ember: #ef5a28;
-  --rtgt-lagoon: #1f8f83;
-  --rtgt-track: rgb(20 34 58 / 30%);
+  --rtgt-brand: #0F3B35;
+  --rtgt-you: #6A4DF4;
+  --rtgt-dest: #149A80;
+  --rtgt-track: rgb(15 59 53 / 30%);
 }
 .dark {
-  --rtgt-ink: #e8ecf2;
-  --rtgt-ember: #ff7b4b;
-  --rtgt-lagoon: #4fc1b0;
-  --rtgt-track: rgb(232 236 242 / 32%);
+  --rtgt-brand: #e6efec;
+  --rtgt-you: #a08cff;
+  --rtgt-dest: #4fd1b5;
+  --rtgt-track: rgb(230 239 236 / 32%);
 }
 .leaflet-container {
   font: inherit;
-  background: #e9e6df;
+  background: #e4e9e6;
 }
 .dark .leaflet-container {
-  background: #1b222b;
+  background: #17211e;
 }
 .rtgt-marker {
   display: grid;
@@ -30,22 +30,22 @@ body,
   height: 34px;
   border-radius: 50%;
   border: 2.5px solid #fff;
-  box-shadow: 0 2px 10px rgb(20 34 58 / 30%);
+  box-shadow: 0 2px 10px rgb(15 59 53 / 30%);
   color: #fff;
   font-size: 16px;
 }
 .rtgt-marker.me {
-  background: #ef5a28;
+  background: #6A4DF4;
   animation: rtgt-pulse 2s infinite;
 }
 .rtgt-marker.start {
-  background: #14223a;
+  background: #0F3B35;
   width: 22px;
   height: 22px;
   font-size: 11px;
 }
 .rtgt-marker.goal {
-  background: #1f8f83;
+  background: #149A80;
 }
 .rtgt-marker.peek {
   background: #3d6fa8;
@@ -55,13 +55,13 @@ body,
 }
 @keyframes rtgt-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgb(239 90 40 / 50%);
+    box-shadow: 0 0 0 0 rgb(106 77 244 / 50%);
   }
   70% {
-    box-shadow: 0 0 0 16px rgb(239 90 40 / 0%);
+    box-shadow: 0 0 0 16px rgb(106 77 244 / 0%);
   }
   100% {
-    box-shadow: 0 0 0 0 rgb(239 90 40 / 0%);
+    box-shadow: 0 0 0 0 rgb(106 77 244 / 0%);
   }
 }
 

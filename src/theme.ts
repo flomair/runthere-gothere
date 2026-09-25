@@ -1,15 +1,16 @@
 import { alpha, createTheme } from '@mui/material/styles';
 
 /**
- * Colour concept, taken from the logo:
- *  - Ink (the navy footprints) carries the brand: text, buttons, hero surfaces.
- *  - Ember (the orange route) is reserved for *you*: your position, the covered route, progress.
- *  - Lagoon (the teal pin) marks destinations, finishes and success.
- * Neutrals are warm paper tones so photos and maps stay the most colourful thing on screen.
+ * Colour concept "Pine & Iris" – deliberately nothing like Strava orange:
+ *  - Pine (deep evergreen) carries the brand: buttons, headings, hero surfaces.
+ *  - Iris (violet) is reserved for *you*: your position, the covered route, progress.
+ *    Violet barely occurs on map tiles, so your route always stands out on the map.
+ *  - Mint marks destinations, finishes and success.
+ * Neutrals are cool paper tones so photos and maps stay the most colourful thing on screen.
  */
-export const INK = '#14223A';
-export const EMBER = '#EF5A28';
-export const LAGOON = '#1F8F83';
+export const PINE = '#0F3B35';
+export const IRIS = '#6A4DF4';
+export const MINT = '#149A80';
 /** Selected run / rating stars. */
 export const HIGHLIGHT = '#E8B03A';
 /** Only for the "Connect with Strava" button (Strava brand guidelines). */
@@ -17,15 +18,15 @@ export const STRAVA_ORANGE = '#fc4c02';
 
 /** Theme-aware tokens as CSS variables (see styles.css) for SVG, canvas-free markup and inline styles. */
 export const C = {
-  ink: 'var(--rtgt-ink)',
-  ember: 'var(--rtgt-ember)',
-  lagoon: 'var(--rtgt-lagoon)',
+  brand: 'var(--rtgt-brand)',
+  you: 'var(--rtgt-you)',
+  dest: 'var(--rtgt-dest)',
   track: 'var(--rtgt-track)',
   heroBg: 'var(--rtgt-hero-bg)',
 };
 
-/** Deep ink surface with a faint ember glow – used for the hero cards. */
-export const HERO_SURFACE = `radial-gradient(120% 90% at 100% 0%, ${alpha(EMBER, 0.28)} 0%, transparent 55%), radial-gradient(90% 80% at 0% 100%, ${alpha(LAGOON, 0.22)} 0%, transparent 60%), ${INK}`;
+/** Deep pine surface with a faint iris and mint glow – used for the hero cards. */
+export const HERO_SURFACE = `radial-gradient(120% 90% at 100% 0%, ${alpha(IRIS, 0.28)} 0%, transparent 55%), radial-gradient(90% 80% at 0% 100%, ${alpha(MINT, 0.22)} 0%, transparent 60%), ${PINE}`;
 
 const SERIF = '"Fraunces", "Iowan Old Style", Georgia, serif';
 const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
@@ -35,24 +36,24 @@ export const theme = createTheme({
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: INK, light: '#2B3B57', dark: '#0B1526', contrastText: '#fff' },
-        secondary: { main: EMBER, light: '#F47B52', dark: '#C9441A', contrastText: '#fff' },
-        success: { main: LAGOON, contrastText: '#fff' },
+        primary: { main: PINE, light: '#1E5249', dark: '#082722', contrastText: '#fff' },
+        secondary: { main: IRIS, light: '#8B74F7', dark: '#5236D6', contrastText: '#fff' },
+        success: { main: MINT, contrastText: '#fff' },
         info: { main: '#3D6FA8' },
-        background: { default: '#F7F5F0', paper: '#FFFFFF' },
-        text: { primary: '#14171C', secondary: '#5E6570' },
-        divider: 'rgba(20, 34, 58, 0.09)',
-        action: { hover: 'rgba(20, 34, 58, 0.045)', selected: 'rgba(20, 34, 58, 0.08)' },
+        background: { default: '#F4F6F4', paper: '#FFFFFF' },
+        text: { primary: '#121A18', secondary: '#5B6763' },
+        divider: 'rgba(15, 59, 53, 0.09)',
+        action: { hover: 'rgba(15, 59, 53, 0.045)', selected: 'rgba(15, 59, 53, 0.08)' },
       },
     },
     dark: {
       palette: {
-        primary: { main: '#E8ECF2', light: '#FFFFFF', dark: '#C5CCD6', contrastText: '#0D1117' },
-        secondary: { main: '#FF7B4B', light: '#FF9A74', dark: '#E0602F', contrastText: '#0D1117' },
-        success: { main: '#4FC1B0', contrastText: '#0D1117' },
+        primary: { main: '#E6EFEC', light: '#FFFFFF', dark: '#C3D2CD', contrastText: '#0B1210' },
+        secondary: { main: '#A08CFF', light: '#B9AAFF', dark: '#8570F0', contrastText: '#0B1210' },
+        success: { main: '#4FD1B5', contrastText: '#0B1210' },
         info: { main: '#7FA7D6' },
-        background: { default: '#0D1117', paper: '#151B23' },
-        text: { primary: '#ECEFF3', secondary: '#9AA3AE' },
+        background: { default: '#0B1210', paper: '#121B18' },
+        text: { primary: '#E9F0ED', secondary: '#93A39E' },
         divider: 'rgba(255, 255, 255, 0.08)',
         action: { hover: 'rgba(255, 255, 255, 0.05)', selected: 'rgba(255, 255, 255, 0.09)' },
       },
@@ -75,7 +76,7 @@ export const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: { WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale', fontFeatureSettings: '"cv11", "ss01"' },
-        '::selection': { background: alpha(EMBER, 0.22) },
+        '::selection': { background: alpha(IRIS, 0.22) },
       },
     },
     MuiCard: {
@@ -85,7 +86,7 @@ export const theme = createTheme({
           borderRadius: 20,
           border: '1px solid',
           borderColor: theme.vars ? theme.vars.palette.divider : theme.palette.divider,
-          boxShadow: '0 1px 2px rgba(20, 34, 58, 0.04)',
+          boxShadow: '0 1px 2px rgba(15, 59, 53, 0.04)',
           backgroundImage: 'none',
           transition: 'box-shadow .3s ease, transform .3s ease, border-color .3s ease',
           ...theme.applyStyles('dark', { boxShadow: 'none' }),

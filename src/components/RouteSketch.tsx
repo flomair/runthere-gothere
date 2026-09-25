@@ -50,7 +50,7 @@ export default function RouteSketch({ points, doneM, height = 120 }: { points: L
             <motion.path
               d={g.done}
               fill="none"
-              style={{ stroke: C.ember }}
+              style={{ stroke: C.you }}
               strokeWidth={3}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -60,13 +60,13 @@ export default function RouteSketch({ points, doneM, height = 120 }: { points: L
               transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
             />
           )}
-          <circle cx={g.start[0]} cy={g.start[1]} r={3.5} style={{ fill: C.ink }} />
-          <circle cx={g.end[0]} cy={g.end[1]} r={5} fill="none" strokeWidth={2} style={{ stroke: C.lagoon }} />
-          <circle cx={g.end[0]} cy={g.end[1]} r={1.8} style={{ fill: C.lagoon }} />
+          <circle cx={g.start[0]} cy={g.start[1]} r={3.5} style={{ fill: C.brand }} />
+          <circle cx={g.end[0]} cy={g.end[1]} r={5} fill="none" strokeWidth={2} style={{ stroke: C.dest }} />
+          <circle cx={g.end[0]} cy={g.end[1]} r={1.8} style={{ fill: C.dest }} />
           {g.me && (
             <>
-              <circle cx={g.me[0]} cy={g.me[1]} r={9} opacity={0.18} style={{ fill: C.ember }} />
-              <circle cx={g.me[0]} cy={g.me[1]} r={4.5} strokeWidth={2} style={{ fill: C.ember, stroke: 'var(--mui-palette-background-paper)' }} />
+              <circle cx={g.me[0]} cy={g.me[1]} r={9} opacity={0.18} style={{ fill: C.you }} />
+              <circle cx={g.me[0]} cy={g.me[1]} r={4.5} strokeWidth={2} style={{ fill: C.you, stroke: 'var(--mui-palette-background-paper)' }} />
             </>
           )}
         </svg>

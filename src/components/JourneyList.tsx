@@ -28,7 +28,7 @@ import StravaButton from './StravaButton';
 import { InstallBanner } from './InstallPrompt';
 import { t } from '../lib/i18n';
 import HeroSurface from './HeroSurface';
-import { EMBER, INK, LAGOON } from '../theme';
+import { IRIS, PINE, MINT } from '../theme';
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -49,7 +49,7 @@ function JourneyCard({ journey, connected, newPostcards }: { journey: Journey; c
   const from = journey.waypoints[0]?.name;
   const to = journey.waypoints[journey.waypoints.length - 1]?.name;
   return (
-    <Card sx={{ height: '100%', '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 18px 36px -24px rgba(20, 34, 58, 0.35)' } }}>
+    <Card sx={{ height: '100%', '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 18px 36px -24px rgba(15, 59, 53, 0.35)' } }}>
       <CardActionArea onClick={() => navigate(`/j/${journey.id}`)} sx={{ height: '100%' }}>
         <Box sx={{ m: 1, mb: 0, borderRadius: '14px', bgcolor: 'action.hover', color: 'text.primary' }}>
           <RouteSketch points={journey.route.points} doneM={p.doneM} height={130} />
@@ -156,7 +156,7 @@ export default function JourneyList() {
             <motion.path
               d="M10 140 C 80 140, 90 90, 160 90 S 260 110, 290 60 S 360 20, 390 16"
               fill="none"
-              stroke={EMBER}
+              stroke={IRIS}
               strokeWidth={4}
               strokeLinecap="round"
               strokeDasharray="2 12"
@@ -164,7 +164,7 @@ export default function JourneyList() {
               animate={{ pathLength: 1 }}
               transition={{ duration: 2.4, ease: 'easeInOut', delay: 0.3 }}
             />
-            <circle cx={390} cy={16} r={6} fill="none" stroke={LAGOON} strokeWidth={2.5} />
+            <circle cx={390} cy={16} r={6} fill="none" stroke={MINT} strokeWidth={2.5} />
           </Box>
           <Box sx={{ position: 'relative' }}>
             <Typography variant="h2" component="h1" sx={{ fontSize: { xs: '2.4rem', sm: '3.8rem' }, lineHeight: 1.02 }}>
@@ -175,7 +175,7 @@ export default function JourneyList() {
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 + i * 0.18 }}
-                  sx={{ display: 'block', fontStyle: i ? 'italic' : 'normal', color: i ? EMBER : 'inherit' }}
+                  sx={{ display: 'block', fontStyle: i ? 'italic' : 'normal', color: i ? IRIS : 'inherit' }}
                 >
                   {w}
                 </Box>
@@ -204,7 +204,7 @@ export default function JourneyList() {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => setDialog({ open: true })}
-                sx={{ bgcolor: '#F4F1EA', color: INK, '&:hover': { bgcolor: '#fff' } }}
+                sx={{ bgcolor: '#EEF4F1', color: PINE, '&:hover': { bgcolor: '#fff' } }}
               >
                 {t('Plan a journey')}
               </Button>
@@ -220,7 +220,7 @@ export default function JourneyList() {
                   transition={{ delay: 0.8 + i * 0.06 }}
                   label={p.name}
                   onClick={() => setDialog({ open: true, preset: p })}
-                  sx={{ flexShrink: 0, bgcolor: 'transparent', color: '#F4F1EA', border: '1px solid rgb(255 255 255 / 22%)', '&:hover': { bgcolor: 'rgb(255 255 255 / 8%)' } }}
+                  sx={{ flexShrink: 0, bgcolor: 'transparent', color: '#EEF4F1', border: '1px solid rgb(255 255 255 / 22%)', '&:hover': { bgcolor: 'rgb(255 255 255 / 8%)' } }}
                 />
               ))}
             </Stack>

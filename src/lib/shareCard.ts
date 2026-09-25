@@ -2,7 +2,7 @@ import type { LatLon } from '../../shared/geo';
 import { cumulativeDistances, simplifyToMax, splitRoute } from '../../shared/geo';
 import { formatKm } from './format';
 import { t } from './i18n';
-import { EMBER, INK } from '../theme';
+import { IRIS, PINE } from '../theme';
 
 export interface CardInput {
   name: string;
@@ -33,11 +33,11 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   await document.fonts?.ready;
 
   // ink surface with an ember and a lagoon glow, like the app's hero
-  ctx.fillStyle = INK;
+  ctx.fillStyle = PINE;
   ctx.fillRect(0, 0, W, H);
   for (const [x, y, r, color] of [
-    [W * 0.95, H * 0.05, W * 0.8, 'rgba(239,90,40,0.30)'],
-    [0, H, W * 0.8, 'rgba(31,143,131,0.22)'],
+    [W * 0.95, H * 0.05, W * 0.8, 'rgba(106, 77, 244,0.30)'],
+    [0, H, W * 0.8, 'rgba(20,154,128,0.22)'],
   ] as const) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, color);
@@ -74,7 +74,7 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
     ctx.setLineDash([]);
   };
   stroke(ahead, 'rgba(255,255,255,0.4)', 8, [2, 20]);
-  stroke(done, EMBER, 12);
+  stroke(done, IRIS, 12);
   const me = P(done[done.length - 1]);
   ctx.beginPath();
   ctx.arc(me[0], me[1], 26, 0, Math.PI * 2);
@@ -82,11 +82,11 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   ctx.fill();
   ctx.beginPath();
   ctx.arc(me[0], me[1], 16, 0, Math.PI * 2);
-  ctx.fillStyle = EMBER;
+  ctx.fillStyle = IRIS;
   ctx.fill();
 
   // text
-  ctx.fillStyle = '#F4F1EA';
+  ctx.fillStyle = '#EEF4F1';
   ctx.textBaseline = 'alphabetic';
   ctx.font = '600 34px Inter, sans-serif';
   ctx.globalAlpha = 0.65;

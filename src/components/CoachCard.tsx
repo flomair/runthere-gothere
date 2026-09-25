@@ -9,10 +9,10 @@ import { CountUp, Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
 
 const LOOK: Record<WorkoutType, { emoji: string; color: string; label: string }> = {
-  easy: { emoji: '🙂', color: '#1F8F83', label: 'Easy' },
-  long: { emoji: '🛣️', color: '#EF5A28', label: 'Long' },
+  easy: { emoji: '🙂', color: '#149A80', label: 'Easy' },
+  long: { emoji: '🛣️', color: '#6A4DF4', label: 'Long' },
   tempo: { emoji: '⚡', color: '#C2477A', label: 'Tempo' },
-  intervals: { emoji: '🔁', color: '#7A5AC8', label: 'Intervals' },
+  intervals: { emoji: '🔁', color: '#C98F12', label: 'Intervals' },
   recovery: { emoji: '🌿', color: '#5C7A29', label: 'Recovery' },
   rest: { emoji: '😴', color: '#8A94A3', label: 'Rest' },
   cross: { emoji: '🚴', color: '#3D6FA8', label: 'Cross' },

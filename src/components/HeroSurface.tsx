@@ -1,7 +1,7 @@
 import { Box, type BoxProps } from '@mui/material';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
-import { EMBER, HERO_SURFACE } from '../theme';
+import { IRIS, HERO_SURFACE } from '../theme';
 
 /** Concentric, slightly irregular rings, like contour lines on a hiking map. */
 function contourPaths(cx: number, cy: number, rings: number, seed: number): string[] {
@@ -20,7 +20,7 @@ function contourPaths(cx: number, cy: number, rings: number, seed: number): stri
 }
 
 /**
- * The app's signature surface: deep ink with a faint ember glow and a topographic texture.
+ * The app's signature surface: deep pine with a faint iris glow and a topographic texture.
  * Used for the journey hero, the start page and shared/public journey headers.
  */
 export default function HeroSurface({ children, sx, seed = 1, ...rest }: BoxProps & { seed?: number }) {
@@ -35,9 +35,9 @@ export default function HeroSurface({ children, sx, seed = 1, ...rest }: BoxProp
         position: 'relative',
         overflow: 'hidden',
         borderRadius: { xs: '24px', sm: '28px' },
-        color: '#F4F1EA',
+        color: '#EEF4F1',
         background: HERO_SURFACE,
-        boxShadow: '0 24px 48px -28px rgba(20, 34, 58, 0.55)',
+        boxShadow: '0 24px 48px -28px rgba(15, 59, 53, 0.55)',
         isolation: 'isolate',
         ...sx,
       }}
@@ -66,7 +66,7 @@ export default function HeroSurface({ children, sx, seed = 1, ...rest }: BoxProp
           top: '-45%',
           right: '-15%',
           zIndex: -1,
-          background: `radial-gradient(closest-side, ${EMBER}33, transparent)`,
+          background: `radial-gradient(closest-side, ${IRIS}33, transparent)`,
           pointerEvents: 'none',
         }}
       />
