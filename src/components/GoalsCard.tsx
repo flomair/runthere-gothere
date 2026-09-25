@@ -278,7 +278,7 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </Stack>
-                <AnimatedBar value={frac * 100} height={8} color={c.achieved ? 'linear-gradient(90deg, #4caf50, #2e7d32)' : undefined} />
+                <AnimatedBar value={frac * 100} height={8} color={c.achieved ? 'var(--rtgt-lagoon)' : undefined} />
               </Box>
             );
           })}

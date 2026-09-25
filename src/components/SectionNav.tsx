@@ -41,7 +41,7 @@ export default function SectionNav({ value, onChange, onDiary, unseen }: { value
             label={t('Diary')}
             iconPosition="start"
             icon={
-              <Badge color="primary" variant="dot" invisible={!unseen}>
+              <Badge color="secondary" variant="dot" invisible={!unseen}>
                 <AutoStoriesIcon />
               </Badge>
             }
@@ -80,7 +80,7 @@ export default function SectionNav({ value, onChange, onDiary, unseen }: { value
             value="diary"
             label={t('Diary')}
             icon={
-              <Badge color="primary" badgeContent={unseen} invisible={!unseen}>
+              <Badge color="secondary" badgeContent={unseen} invisible={!unseen}>
                 <AutoStoriesIcon />
               </Badge>
             }

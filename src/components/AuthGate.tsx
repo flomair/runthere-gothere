@@ -24,7 +24,7 @@ function Screen({ children }: { children: ReactNode }) {
         />
         <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
           Run There
-          <Box component="span" sx={{ color: 'primary.main', mx: 0.75 }}>
+          <Box component="span" sx={{ color: 'secondary.main', mx: 0.75 }}>
             ·
           </Box>
           Go There

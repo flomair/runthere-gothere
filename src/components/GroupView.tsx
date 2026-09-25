@@ -35,8 +35,11 @@ import type { FeedItem, Standing } from '../lib/types';
 import { AnimatedBar, CountUp, Stagger, StaggerItem } from './motion';
 import { getLang, t } from '../lib/i18n';
 import { milestoneTitle } from '../../shared/milestoneTitle';
+import HeroSurface from './HeroSurface';
+import { INK } from '../theme';
 
-const COLORS = ['#fc4c02', '#1d3557', '#2a9d8f', '#8e44ad', '#e9c46a', '#e76f51', '#457b9d', '#6a994e'];
+// runner colours: ember first (usually you), then calm, well-separated tones
+const COLORS = ['#EF5A28', '#3D6FA8', '#1F8F83', '#9B5DE5', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
 const initials = (n: string) => n.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
 
 function avatarIcon(s: Standing, color: string, leader: boolean) {
@@ -59,7 +62,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
     <Card>
       <CardContent sx={{ pb: '12px !important' }}>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start' }}>
-          <Avatar src={item.picture} sx={{ width: 40, height: 40, bgcolor: 'secondary.main' }}>
+          <Avatar src={item.picture} sx={{ width: 40, height: 40, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
             {initials(item.name)}
           </Avatar>
           <Box sx={{ minWidth: 0, flexGrow: 1 }}>
@@ -81,7 +84,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
                 onClick={() => kudos(groupId, item.id)}
                 component={motion.button}
                 whileTap={{ scale: 0.85 }}
-                sx={{ minWidth: 0, px: 1.25, bgcolor: mine ? 'rgba(252,76,2,0.12)' : 'transparent', color: mine ? 'primary.main' : 'text.secondary' }}
+                sx={{ minWidth: 0, px: 1.25, bgcolor: mine ? 'rgba(239,90,40,0.12)' : 'transparent', color: mine ? 'secondary.main' : 'text.secondary' }}
               >
                 <motion.span key={String(mine)} initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 15 }} style={{ marginRight: 6 }}>
                   👏
@@ -175,12 +178,7 @@ export default function GroupView({ id }: { id: string }) {
 
   return (
     <Stack spacing={2.5} sx={{ pb: 4 }}>
-      <Box
-        component={motion.div}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        sx={{ borderRadius: { xs: '26px', sm: '32px' }, p: { xs: 2, sm: 3.5 }, color: '#fff', background: 'linear-gradient(135deg, #1d3557 0%, #3a3f8f 45%, #d9345f 100%)', boxShadow: '0 20px 40px -22px rgba(29,53,87,.7)' }}
-      >
+      <HeroSurface sx={{ p: { xs: 2, sm: 3.5 } }} seed={3}>
         <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5, ml: -1, mb: 1 }}>
           <IconButton onClick={() => navigate('/')} sx={{ color: 'inherit' }} aria-label="back">
             <ArrowBackIcon />
@@ -218,10 +216,10 @@ export default function GroupView({ id }: { id: string }) {
         </Stack>
         {team && (
           <Box sx={{ mt: 1.5 }}>
-            <AnimatedBar value={(team.doneM / g.route.totalM) * 100} color="linear-gradient(90deg, #ffd3b8, #fff)" />
+            <AnimatedBar value={(team.doneM / g.route.totalM) * 100} color="var(--rtgt-ember)" />
           </Box>
         )}
-      </Box>
+      </HeroSurface>
 
       {g.invitedEmails.length > 0 && (
         <Typography variant="body2" color="text.secondary">
@@ -233,7 +231,7 @@ export default function GroupView({ id }: { id: string }) {
         <Card sx={{ overflow: 'hidden', p: 0 }}>
           <MapContainer bounds={bounds} boundsOptions={{ padding: [30, 30] }} style={{ height: 420, width: '100%' }} scrollWheelZoom>
             <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Polyline positions={g.route.points as LatLon[]} pathOptions={{ color: '#1d3557', weight: 4, opacity: 0.5, dashArray: '6 8' }} />
+            <Polyline positions={g.route.points as LatLon[]} pathOptions={{ color: INK, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
             {race
               ? standings.map((s, i) => (
                   <Marker key={s.uid} position={s.point} icon={avatarIcon(s, colorOf(s.uid), i === 0 && s.doneM > 0)} zIndexOffset={1000 - i}>
@@ -276,7 +274,7 @@ export default function GroupView({ id }: { id: string }) {
                       <AnimatedBar
                         value={race ? (s.doneM / g.route.totalM) * 100 : (s.distanceM / teamTotal) * 100}
                         height={7}
-                        color={`linear-gradient(90deg, ${colorOf(s.uid)}, ${colorOf(s.uid)}cc)`}
+                        color={colorOf(s.uid)}
                       />
                       <Typography variant="caption" color="text.secondary">
                         {s.finishedOn ? `🏁 ${t('arrived {date}', { date: formatDate(s.finishedOn) })}` : t('{km} / week', { km: formatKm(s.weeklyAvgM) })}

@@ -486,4 +486,11 @@ export const DE: Record<string, string> = {
   "The browser did not return a push token.": "Der Browser hat kein Push-Token geliefert.",
   "Could not start the Strava connection: {error}": "Die Strava-Verbindung konnte nicht gestartet werden: {error}",
   "best: 1 week": "Bestwert: 1 Woche",
+  "Where to next?": "Wohin als Nächstes?",
+  "New journey": "Neue Reise",
+  "Good night": "Gute Nacht",
+  "Good morning": "Guten Morgen",
+  "Good afternoon": "Guten Tag",
+  "Good evening": "Guten Abend",
+  "{n} new": "{n} neu",
 };

@@ -2,6 +2,7 @@ import type { LatLon } from '../../shared/geo';
 import { cumulativeDistances, simplifyToMax, splitRoute } from '../../shared/geo';
 import { formatKm } from './format';
 import { t } from './i18n';
+import { EMBER, INK } from '../theme';
 
 export interface CardInput {
   name: string;
@@ -31,18 +32,19 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   const ctx = canvas.getContext('2d')!;
   await document.fonts?.ready;
 
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#ff7a3d');
-  bg.addColorStop(0.3, '#fc4c02');
-  bg.addColorStop(0.62, '#d9345f');
-  bg.addColorStop(1, '#3b2d63');
-  ctx.fillStyle = bg;
+  // ink surface with an ember and a lagoon glow, like the app's hero
+  ctx.fillStyle = INK;
   ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W * 0.85, H * 0.12, 0, W * 0.85, H * 0.12, W * 0.7);
-  glow.addColorStop(0, 'rgba(255,255,255,0.28)');
-  glow.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
+  for (const [x, y, r, color] of [
+    [W * 0.95, H * 0.05, W * 0.8, 'rgba(239,90,40,0.30)'],
+    [0, H, W * 0.8, 'rgba(31,143,131,0.22)'],
+  ] as const) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   // route
   const pts = simplifyToMax(c.points, 800);
@@ -71,8 +73,8 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
     ctx.stroke();
     ctx.setLineDash([]);
   };
-  stroke(ahead, 'rgba(255,255,255,0.45)', 10, [2, 22]);
-  stroke(done, '#ffffff', 16);
+  stroke(ahead, 'rgba(255,255,255,0.4)', 8, [2, 20]);
+  stroke(done, EMBER, 12);
   const me = P(done[done.length - 1]);
   ctx.beginPath();
   ctx.arc(me[0], me[1], 26, 0, Math.PI * 2);
@@ -80,21 +82,21 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   ctx.fill();
   ctx.beginPath();
   ctx.arc(me[0], me[1], 16, 0, Math.PI * 2);
-  ctx.fillStyle = '#fc4c02';
+  ctx.fillStyle = EMBER;
   ctx.fill();
 
   // text
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#F4F1EA';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = '700 40px "Plus Jakarta Sans", Inter, sans-serif';
-  ctx.globalAlpha = 0.85;
+  ctx.font = '600 34px Inter, sans-serif';
+  ctx.globalAlpha = 0.65;
   ctx.fillText(t('I’M RUNNING'), 90, 150);
   ctx.globalAlpha = 1;
-  ctx.font = '800 84px "Plus Jakarta Sans", Inter, sans-serif';
+  ctx.font = '600 84px Fraunces, Georgia, serif';
   const title = c.name.length > 22 ? `${c.name.slice(0, 21)}…` : c.name;
   ctx.fillText(title, 90, 250);
 
-  ctx.font = '800 150px "Plus Jakarta Sans", Inter, sans-serif';
+  ctx.font = '600 150px Fraunces, Georgia, serif';
   ctx.fillText(formatKm(c.doneM, 0), 90, 1085);
   ctx.font = '600 44px Inter, sans-serif';
   ctx.globalAlpha = 0.9;
@@ -112,7 +114,7 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   } catch {
     /* logo is decorative */
   }
-  ctx.font = '700 34px "Plus Jakarta Sans", Inter, sans-serif';
+  ctx.font = '600 32px Inter, sans-serif';
   ctx.fillText('Run There · Go There', 90, H - 110);
 
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));

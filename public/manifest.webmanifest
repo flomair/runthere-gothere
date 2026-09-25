@@ -12,8 +12,8 @@
     "minimal-ui"
   ],
   "orientation": "any",
-  "background_color": "#f6f5f2",
-  "theme_color": "#fc4c02",
+  "background_color": "#F7F5F0",
+  "theme_color": "#14223A",
   "categories": [
     "sports",
     "health",

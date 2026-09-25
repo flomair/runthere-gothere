@@ -75,7 +75,7 @@ export function InstallBanner() {
       <AnimatePresence>
         {show && (
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
-            <Card sx={{ position: 'relative', background: 'linear-gradient(135deg, color-mix(in srgb, var(--mui-palette-primary-main) 14%, var(--mui-palette-background-paper)), var(--mui-palette-background-paper))' }}>
+            <Card sx={{ position: 'relative' }}>
               <CardContent sx={{ display: 'flex', gap: 1.5, alignItems: 'center', '&:last-child': { pb: 2 } }}>
                 <Box component="img" src="/icons/icon-192.png" alt="" sx={{ width: 52, height: 52, borderRadius: '14px', boxShadow: 2, flexShrink: 0 }} />
                 <Box sx={{ flexGrow: 1, minWidth: 0, pr: 3 }}>

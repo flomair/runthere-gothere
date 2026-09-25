@@ -288,7 +288,7 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
   };
 
   return (
-    <Card sx={{ borderColor: 'primary.main', borderWidth: 1.5 }}>
+    <Card>
       <CardContent>
         <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 1.5 }}>
           <AutoStoriesIcon color="primary" />

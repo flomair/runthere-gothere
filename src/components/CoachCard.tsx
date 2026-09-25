@@ -9,13 +9,13 @@ import { CountUp, Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
 
 const LOOK: Record<WorkoutType, { emoji: string; color: string; label: string }> = {
-  easy: { emoji: '🙂', color: '#2a9d8f', label: 'Easy' },
-  long: { emoji: '🛣️', color: '#fc4c02', label: 'Long' },
-  tempo: { emoji: '⚡', color: '#d9345f', label: 'Tempo' },
-  intervals: { emoji: '🔁', color: '#8e44ad', label: 'Intervals' },
-  recovery: { emoji: '🌿', color: '#6a994e', label: 'Recovery' },
-  rest: { emoji: '😴', color: '#8d99ae', label: 'Rest' },
-  cross: { emoji: '🚴', color: '#457b9d', label: 'Cross' },
+  easy: { emoji: '🙂', color: '#1F8F83', label: 'Easy' },
+  long: { emoji: '🛣️', color: '#EF5A28', label: 'Long' },
+  tempo: { emoji: '⚡', color: '#C2477A', label: 'Tempo' },
+  intervals: { emoji: '🔁', color: '#7A5AC8', label: 'Intervals' },
+  recovery: { emoji: '🌿', color: '#5C7A29', label: 'Recovery' },
+  rest: { emoji: '😴', color: '#8A94A3', label: 'Rest' },
+  cross: { emoji: '🚴', color: '#3D6FA8', label: 'Cross' },
 };
 
 export default function CoachCard({ journeyId }: { journeyId: string }) {

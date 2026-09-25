@@ -97,8 +97,7 @@ export function AnimatedBar({ value, height = 10, color }: { value: number; heig
         style={{
           height: '100%',
           borderRadius: 99,
-          background: color ?? 'linear-gradient(90deg, #ff8a4c 0%, #fc4c02 55%, #e8336b 100%)',
-          boxShadow: '0 0 12px rgba(252, 76, 2, 0.35)',
+          background: color ?? 'var(--rtgt-ember)',
         }}
       />
     </Box>

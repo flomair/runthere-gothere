@@ -4,6 +4,7 @@ import { LayersControl, MapContainer, Marker, Polyline, TileLayer, Tooltip, useM
 import { type LatLon, haversine, positionAt, sliceRoute, splitRoute } from '../../shared/geo';
 import type { Waypoint } from '../lib/types';
 import { t } from '../lib/i18n';
+import { EMBER, HIGHLIGHT, INK } from '../theme';
 
 const icon = (cls: string, html = '') =>
   L.divIcon({ className: '', html: `<div class="rtgt-marker ${cls}">${html}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
@@ -114,9 +115,10 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
         </LayersControl.BaseLayer>
       </LayersControl>
 
-      <Polyline positions={ahead} pathOptions={{ color: '#1d3557', weight: 4, opacity: 0.55, dashArray: '6 8' }} />
-      <Polyline positions={done} pathOptions={{ color: '#fc4c02', weight: 6, opacity: 0.95 }} />
-      {hl.length >= 2 && <Polyline positions={hl} pathOptions={{ color: '#f4b400', weight: 9, opacity: 0.9, lineCap: 'round' }} />}
+      <Polyline positions={ahead} pathOptions={{ color: INK, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
+      <Polyline positions={done} pathOptions={{ color: '#fff', weight: 8, opacity: 0.9 }} />
+      <Polyline positions={done} pathOptions={{ color: EMBER, weight: 4.5 }} />
+      {hl.length >= 2 && <Polyline positions={hl} pathOptions={{ color: HIGHLIGHT, weight: 8, opacity: 0.95, lineCap: 'round' }} />}
       {hl.length >= 2 && <FitHighlight line={hl} />}
 
       <Marker position={start} icon={ICONS.start}>

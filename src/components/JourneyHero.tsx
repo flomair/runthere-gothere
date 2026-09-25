@@ -12,6 +12,8 @@ import type { Progress } from '../lib/progress';
 import type { Journey } from '../lib/types';
 import { toUnit } from '../lib/units';
 import { CountUp } from './motion';
+import HeroSurface from './HeroSurface';
+import { EMBER } from '../theme';
 import { locale, t } from '../lib/i18n';
 
 function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
@@ -21,20 +23,14 @@ function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
   return (
     <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <defs>
-          <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffd3b8" />
-            <stop offset="100%" stopColor="#ffffff" />
-          </linearGradient>
-        </defs>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={10} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={6} />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="url(#ringGrad)"
-          strokeWidth={10}
+          stroke={EMBER}
+          strokeWidth={6}
           strokeLinecap="round"
           strokeDasharray={c}
           initial={{ strokeDashoffset: c }}
@@ -45,7 +41,7 @@ function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
       </svg>
       <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
         <Box>
-          <Typography sx={{ fontFamily: 'var(--display, inherit)', fontWeight: 800, fontSize: size > 110 ? '1.9rem' : '1.4rem', lineHeight: 1 }}>
+          <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: size > 110 ? '2rem' : '1.5rem', lineHeight: 1 }}>
             <CountUp value={fraction * 100} format={(n) => `${n.toLocaleString(locale(), { maximumFractionDigits: fraction < 0.1 ? 1 : 0, minimumFractionDigits: fraction < 0.1 ? 1 : 0 })}%`} />
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.85 }}>
@@ -60,10 +56,10 @@ function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Box sx={{ minWidth: 0 }}>
-      <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', display: 'block' }} noWrap>
+      <Typography variant="caption" sx={{ opacity: 0.6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', fontSize: '0.66rem', display: 'block' }} noWrap>
         {label}
       </Typography>
-      <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.35rem' }, lineHeight: 1.25 }} noWrap>
+      <Typography sx={{ fontWeight: 600, fontSize: { xs: '1.15rem', sm: '1.4rem' }, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }} noWrap>
         {children}
       </Typography>
     </Box>
@@ -86,37 +82,7 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
   const to = journey.waypoints[journey.waypoints.length - 1]?.name;
   const unitLabel = formatKm(0, 0).replace(/^[\d.,\s]+/, '');
   return (
-    <Box
-      component={motion.div}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      sx={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: { xs: '26px', sm: '32px' },
-        color: '#fff',
-        p: { xs: 2, sm: 3.5 },
-        background: 'linear-gradient(135deg, #ff7a3d 0%, #fc4c02 38%, #d9345f 72%, #1d3557 130%)',
-        boxShadow: '0 20px 40px -20px rgba(252, 76, 2, 0.55)',
-      }}
-    >
-      {/* soft moving light */}
-      <Box
-        component={motion.div}
-        aria-hidden
-        animate={{ x: ['-10%', '12%', '-10%'], y: ['-8%', '10%', '-8%'] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-        sx={{
-          position: 'absolute',
-          width: '70%',
-          height: '140%',
-          top: '-40%',
-          right: '-20%',
-          background: 'radial-gradient(closest-side, rgba(255,255,255,0.22), transparent)',
-          pointerEvents: 'none',
-        }}
-      />
+    <HeroSurface sx={{ p: { xs: 2, sm: 3.5 } }}>
       <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5, position: 'relative', mb: { xs: 1, sm: 2 }, ml: -1 }}>
         <IconButton onClick={() => navigate('/')} aria-label="back to journeys" sx={{ color: 'inherit' }}>
           <ArrowBackIcon />
@@ -133,7 +99,7 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
         )}
         <Tooltip title={t('Travel diary')}>
           <IconButton onClick={() => navigate(`/j/${journey.id}/diary`)} aria-label="travel diary" sx={{ color: 'inherit' }}>
-            <Badge badgeContent={unseen} invisible={!unseen} sx={{ '& .MuiBadge-badge': { bgcolor: '#fff', color: '#d9345f', fontWeight: 800 } }}>
+            <Badge badgeContent={unseen} invisible={!unseen} sx={{ '& .MuiBadge-badge': { bgcolor: EMBER, color: '#fff', fontWeight: 700 } }}>
               <AutoStoriesIcon />
             </Badge>
           </IconButton>
@@ -163,7 +129,7 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.4 }}
-              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, mt: 1, px: 1.25, py: 0.4, borderRadius: 99, bgcolor: 'rgba(255,255,255,0.18)', fontWeight: 700, fontSize: '0.85rem' }}
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, mt: 1, px: 1.25, py: 0.4, borderRadius: 99, bgcolor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', fontWeight: 600, fontSize: '0.82rem' }}
             >
               🏅 {journey.event.name} ·{' '}
               {(() => {
@@ -193,8 +159,9 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
           gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' },
           p: { xs: 1.5, sm: 2 },
           borderRadius: '18px',
-          bgcolor: 'rgba(255,255,255,0.14)',
-          backdropFilter: 'blur(6px)',
+          bgcolor: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(8px)',
         }}
       >
         <Stat label={t('Covered')}>
@@ -210,6 +177,6 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
           {progress.finished ? (progress.finishedOn ? formatDate(progress.finishedOn) : '🎉') : progress.eta ? formatDate(progress.eta) : '—'}
         </Stat>
       </Box>
-    </Box>
+    </HeroSurface>
   );
 }

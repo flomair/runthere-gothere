@@ -85,7 +85,7 @@ export default function AppHeader() {
           />
           <Typography variant="h6" noWrap sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
             Run There
-            <Box component="span" sx={{ color: 'primary.main', mx: 0.75 }}>
+            <Box component="span" sx={{ color: 'secondary.main', mx: 0.75 }}>
               ·
             </Box>
             Go There

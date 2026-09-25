@@ -43,6 +43,7 @@ import SectionNav, { type Section } from './SectionNav';
 import StravaButton from './StravaButton';
 import { getLang, locale, t } from '../lib/i18n';
 import { milestoneTitle } from '../../shared/milestoneTitle';
+import { HIGHLIGHT } from '../theme';
 
 function downloadGpx(j: Journey) {
   const pts = j.route.points.map(([la, lo]) => `<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"/>`).join('');
@@ -310,6 +311,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       <Button
         variant="contained"
         size="small"
+        color="secondary"
         startIcon={<MyLocationIcon />}
         onClick={() => setFly((f) => ({ token: f.token + 1, target: here }))}
         sx={{ position: 'absolute', zIndex: 1000, left: { xs: '50%', sm: 12 }, top: { xs: 12, sm: 'auto' }, bottom: { sm: 12 }, transform: { xs: 'translateX(-50%)', sm: 'none' } }}
@@ -319,7 +321,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       <Button
         variant="contained"
         size="small"
-        color="secondary"
+        color="primary"
         startIcon={<ThreeDRotationIcon />}
         onClick={() => setFlyover(true)}
         sx={{ position: 'absolute', zIndex: 1000, left: { xs: 12, sm: 148 }, bottom: { xs: 22, sm: 12 } }}
@@ -338,7 +340,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             <Chip
               label={`${selected.label} · ${formatDate(selected.date)} · ${formatKm(selected.countedM)}`}
               onDelete={() => setSelected(null)}
-              sx={{ bgcolor: '#f4b400', color: '#1d1d1d', maxWidth: '100%', boxShadow: 3 }}
+              sx={{ bgcolor: HIGHLIGHT, color: '#14171C', maxWidth: '100%', boxShadow: 3 }}
             />
           </motion.div>
         )}
@@ -374,7 +376,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
                 />
                 <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
                   {quickPeeks.map((m) => (
-                    <Chip key={m} label={`+${formatKm(m - progress.doneM, 0)}`} onClick={() => setPeekM(m)} variant={Math.abs(m - peekM) < 1 ? 'filled' : 'outlined'} color="secondary" />
+                    <Chip key={m} label={`+${formatKm(m - progress.doneM, 0)}`} onClick={() => setPeekM(m)} variant={Math.abs(m - peekM) < 1 ? 'filled' : 'outlined'} />
                   ))}
                   {waypointDist.slice(1).filter((w) => w.m > progress.doneM).map((w) => (
                     <Chip key={w.name} label={w.name} onClick={() => setPeekM(w.m)} variant={Math.abs(w.m - peekM) < 1 ? 'filled' : 'outlined'} />

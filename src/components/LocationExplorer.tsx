@@ -51,7 +51,7 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate, o
         <CardContent>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
+              <Typography variant="overline" color="secondary">
                 {eyebrow}
               </Typography>
               {env.isLoading ? (

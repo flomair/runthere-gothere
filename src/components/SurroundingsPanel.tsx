@@ -22,6 +22,7 @@ import { formatKm } from '../lib/format';
 import type { SurroundingsResponse } from '../lib/types';
 import BookmarkButton from './BookmarkButton';
 import { locale, t } from '../lib/i18n';
+import { HIGHLIGHT } from '../theme';
 
 const km = (m: number) => (m < 1000 ? `${Math.round(m)} m` : formatKm(m));
 
@@ -142,7 +143,7 @@ export function PlacesList({
               <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
               {p.rating != null && (
                 <Stack direction="row" sx={{ alignItems: 'center', gap: 0.25 }}>
-                  <StarIcon sx={{ color: '#f4b400', fontSize: 18 }} />
+                  <StarIcon sx={{ color: HIGHLIGHT, fontSize: 18 }} />
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {p.rating.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                   </Typography>

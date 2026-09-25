@@ -1,49 +1,81 @@
 import { alpha, createTheme } from '@mui/material/styles';
 
+/**
+ * Colour concept, taken from the logo:
+ *  - Ink (the navy footprints) carries the brand: text, buttons, hero surfaces.
+ *  - Ember (the orange route) is reserved for *you*: your position, the covered route, progress.
+ *  - Lagoon (the teal pin) marks destinations, finishes and success.
+ * Neutrals are warm paper tones so photos and maps stay the most colourful thing on screen.
+ */
+export const INK = '#14223A';
+export const EMBER = '#EF5A28';
+export const LAGOON = '#1F8F83';
+/** Selected run / rating stars. */
+export const HIGHLIGHT = '#E8B03A';
+/** Only for the "Connect with Strava" button (Strava brand guidelines). */
 export const STRAVA_ORANGE = '#fc4c02';
-export const ACCENT_GRADIENT = 'linear-gradient(135deg, #ff6a2b 0%, #fc4c02 45%, #e8336b 100%)';
-const DISPLAY = '"Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-const BODY = '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+/** Theme-aware tokens as CSS variables (see styles.css) for SVG, canvas-free markup and inline styles. */
+export const C = {
+  ink: 'var(--rtgt-ink)',
+  ember: 'var(--rtgt-ember)',
+  lagoon: 'var(--rtgt-lagoon)',
+  track: 'var(--rtgt-track)',
+  heroBg: 'var(--rtgt-hero-bg)',
+};
+
+/** Deep ink surface with a faint ember glow – used for the hero cards. */
+export const HERO_SURFACE = `radial-gradient(120% 90% at 100% 0%, ${alpha(EMBER, 0.28)} 0%, transparent 55%), radial-gradient(90% 80% at 0% 100%, ${alpha(LAGOON, 0.22)} 0%, transparent 60%), ${INK}`;
+
+const SERIF = '"Fraunces", "Iowan Old Style", Georgia, serif';
+const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: 'class' },
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: STRAVA_ORANGE, contrastText: '#fff' },
-        secondary: { main: '#1d3557' },
-        background: { default: '#f5f3ef', paper: '#ffffff' },
-        text: { primary: '#15171a', secondary: '#5d636b' },
-        divider: 'rgba(21, 23, 26, 0.08)',
+        primary: { main: INK, light: '#2B3B57', dark: '#0B1526', contrastText: '#fff' },
+        secondary: { main: EMBER, light: '#F47B52', dark: '#C9441A', contrastText: '#fff' },
+        success: { main: LAGOON, contrastText: '#fff' },
+        info: { main: '#3D6FA8' },
+        background: { default: '#F7F5F0', paper: '#FFFFFF' },
+        text: { primary: '#14171C', secondary: '#5E6570' },
+        divider: 'rgba(20, 34, 58, 0.09)',
+        action: { hover: 'rgba(20, 34, 58, 0.045)', selected: 'rgba(20, 34, 58, 0.08)' },
       },
     },
     dark: {
       palette: {
-        primary: { main: '#ff6a2b', contrastText: '#fff' },
-        secondary: { main: '#8ecae6' },
-        background: { default: '#0c0e11', paper: '#15181c' },
-        text: { primary: '#f1f2f4', secondary: '#9aa1ab' },
+        primary: { main: '#E8ECF2', light: '#FFFFFF', dark: '#C5CCD6', contrastText: '#0D1117' },
+        secondary: { main: '#FF7B4B', light: '#FF9A74', dark: '#E0602F', contrastText: '#0D1117' },
+        success: { main: '#4FC1B0', contrastText: '#0D1117' },
+        info: { main: '#7FA7D6' },
+        background: { default: '#0D1117', paper: '#151B23' },
+        text: { primary: '#ECEFF3', secondary: '#9AA3AE' },
         divider: 'rgba(255, 255, 255, 0.08)',
+        action: { hover: 'rgba(255, 255, 255, 0.05)', selected: 'rgba(255, 255, 255, 0.09)' },
       },
     },
   },
-  shape: { borderRadius: 16 },
+  shape: { borderRadius: 14 },
   typography: {
-    fontFamily: BODY,
-    h1: { fontFamily: DISPLAY, fontWeight: 800, letterSpacing: '-0.035em' },
-    h2: { fontFamily: DISPLAY, fontWeight: 800, letterSpacing: '-0.03em' },
-    h3: { fontFamily: DISPLAY, fontWeight: 800, letterSpacing: '-0.03em' },
-    h4: { fontFamily: DISPLAY, fontWeight: 800, letterSpacing: '-0.02em' },
-    h5: { fontFamily: DISPLAY, fontWeight: 700, letterSpacing: '-0.015em' },
-    h6: { fontFamily: DISPLAY, fontWeight: 700, letterSpacing: '-0.01em' },
-    overline: { fontWeight: 700, letterSpacing: '0.08em' },
-    button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0.005em' },
+    fontFamily: SANS,
+    h1: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.02em', fontVariationSettings: '"opsz" 144' },
+    h2: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.02em', fontVariationSettings: '"opsz" 144' },
+    h3: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.015em', fontVariationSettings: '"opsz" 96' },
+    h4: { fontFamily: SERIF, fontWeight: 600, letterSpacing: '-0.01em', fontVariationSettings: '"opsz" 72' },
+    h5: { fontWeight: 650, letterSpacing: '-0.015em' },
+    h6: { fontWeight: 650, letterSpacing: '-0.01em', fontSize: '1.1rem' },
+    subtitle2: { fontWeight: 650 },
+    overline: { fontWeight: 650, letterSpacing: '0.12em', fontSize: '0.7rem' },
+    button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0' },
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: { WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale' },
-        '::selection': { background: alpha(STRAVA_ORANGE, 0.25) },
+        body: { WebkitFontSmoothing: 'antialiased', MozOsxFontSmoothing: 'grayscale', fontFeatureSettings: '"cv11", "ss01"' },
+        '::selection': { background: alpha(EMBER, 0.22) },
       },
     },
     MuiCard: {
@@ -53,10 +85,10 @@ export const theme = createTheme({
           borderRadius: 20,
           border: '1px solid',
           borderColor: theme.vars ? theme.vars.palette.divider : theme.palette.divider,
-          boxShadow: '0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -12px rgba(16, 24, 40, 0.12)',
+          boxShadow: '0 1px 2px rgba(20, 34, 58, 0.04)',
           backgroundImage: 'none',
-          transition: 'box-shadow .25s ease, transform .25s ease, border-color .25s ease',
-          ...theme.applyStyles('dark', { boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 32px -16px rgba(0,0,0,0.6)' }),
+          transition: 'box-shadow .3s ease, transform .3s ease, border-color .3s ease',
+          ...theme.applyStyles('dark', { boxShadow: 'none' }),
         }),
       },
     },
@@ -67,36 +99,37 @@ export const theme = createTheme({
         root: {
           borderRadius: 999,
           paddingInline: 18,
+          transition: 'transform .15s ease, background-color .2s ease, box-shadow .2s ease',
+          '&:active': { transform: 'scale(0.97)' },
           variants: [
             { props: { size: 'small' }, style: { paddingInline: 12 } },
-            {
-              props: { variant: 'contained', color: 'primary' },
-              style: {
-                backgroundImage: ACCENT_GRADIENT,
-                boxShadow: `0 6px 16px -6px ${alpha(STRAVA_ORANGE, 0.55)}`,
-                transition: 'transform .15s ease, box-shadow .2s ease, filter .2s ease',
-                '&:hover': { filter: 'brightness(1.05)', boxShadow: `0 10px 22px -8px ${alpha(STRAVA_ORANGE, 0.6)}` },
-                '&:active': { transform: 'scale(0.97)' },
-                '&.Mui-disabled': { backgroundImage: 'none' },
-              },
-            },
+            { props: { size: 'large' }, style: { paddingInline: 24, minHeight: 48 } },
+            { props: { variant: 'outlined' }, style: { borderColor: 'var(--mui-palette-divider)', '&:hover': { borderColor: 'currentColor' } } },
           ],
         },
       },
     },
-    MuiChip: { styleOverrides: { root: { fontWeight: 600, borderRadius: 999 } } },
-    MuiToggleButton: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600 } } },
-    MuiTab: { styleOverrides: { root: { textTransform: 'none', fontWeight: 700, fontSize: '0.95rem', minHeight: 44 } } },
-    MuiTabs: { styleOverrides: { indicator: { height: 3, borderRadius: 3 } } },
-    MuiLinearProgress: {
+    MuiIconButton: { styleOverrides: { root: { transition: 'background-color .2s ease, transform .15s ease', '&:active': { transform: 'scale(0.92)' } } } },
+    MuiChip: {
       styleOverrides: {
-        root: { borderRadius: 99, height: 8 },
-        bar: { borderRadius: 99, backgroundImage: ACCENT_GRADIENT },
+        root: { fontWeight: 600, borderRadius: 999 },
+        outlined: { borderColor: 'var(--mui-palette-divider)' },
       },
     },
+    MuiToggleButton: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600 } } },
+    MuiTab: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600, fontSize: '0.95rem', minHeight: 44 } } },
+    MuiTabs: { styleOverrides: { indicator: { height: 2, borderRadius: 2 } } },
+    MuiLinearProgress: { styleOverrides: { root: { borderRadius: 99, height: 6 }, bar: { borderRadius: 99 } } },
     MuiDialog: { styleOverrides: { paper: { borderRadius: 24 } } },
     MuiAppBar: { defaultProps: { elevation: 0 } },
-    MuiAlert: { styleOverrides: { root: { borderRadius: 16, alignItems: 'center' } } },
-    MuiTooltip: { styleOverrides: { tooltip: { borderRadius: 10, fontWeight: 500 } } },
+    MuiAlert: {
+      styleOverrides: {
+        root: { borderRadius: 14, alignItems: 'center' },
+        standard: { border: '1px solid var(--mui-palette-divider)' },
+      },
+    },
+    MuiTooltip: { styleOverrides: { tooltip: { borderRadius: 8, fontWeight: 500 } } },
+    MuiTextField: { defaultProps: { variant: 'outlined' } },
+    MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 12 } } },
   },
 });
