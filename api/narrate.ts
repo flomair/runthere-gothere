@@ -24,7 +24,7 @@ export const POST = handle(async (req) => {
     throw new HttpError(400, 'invalid narrate request');
   }
   body.language = /^[a-z]{2,3}$/.test(body.language) ? body.language : 'en';
-  const stream = await narrate(body, req.headers.get('x-anthropic-key')?.trim() || undefined);
+  const stream = await narrate(body, req.headers.get('x-anthropic-key')?.trim() || undefined, req.headers.get('x-anthropic-workspace'));
   return new Response(stream, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' },
   });

@@ -4,13 +4,15 @@ import type { NarrateRequest, NarrationStyle } from './types';
 export interface NarratorSettings {
   /** User's own Anthropic API key – stays in this browser, sent only with narrate requests. */
   apiKey: string;
+  /** Needed only for organization-level keys that aren't scoped to a workspace. */
+  workspaceId: string;
   style: NarrationStyle;
   voiceURI: string | null;
   rate: number;
 }
 
 const KEY = 'rtgt.narrator.v1';
-const DEFAULTS: NarratorSettings = { apiKey: '', style: 'travelogue', voiceURI: null, rate: 1 };
+const DEFAULTS: NarratorSettings = { apiKey: '', workspaceId: '', style: 'travelogue', voiceURI: null, rate: 1 };
 const listeners = new Set<() => void>();
 let cache: NarratorSettings | null = null;
 
@@ -53,16 +55,23 @@ export const STYLE_LABELS: Record<NarrationStyle, string> = {
   kids: 'Story for kids',
 };
 
+export function authHeaders(apiKey: string, workspaceId: string): Record<string, string> {
+  const h: Record<string, string> = {};
+  if (apiKey.trim()) h['x-anthropic-key'] = apiKey.trim();
+  if (apiKey.trim() && workspaceId.trim()) h['x-anthropic-workspace'] = workspaceId.trim();
+  return h;
+}
+
 /** Streams narration text; calls onText with the accumulated text. */
 export async function streamNarration(
   req: NarrateRequest,
-  apiKey: string,
+  auth: { apiKey: string; workspaceId: string },
   onText: (full: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
   const res = await fetch('/api/narrate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(apiKey ? { 'x-anthropic-key': apiKey } : {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(auth.apiKey, auth.workspaceId) },
     body: JSON.stringify(req),
     signal,
   });

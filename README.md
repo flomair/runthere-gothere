@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.svg" width="120" alt="Run There · Go There logo"></p>
+
 # Run There · Go There
 
 Turn your Strava runs into a virtual journey between real places.
@@ -81,6 +83,7 @@ npm run dev                  # http://localhost:5173, the /api functions run ins
 
 - `MAPILLARY_TOKEN`: recent street-level photos along the route.
 - `GOOGLE_PLACES_API_KEY`: top-rated cafés, sights and parks with a review snippet. Without it the app links to Google Maps searches.
+- `ANTHROPIC_WORKSPACE_ID`: only needed if that key is an organization-level key not scoped to a workspace (Anthropic then answers "This API key is not scoped to a workspace"). Users with such a key enter the Workspace ID in the narrator settings.
 - `ANTHROPIC_API_KEY`: turns on the AI narrator for everyone using the deployment. Alternatively, each user can paste **their own Anthropic key** in the narrator settings. It stays in their browser, is sent only with narration requests (`x-anthropic-key` header) and is never stored on the server.
 
 ## Route options

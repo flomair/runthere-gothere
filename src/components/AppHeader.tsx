@@ -43,7 +43,18 @@ export default function AppHeader() {
           color="inherit"
           sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexGrow: 1, minWidth: 0 }}
         >
-          <Box component="img" src="/favicon.svg" alt="" sx={{ width: 32, height: 32 }} />
+          <Box
+            component="img"
+            src="/logo.svg"
+            alt=""
+            sx={(theme) => ({
+              width: 38,
+              height: 38,
+              flexShrink: 0,
+              // the navy footprints need a light tile on dark backgrounds
+              ...theme.applyStyles('dark', { bgcolor: '#fff', borderRadius: '10px', p: '3px' }),
+            })}
+          />
           <Typography variant="h6" noWrap sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
             Run There
             <Box component="span" sx={{ color: 'primary.main', mx: 0.75 }}>

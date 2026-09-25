@@ -25,6 +25,7 @@ import { lang, useMe } from '../lib/api';
 import { formatDate } from '../lib/format';
 import {
   STYLE_LABELS,
+  authHeaders,
   loadNarration,
   narrationKey,
   saveNarratorSettings,
@@ -71,17 +72,18 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
   const s = useNarratorSettings();
   const voices = useVoices();
   const [key, setKey] = useState(s.apiKey);
+  const [workspace, setWorkspace] = useState(s.workspaceId);
   const [test, setTest] = useState<{ busy: boolean; ok?: boolean; text?: string }>({ busy: false });
   useEffect(() => {
     setKey(s.apiKey);
+    setWorkspace(s.workspaceId);
     setTest({ busy: false });
-  }, [s.apiKey, open]);
+  }, [s.apiKey, s.workspaceId, open]);
 
   const runTest = async () => {
     setTest({ busy: true });
     try {
-      const k = key.trim();
-      const res = await fetch('/api/ai-check', { method: 'POST', headers: k ? { 'x-anthropic-key': k } : {} });
+      const res = await fetch('/api/ai-check', { method: 'POST', headers: authHeaders(key, workspace) });
       const r = (await res.json()) as { ok: boolean; source?: string; masked?: string; model?: string; error?: string };
       setTest({
         busy: false,
@@ -113,6 +115,17 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
                 : 'Stored only in this browser. It is sent along with narration requests and never saved on the server. Get a key at console.anthropic.com.'
             }
           />
+          {key.trim() && (
+            <TextField
+              label="Workspace ID (only for organization-level keys)"
+              value={workspace}
+              onChange={(e) => setWorkspace(e.target.value)}
+              placeholder="wrkspc_…"
+              autoComplete="off"
+              size="small"
+              helperText="Leave empty unless Anthropic says the key is not scoped to a workspace. Find the ID under Console → Settings → Workspaces."
+            />
+          )}
           <Box>
             <Button size="small" variant="outlined" onClick={runTest} loading={test.busy} disabled={!key.trim() && !serverKey}>
               {key.trim() ? 'Test this key' : "Test the server's key"}
@@ -150,14 +163,14 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
       </DialogContent>
       <DialogActions>
         {s.apiKey && (
-          <Button color="error" onClick={() => saveNarratorSettings({ apiKey: '' })}>
+          <Button color="error" onClick={() => saveNarratorSettings({ apiKey: '', workspaceId: '' })}>
             Remove key
           </Button>
         )}
         <Button
           variant="contained"
           onClick={() => {
-            saveNarratorSettings({ apiKey: key.trim() });
+            saveNarratorSettings({ apiKey: key.trim(), workspaceId: workspace.trim() });
             onClose();
           }}
         >
@@ -216,7 +229,7 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
     setError(null);
     setText('');
     try {
-      const full = await streamNarration({ ...request, style: settings.style, language: lang() }, settings.apiKey, setText, ac.signal);
+      const full = await streamNarration({ ...request, style: settings.style, language: lang() }, settings, setText, ac.signal);
       if (full.trim()) {
         storeNarration(key, full);
         setSavedAt(new Date().toISOString());

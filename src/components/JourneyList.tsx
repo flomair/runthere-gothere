@@ -176,6 +176,17 @@ export default function JourneyList() {
         </Stack>
         {journeys.length === 0 ? (
           <Card sx={{ p: 4, textAlign: 'center', borderStyle: 'dashed' }}>
+            <Box
+              component="img"
+              src="/logo.svg"
+              alt=""
+              sx={(theme) => ({
+                width: 96,
+                height: 96,
+                mb: 1.5,
+                ...theme.applyStyles('dark', { bgcolor: '#fff', borderRadius: '20px', p: '8px' }),
+              })}
+            />
             <Typography color="text.secondary">
               No journeys yet. Plan one above, or pick one of the suggestions.
             </Typography>

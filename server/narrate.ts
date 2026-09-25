@@ -82,23 +82,35 @@ export function cleanKey(raw: string | undefined | null): string {
 
 export interface ResolvedKey {
   key: string;
+  /** Workspace for organization-level keys (sent as anthropic-workspace-id). */
+  workspaceId?: string;
   source: 'yours' | 'server';
   /** Safe to show: prefix and last 4 characters. */
   masked: string;
 }
 
-export function resolveKey(userKey: string | undefined | null): ResolvedKey | null {
+const cleanWorkspace = (raw: string | undefined | null) => {
+  const w = cleanKey(raw);
+  return /^[A-Za-z0-9_-]{1,128}$/.test(w) ? w : undefined;
+};
+
+export function resolveKey(userKey: string | undefined | null, userWorkspace?: string | null): ResolvedKey | null {
   const mine = cleanKey(userKey);
   const server = cleanKey(process.env.ANTHROPIC_API_KEY);
   const key = mine || server;
   if (!key) return null;
   const prefix = /^sk-ant-[a-z]+\d*-/.exec(key)?.[0] ?? key.slice(0, 7);
-  return { key, source: mine ? 'yours' : 'server', masked: `${prefix}…${key.slice(-4)}` };
+  const workspaceId = mine ? cleanWorkspace(userWorkspace) : cleanWorkspace(process.env.ANTHROPIC_WORKSPACE_ID);
+  return { key, workspaceId, source: mine ? 'yours' : 'server', masked: `${prefix}…${key.slice(-4)}` };
 }
 
 function client(k: ResolvedKey) {
   // authToken: null so a stray ANTHROPIC_AUTH_TOKEN in the environment can't interfere
-  return new Anthropic({ apiKey: k.key, authToken: null });
+  return new Anthropic({
+    apiKey: k.key,
+    authToken: null,
+    defaultHeaders: k.workspaceId ? { 'anthropic-workspace-id': k.workspaceId } : undefined,
+  });
 }
 
 /** Human-readable explanation of an API failure, naming which key was used. */
@@ -110,14 +122,19 @@ export function explainError(e: unknown, k: ResolvedKey): string {
   if (e instanceof Anthropic.PermissionDeniedError) return `${who} is not allowed to use ${NARRATOR_MODEL}: ${e.message}`;
   if (e instanceof Anthropic.NotFoundError) return `${NARRATOR_MODEL} is not available for ${who}: ${e.message}`;
   if (e instanceof Anthropic.RateLimitError) return 'The AI is rate-limited right now. Try again in a minute.';
+  if (e instanceof Anthropic.BadRequestError && /anthropic-workspace-id|not scoped to a workspace/i.test(e.message)) {
+    return k.source === 'yours'
+      ? `${who} is an organization-level key. Enter your Workspace ID in the narrator settings (Console → Settings → Workspaces), or create a key inside a workspace.`
+      : `The server's key (${k.masked}) is an organization-level key. Set ANTHROPIC_WORKSPACE_ID on the server, or use a key created inside a workspace.`;
+  }
   if (e instanceof Anthropic.BadRequestError) return `Anthropic refused the request for ${who}: ${e.message}`;
   if (e instanceof Anthropic.APIError) return `AI error ${e.status ?? ''} with ${who}: ${e.message}`;
   return String(e);
 }
 
 /** Cheap check that a key works and can use the narrator model (no tokens spent). */
-export async function checkKey(userKey: string | undefined | null) {
-  const k = resolveKey(userKey);
+export async function checkKey(userKey: string | undefined | null, userWorkspace?: string | null) {
+  const k = resolveKey(userKey, userWorkspace);
   if (!k) return { ok: false as const, error: 'No key: add one here or set ANTHROPIC_API_KEY on the server.' };
   try {
     const m = await client(k).models.retrieve(NARRATOR_MODEL);
@@ -127,8 +144,12 @@ export async function checkKey(userKey: string | undefined | null) {
   }
 }
 
-export async function narrate(req: NarrateRequest, apiKey: string | undefined): Promise<ReadableStream<Uint8Array>> {
-  const resolved = resolveKey(apiKey);
+export async function narrate(
+  req: NarrateRequest,
+  apiKey: string | undefined,
+  workspaceId?: string | null,
+): Promise<ReadableStream<Uint8Array>> {
+  const resolved = resolveKey(apiKey, workspaceId);
   if (!resolved) throw new HttpError(400, 'No AI key configured. Add your Anthropic API key in the narrator settings, or set ANTHROPIC_API_KEY on the server.');
 
   const gathered = await gather(req);
