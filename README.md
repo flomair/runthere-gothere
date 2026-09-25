@@ -19,13 +19,14 @@ Once you arrive, go there for real. 🏁
 ## Stack
 
 - **React 19 + TypeScript + Vite + MUI**, with Leaflet / react-leaflet for the map
-- **Vercel Functions** in `/api` (Web-standard `Request → Response` handlers), plus a daily **Vercel Cron**
+- **One Vercel Function** (`api/router.ts`) serving every `/api/*` URL. The handlers live in `/routes` as Web-standard `Request → Response` functions. This keeps the app within the Hobby plan's limit of 12 functions. Plus a daily **Vercel Cron**.
 - **Firebase Authentication** (Google sign-in) and **Cloud Firestore**. Only the server talks to Firestore (Admin SDK); the database rules deny all browser access.
 - Sign-in is required, and only admins (`ADMIN_EMAILS`) and people on the in-app **allowlist** can use the app.
 - Strava tokens and each user's own Anthropic key are stored **AES-256-GCM encrypted** in Firestore.
 
 ```
-api/            Vercel functions (thin handlers; all require sign-in except Strava's callbacks and the cron)
+api/router.ts   the single Vercel Function; vercel.json rewrites /api/<path> to it
+routes/         the /api handlers (all require sign-in except Strava's callbacks and the cron)
   me.ts         the signed-in user, connections, features
   journeys.ts   list / save / delete journeys
   activities.ts synced Strava activities (from Firestore)

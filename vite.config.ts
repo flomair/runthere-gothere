@@ -1,12 +1,11 @@
-import { existsSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { type Plugin, type ViteDevServer, defineConfig, loadEnv } from 'vite';
 
 /**
- * Serves the Vercel functions in /api during `vite dev`, so no Vercel CLI is needed locally.
- * Each file exports Web-standard handlers named after HTTP methods (GET, POST, ...).
+ * Serves /api during `vite dev` through api/router.ts (the single Vercel Function), so no Vercel
+ * CLI is needed locally. Handlers are Web-standard (Request → Response) functions per HTTP method.
  */
 function vercelApiDev(): Plugin {
   return {
@@ -16,11 +15,8 @@ function vercelApiDev(): Plugin {
       server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
         if (!req.url?.startsWith('/api/')) return next();
         const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
-        const file = resolve(process.cwd(), `.${url.pathname.replace(/\/$/, '')}.ts`);
-        if (!file.startsWith(resolve(process.cwd(), 'api')) || !existsSync(file)) {
-          res.statusCode = 404;
-          return res.end('Not found');
-        }
+        // same single entry point as on Vercel (see vercel.json rewrites)
+        const file = resolve(process.cwd(), 'api/router.ts');
         try {
           const mod = await server.ssrLoadModule(file);
           const handler = mod[req.method ?? 'GET'];

@@ -42,7 +42,7 @@ describe('AI key (per user, encrypted)', () => {
         return model();
       }),
     );
-    const api = await import('../api/ai-key');
+    const api = await import('../routes/ai-key');
     const bad = await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: ' sk-ant-api03-bad0 ' } }));
     expect(bad.status).toBe(400);
     expect(((await bad.json()) as { error: string }).error).toContain('invalid x-api-key');
@@ -66,7 +66,7 @@ describe('AI key (per user, encrypted)', () => {
 
   it('explains an empty credit balance', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.')));
-    const api = await import('../api/ai-key');
+    const api = await import('../routes/ai-key');
     const r = (await (await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: 'sk-ant-api03-x1' } }))).json()) as { error: string };
     expect(r.error).toMatch(/no credits left/);
   });
@@ -84,7 +84,7 @@ describe('narrate', () => {
 
   it('requires the user’s own key', async () => {
     process.env.ANTHROPIC_API_KEY = 'sk-ant-api03-server-should-be-ignored';
-    const { POST } = await import('../api/narrate');
+    const { POST } = await import('../routes/narrate');
     const res = await POST(req('/api/narrate', { method: 'POST', headers: OWNER, json: body }));
     expect(res.status).toBe(400);
     expect(((await res.json()) as { error: string }).error).toMatch(/your own Anthropic API key/);
@@ -121,7 +121,7 @@ describe('narrate', () => {
         throw new Error(`unexpected fetch ${url}`);
       }),
     );
-    const { POST } = await import('../api/narrate');
+    const { POST } = await import('../routes/narrate');
     const res = await POST(req('/api/narrate', { method: 'POST', headers: OWNER, json: body }));
     expect(await res.text()).toBe('We stand in Dresden.');
     expect(headers!.get('x-api-key')).toBe('sk-ant-api03-mine');
@@ -136,7 +136,7 @@ describe('narrate', () => {
 
     const saved = await store.getNarration('owner', body.saveKey);
     expect(saved?.text).toBe('We stand in Dresden.');
-    const n = await import('../api/narrations');
+    const n = await import('../routes/narrations');
     const r = (await (await n.GET(req(`/api/narrations?key=${encodeURIComponent(body.saveKey)}`, { headers: OWNER }))).json()) as { narration: { text: string } };
     expect(r.narration.text).toBe('We stand in Dresden.');
   });

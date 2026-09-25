@@ -41,7 +41,7 @@ describe('crypto', () => {
 
 describe('access control', () => {
   it('requires sign-in, a verified email and the allowlist', async () => {
-    const { GET } = await import('../api/me');
+    const { GET } = await import('../routes/me');
     expect((await GET(req('/api/me'))).status).toBe(401);
     expect((await GET(req('/api/me', { headers: FRIEND }))).status).toBe(403);
     expect((await GET(req('/api/me', { headers: bearer('owner', 'owner@example.com', ':unverified') }))).status).toBe(403);
@@ -57,7 +57,7 @@ describe('access control', () => {
   });
 
   it('lets only admins manage the allowlist', async () => {
-    const admin = await import('../api/admin/allowlist');
+    const admin = await import('../routes/admin/allowlist');
     await store.allow({ email: 'friend@example.com', addedBy: 'x', addedAt: '2026-09-01' });
     expect((await admin.GET(req('/api/admin/allowlist', { headers: FRIEND }))).status).toBe(403);
 
@@ -75,7 +75,7 @@ describe('access control', () => {
   });
 
   it('protects the helper APIs too', async () => {
-    const { POST } = await import('../api/route');
+    const { POST } = await import('../routes/route');
     expect((await POST(req('/api/route', { method: 'POST', json: { waypoints: [[1, 2], [3, 4]] } }))).status).toBe(401);
     expect((await POST(req('/api/route', { method: 'POST', headers: OWNER, json: { waypoints: [[1, 2]] } }))).status).toBe(400);
   });
@@ -97,7 +97,7 @@ describe('journeys', () => {
   });
 
   it('stores, lists and deletes per user (route kept via polyline)', async () => {
-    const api = await import('../api/journeys');
+    const api = await import('../routes/journeys');
     await store.allow({ email: 'friend@example.com', addedBy: 'x', addedAt: 'x' });
     expect((await api.PUT(req('/api/journeys', { method: 'PUT', headers: OWNER, json: journey('j1') }))).status).toBe(200);
 
@@ -113,7 +113,7 @@ describe('journeys', () => {
   });
 
   it('rejects malformed journeys', async () => {
-    const api = await import('../api/journeys');
+    const api = await import('../routes/journeys');
     const bad = { ...journey('j2'), route: { points: [[1, 2]], totalM: 1, provider: 'x' } };
     expect((await api.PUT(req('/api/journeys', { method: 'PUT', headers: OWNER, json: bad }))).status).toBe(400);
     expect((await api.PUT(req('/api/journeys', { method: 'PUT', headers: OWNER, json: { ...journey('../x') } }))).status).toBe(400);
@@ -135,7 +135,7 @@ describe('strava', () => {
   });
 
   async function connect() {
-    const connectApi = await import('../api/strava/connect');
+    const connectApi = await import('../routes/strava/connect');
     const r = (await (await connectApi.POST(req('/api/strava/connect', { method: 'POST', headers: OWNER }))).json()) as { url: string };
     const u = new URL(r.url);
     expect(u.host).toBe('www.strava.com');
@@ -149,7 +149,7 @@ describe('strava', () => {
       if (url.includes('/athlete/activities')) return new URL(url).searchParams.get('page') === '1' ? [act(1, '2026-09-10'), act(2, '2026-09-12')] : [];
       throw new Error(url);
     });
-    const cb = await import('../api/strava/callback');
+    const cb = await import('../routes/strava/callback');
     const res = await cb.GET(req(`/api/strava/callback?code=c&state=${state}&scope=read,activity:read_all`));
     expect(res.headers.get('location')).toBe('https://app.example/?strava=connected');
     return calls;
@@ -166,13 +166,13 @@ describe('strava', () => {
     expect(user?.strava?.athleteId).toBe(77);
     expect(user?.strava?.lastSyncAt).toBeTruthy();
 
-    const acts = await import('../api/activities');
+    const acts = await import('../routes/activities');
     const r = (await (await acts.GET(req('/api/activities?since=2026-09-11', { headers: OWNER }))).json()) as { activities: { id: number }[] };
     expect(r.activities.map((a) => a.id)).toEqual([1, 2]); // one day of slack
   });
 
   it('rejects a forged or expired state', async () => {
-    const cb = await import('../api/strava/callback');
+    const cb = await import('../routes/strava/callback');
     const res = await cb.GET(req('/api/strava/callback?code=c&state=forged&scope=activity:read_all'));
     expect(res.headers.get('location')).toContain('strava_error=invalid_state');
   });
@@ -199,7 +199,7 @@ describe('strava', () => {
 
   it('handles webhook handshake and events', async () => {
     await connect();
-    const hook = await import('../api/strava/webhook');
+    const hook = await import('../routes/strava/webhook');
     const ok = await hook.GET(req(`/api/strava/webhook?hub.mode=subscribe&hub.challenge=abc&hub.verify_token=${hook.verifyToken()}`));
     expect(await ok.json()).toEqual({ 'hub.challenge': 'abc' });
     expect((await hook.GET(req('/api/strava/webhook?hub.mode=subscribe&hub.challenge=abc&hub.verify_token=wrong'))).status).toBe(403);
@@ -229,7 +229,7 @@ describe('strava', () => {
 
   it('cron requires the secret and syncs every connected user', async () => {
     await connect();
-    const cron = await import('../api/cron/sync');
+    const cron = await import('../routes/cron/sync');
     expect((await cron.GET(req('/api/cron/sync'))).status).toBe(401);
     mockFetch(() => []);
     const r = (await (await cron.GET(req('/api/cron/sync', { headers: { authorization: 'Bearer cron' } }))).json()) as { users: number };
@@ -239,7 +239,7 @@ describe('strava', () => {
   it('disconnect forgets tokens but keeps activities', async () => {
     await connect();
     mockFetch(() => ({}));
-    const d = await import('../api/strava/disconnect');
+    const d = await import('../routes/strava/disconnect');
     await d.POST(req('/api/strava/disconnect', { method: 'POST', headers: OWNER }));
     expect(await store.uidForAthlete(77)).toBeNull();
     expect((await store.getUser('owner'))?.strava).toBeUndefined();
@@ -315,5 +315,37 @@ describe('photos & surroundings', () => {
     expect(await googlePlaces(50, 14, 'en')).toEqual([]);
     process.env.GOOGLE_PLACES_API_KEY = 'g';
     expect((await googlePlaces(50, 14, 'en'))[0]).toMatchObject({ name: 'Café', rating: 4.6 });
+  });
+});
+
+describe('single-function router', () => {
+  it('dispatches rewritten and direct URLs, strips the routing parameter', async () => {
+    const { GET, POST, routePath } = await import('../api/router');
+    expect(routePath(new URL('https://x/api/router?__path=strava%2Fsync'))).toBe('strava/sync');
+    expect(routePath(new URL('https://x/api/strava/sync'))).toBe('strava/sync');
+
+    // rewritten request as Vercel delivers it: auth still enforced, own query params intact
+    expect((await GET(req('/api/router?__path=me'))).status).toBe(401);
+    const cb = await GET(req('/api/router?__path=strava/callback&code=c&state=forged&scope=activity:read_all'));
+    expect(cb.headers.get('location')).toContain('strava_error=invalid_state');
+
+    expect((await GET(req('/api/nope'))).status).toBe(404);
+    expect((await POST(req('/api/me', { method: 'POST' }))).status).toBe(405);
+    const me = await GET(req('/api/router?__path=me', { headers: OWNER }));
+    expect(me.status).toBe(200);
+  });
+
+  it('forwards request bodies through the rewrite', async () => {
+    const { PUT } = await import('../api/router');
+    const j = { id: 'jb', name: 'n', createdAt: 'x', startDate: '2026-01-01', sportTypes: [], useStrava: false, manualEntries: [], excludedActivityIds: [], waypoints: [], mode: 'foot', route: { points: [[1, 2], [3, 4]], totalM: 5, provider: 'p' } };
+    const res = await PUT(req('/api/router?__path=journeys', { method: 'PUT', headers: OWNER, json: j }));
+    expect(await res.json()).toEqual({ ok: true });
+    expect((await store.listJourneys('owner')).map((x) => x.id)).toEqual(['jb']);
+  });
+
+  it('keeps the function count within the Hobby limit', async () => {
+    const { readdirSync } = await import('node:fs');
+    const fns = readdirSync(new URL('../api', import.meta.url), { recursive: true }).filter((f) => String(f).endsWith('.ts'));
+    expect(fns).toEqual(['router.ts']);
   });
 });

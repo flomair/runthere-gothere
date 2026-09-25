@@ -4,29 +4,20 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/narrate.ts": {
+    "api/router.ts": {
       "maxDuration": 60
-    },
-    "api/route.ts": {
-      "maxDuration": 60
-    },
-    "api/trails/route.ts": {
-      "maxDuration": 60
-    },
-    "api/strava/callback.ts": {
-      "maxDuration": 60
-    },
-    "api/strava/sync.ts": {
-      "maxDuration": 60
-    },
-    "api/cron/sync.ts": {
-      "maxDuration": 300
     }
   },
   "crons": [
     {
       "path": "/api/cron/sync",
       "schedule": "30 4 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/router?__path=:path*"
     }
   ]
 }
