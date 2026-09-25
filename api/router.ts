@@ -39,6 +39,7 @@ export const ROUTES: Record<string, () => Promise<RouteModule>> = {
   photos: () => import('../routes/photos.js'),
   'photos/along': () => import('../routes/photos/along.js'),
   push: () => import('../routes/push.js'),
+  tts: () => import('../routes/tts.js'),
   'push/test': () => import('../routes/push/test.js'),
   public: () => import('../routes/public.js'),
   route: () => import('../routes/route.js'),

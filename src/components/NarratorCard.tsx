@@ -17,6 +17,7 @@ import {
   Slider,
   Stack,
   TextField,
+  ListSubheader,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -36,6 +37,7 @@ import {
   useNarratorSettings,
 } from '../lib/narrator';
 import type { NarrateRequest, NarrationStyle } from '../lib/types';
+import { NATURAL_VOICES, type Playback, readAloud } from '../lib/readAloud';
 import { t } from '../lib/i18n';
 
 function useVoices() {
@@ -174,9 +176,25 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
               </MenuItem>
             ))}
           </TextField>
-          {list.length > 0 && (
-            <TextField select label={t('Voice for reading aloud (this device)')} value={s.voiceURI ?? ''} onChange={(e) => saveNarratorSettings({ voiceURI: e.target.value || null })}>
-              <MenuItem value="">{t('Browser default')}</MenuItem>
+          <TextField
+            select
+            label={t('Voice for reading aloud')}
+            value={s.reader === 'device' ? 'device' : s.naturalVoice}
+            onChange={(e) => (e.target.value === 'device' ? saveNarratorSettings({ reader: 'device' }) : saveNarratorSettings({ reader: 'natural', naturalVoice: e.target.value }))}
+            helperText={s.reader === 'natural' ? t('Natural studio voices by Google, in the story language.') : t('Uses the voices of this device; works offline.')}
+          >
+            <ListSubheader>{t('Natural voices')}</ListSubheader>
+            {NATURAL_VOICES.map((v) => (
+              <MenuItem key={v.id} value={v.id}>
+                {v.label} · {t(v.hint)}
+              </MenuItem>
+            ))}
+            <ListSubheader>{t('This device')}</ListSubheader>
+            <MenuItem value="device">{t('Device voice')}</MenuItem>
+          </TextField>
+          {s.reader === 'device' && list.length > 0 && (
+            <TextField select label={t('Device voice')} value={s.voiceURI ?? ''} onChange={(e) => saveNarratorSettings({ voiceURI: e.target.value || null })}>
+              <MenuItem value="">{t('Best available')}</MenuItem>
               {list.map((v) => (
                 <MenuItem key={v.voiceURI} value={v.voiceURI}>
                   {v.name} ({v.lang})
@@ -184,6 +202,17 @@ function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void 
               ))}
             </TextField>
           )}
+          <Button
+            variant="outlined"
+            startIcon={<VolumeUpIcon />}
+            onClick={async () => {
+              const p = await readAloud(t('Hello! I will read your travel stories aloud, from the first step to the finish line.'), s);
+              if (p.notice) setResult({ busy: false, ok: false, text: p.notice });
+            }}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            {t('Listen to a sample')}
+          </Button>
           <Box>
             <Typography variant="body2" gutterBottom>
               {t('Speaking rate: {rate}×', { rate: s.rate.toFixed(1) })}
@@ -210,13 +239,15 @@ interface Props {
 export default function NarratorCard({ journeyId, request, title }: Props) {
   const settings = useNarratorSettings();
   const { data: me } = useMe();
-  const voices = useVoices();
   const key = narrationKey(journeyId, request.lat, request.lon, settings.style);
   const [text, setText] = useState('');
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const playbackRef = useRef<Playback | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -242,7 +273,7 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
 
   useEffect(() => () => {
     abortRef.current?.abort();
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    playbackRef.current?.stop();
   }, []);
 
   const canRun = !!me?.ai;
@@ -268,23 +299,26 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
     }
   };
 
-  const speak = () => {
-    if (!('speechSynthesis' in window)) return;
-    const synth = window.speechSynthesis;
-    if (speaking) {
-      synth.cancel();
+  const speak = async () => {
+    if (speaking || preparing) {
+      playbackRef.current?.stop();
       setSpeaking(false);
       return;
     }
-    const u = new SpeechSynthesisUtterance(text.replace(/\*/g, ''));
-    u.lang = navigator.language;
-    u.rate = settings.rate;
-    const v = voices.find((x) => x.voiceURI === settings.voiceURI);
-    if (v) u.voice = v;
-    u.onend = u.onerror = () => setSpeaking(false);
-    synth.cancel();
-    synth.speak(u);
-    setSpeaking(true);
+    setPreparing(true);
+    setNotice(null);
+    try {
+      const p = await readAloud(text, settings);
+      playbackRef.current = p;
+      if (p.notice) setNotice(p.notice);
+      setSpeaking(true);
+      await p.done;
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPreparing(false);
+      setSpeaking(false);
+    }
   };
 
   return (
@@ -335,9 +369,9 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
           <Button variant="contained" onClick={generate} loading={busy} startIcon={<AutoStoriesIcon />}>
             {text ? t('Tell it again') : t('Tell me about this place')}
           </Button>
-          {text && !busy && 'speechSynthesis' in window && (
-            <Button variant="outlined" onClick={speak} startIcon={speaking ? <StopIcon /> : <VolumeUpIcon />}>
-              {speaking ? t('Stop') : t('Read aloud')}
+          {text && !busy && (
+            <Button variant="outlined" onClick={speak} loading={preparing && !speaking} loadingPosition="start" startIcon={speaking ? <StopIcon /> : <VolumeUpIcon />}>
+              {speaking ? t('Stop') : preparing ? t('Preparing voice…') : t('Read aloud')}
             </Button>
           )}
           {savedAt && !busy && (
@@ -347,6 +381,11 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
           )}
         </Stack>
       </CardContent>
+      {notice && (
+        <Alert severity="info" onClose={() => setNotice(null)} sx={{ mx: 2, mb: 2, wordBreak: 'break-word' }}>
+          {notice}
+        </Alert>
+      )}
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </Card>
   );

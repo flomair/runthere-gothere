@@ -6,12 +6,15 @@ import { t } from './i18n';
 /** Per-device preferences (voices differ per device). The API key lives encrypted on the server. */
 export interface NarratorSettings {
   style: NarrationStyle;
+  /** Natural Google Cloud voice (default) or the device's own speech voices. */
+  reader: 'natural' | 'device';
+  naturalVoice: string;
   voiceURI: string | null;
   rate: number;
 }
 
 const KEY = 'rtgt.narrator.v1';
-const DEFAULTS: NarratorSettings = { style: 'travelogue', voiceURI: null, rate: 1 };
+const DEFAULTS: NarratorSettings = { style: 'travelogue', reader: 'natural', naturalVoice: 'Charon', voiceURI: null, rate: 1 };
 const listeners = new Set<() => void>();
 let cache: NarratorSettings | null = null;
 

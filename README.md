@@ -76,7 +76,7 @@ firestore.rules deny-all rules for direct database access
 | Photos | Wikimedia Commons, [Mapillary](https://www.mapillary.com/developer) | Mapillary optional |
 | Places & reviews | Google Places API (New) | optional |
 | AI narrator | Anthropic Claude (`claude-sonnet-5`) | each user's own key (stored encrypted) |
-| Read aloud | Browser Web Speech API | no |
+| Read aloud | Google Cloud Text-to-Speech (Chirp 3 HD natural voices) via the Firebase service account; browser voices as fallback | no extra key; enable the API once |
 | 3D flyover | [MapLibre GL](https://maplibre.org), Esri World Imagery, [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/) | no |
 
 ## Setup
@@ -125,6 +125,8 @@ Webhooks can't reach `localhost`; use **Sync now** in the account menu while dev
 - `GOOGLE_PLACES_API_KEY`: top-rated cafés, sights and parks with a review snippet. Without it the app links to Google Maps searches.
 
 - `VITE_FIREBASE_VAPID_KEY`: turns on **push notifications** (milestones reached, kudos and comments from friends). In the Firebase console open *Project settings → Cloud Messaging → Web Push certificates* and click *Generate key pair*; copy the key. Each person then turns notifications on per device in the account menu. On iPhone this works only in the installed app (iOS 16.4+). Sending uses the service account you already set up.
+
+- **Natural read-aloud voices**: in the Google Cloud console of your Firebase project, enable the *Cloud Text-to-Speech API* (APIs & Services → Library; the project needs billing turned on, Google includes a monthly free allowance). The app uses the service account you already set up. Until it's enabled, stories are read with the best voice of the device.
 
 The Mapillary and Google keys are shared by everyone using the deployment. The AI narrator is not: **each user adds their own Anthropic key** in the narrator settings. The key is checked, stored encrypted in their account, and used only for their own stories. Organization-level keys also need the Workspace ID (Anthropic says "not scoped to a workspace" otherwise).
 

@@ -62,6 +62,13 @@ export const db = () => {
   return firestore;
 };
 
+/** OAuth access token of the service account (cloud-platform scope), for other Google Cloud APIs. */
+export async function googleAccessToken(): Promise<string> {
+  const cred = app().options.credential;
+  if (!cred) throw new HttpError(500, 'no service account configured');
+  return (await cred.getAccessToken()).access_token;
+}
+
 /** Firebase Cloud Messaging, for push notifications. */
 export const messaging = () => getMessaging(app());
 
