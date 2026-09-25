@@ -11,11 +11,15 @@ import {
 } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 
+/**
+ * Firebase web config. These values are public identifiers (they ship to every browser); access is
+ * protected by Google sign-in and the server-side allowlist. VITE_FIREBASE_* env vars override them.
+ */
 const config = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined,
+  apiKey: (import.meta.env.VITE_FIREBASE_API_KEY as string | undefined) || 'AIzaSyDqDxbZ_KD3Ur4nb2s-40sSy4-sfYPGveM',
+  authDomain: (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined) || 'run-there-go-threre.firebaseapp.com',
+  projectId: (import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined) || 'run-there-go-threre',
+  appId: (import.meta.env.VITE_FIREBASE_APP_ID as string | undefined) || '1:788921664587:web:3fdedfdbe593066ed279ce',
 };
 
 export const firebaseConfigured = Boolean(config.apiKey && config.authDomain && config.projectId);

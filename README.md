@@ -78,7 +78,7 @@ firestore.rules deny-all rules for direct database access
 2. **Build → Authentication → Get started → Sign-in method → Google → Enable.**
 3. **Authentication → Settings → Authorized domains:** add your Vercel domain (e.g. `runthere-gothere-dev.vercel.app`). `localhost` is already there.
 4. **Build → Firestore Database → Create database** (production mode, a region near you). Under **Rules**, paste the contents of `firestore.rules` and publish.
-5. **Project settings → General → Your apps → Web (`</>`):** register an app and copy `apiKey`, `authDomain`, `projectId` and `appId` into the `VITE_FIREBASE_*` variables.
+5. **Web app config:** the config of the `run-there-go-threre` project is built into `src/lib/firebase.ts`. For a different Firebase project, set the `VITE_FIREBASE_*` variables (Project settings → General → Your apps → Web).
 6. **Project settings → Service accounts → Generate new private key:** put the whole JSON into `FIREBASE_SERVICE_ACCOUNT` (raw, or base64 with `base64 -w0 key.json`). Keep it secret.
 7. Set `ADMIN_EMAILS` to your Google address.
 
