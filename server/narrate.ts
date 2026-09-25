@@ -6,7 +6,7 @@ import { reverseGeocode } from './places.js';
 import { googlePlaces, weather, wikipedia } from './surroundings.js';
 import { describeWeatherCode } from '../shared/weather.js';
 
-export const NARRATOR_MODEL = 'claude-opus-5';
+export const NARRATOR_MODEL = 'claude-sonnet-5';
 
 const STYLE_GUIDE: Record<NarrationStyle, string> = {
   travelogue: `Write a travelogue entry of 250–400 words in the first person plural ("we"), as if the reader and you were walking there together.
@@ -156,11 +156,10 @@ export async function narrate(
   const anthropic = client(resolved);
   const languageName = new Intl.DisplayNames(['en'], { type: 'language' }).of(req.language) ?? req.language;
 
-  const stream = anthropic.beta.messages.stream({
+  const stream = anthropic.messages.stream({
     model: NARRATOR_MODEL,
-    max_tokens: 4000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
+    // room for adaptive thinking plus a ~400-word story
+    max_tokens: 8000,
     thinking: { type: 'adaptive' },
     output_config: { effort: 'medium' },
     system: SYSTEM,

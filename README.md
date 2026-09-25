@@ -50,7 +50,7 @@ test/           Vitest unit tests (external APIs are mocked)
 | Wikipedia | Wikipedia geosearch (in your browser language, English fallback) | no |
 | Photos | Wikimedia Commons, [Mapillary](https://www.mapillary.com/developer) | Mapillary optional |
 | Places & reviews | Google Places API (New) | optional |
-| AI narrator | Anthropic Claude (`claude-opus-5`) | server key **or** your own key in the app |
+| AI narrator | Anthropic Claude (`claude-sonnet-5`) | server key **or** your own key in the app |
 | Read aloud | Browser Web Speech API | no |
 
 ## Setup

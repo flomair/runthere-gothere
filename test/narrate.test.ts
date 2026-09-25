@@ -23,7 +23,7 @@ describe('narrate', () => {
         if (url.includes('api.anthropic.com')) {
           anthropicBody = JSON.parse(String(init?.body));
           anthropicHeaders = new Headers(init?.headers);
-          const msg = { id: 'm', type: 'message', role: 'assistant', model: 'claude-opus-5', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } };
+          const msg = { id: 'm', type: 'message', role: 'assistant', model: 'claude-sonnet-5', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } };
           return sse([
             ['message_start', { type: 'message_start', message: msg }],
             ['content_block_start', { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } }],
@@ -56,10 +56,9 @@ describe('narrate', () => {
     expect(await res.text()).toBe('We stand in Dresden.');
 
     expect(anthropicHeaders!.get('x-api-key')).toBe('sk-ant-user');
-    expect(anthropicHeaders!.get('anthropic-beta')).toContain('server-side-fallback-2026-07-01');
-    const body = anthropicBody as unknown as { model: string; fallbacks: string; stream: boolean; messages: { content: string }[] };
-    expect(body.model).toBe('claude-opus-5');
-    expect(body.fallbacks).toBe('default');
+    const body = anthropicBody as unknown as { model: string; stream: boolean; thinking: { type: string }; messages: { content: string }[] };
+    expect(body.model).toBe('claude-sonnet-5');
+    expect(body.thinking.type).toBe('adaptive');
     expect(body.stream).toBe(true);
     const prompt = body.messages[0].content;
     expect(prompt).toContain('Dresden (Saxony, Germany)');
@@ -84,7 +83,7 @@ describe('key handling', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-        expect(String(input)).toContain('/v1/models/claude-opus-5');
+        expect(String(input)).toContain('/v1/models/claude-sonnet-5');
         const h = new Headers(init?.headers);
         expect(h.get('x-api-key')).toBe('sk-ant-api03-bad0');
         expect(h.get('authorization')).toBeNull();
@@ -118,7 +117,7 @@ describe('workspace header', () => {
             JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header' } }),
             { status: 400, headers: { 'Content-Type': 'application/json' } },
           );
-        return new Response(JSON.stringify({ type: 'model', id: 'claude-opus-5', display_name: 'Claude Opus 5', created_at: '2026-01-01T00:00:00Z' }), {
+        return new Response(JSON.stringify({ type: 'model', id: 'claude-sonnet-5', display_name: 'Claude Sonnet 5', created_at: '2026-01-01T00:00:00Z' }), {
           headers: { 'Content-Type': 'application/json' },
         });
       }),
@@ -130,7 +129,7 @@ describe('workspace header', () => {
     expect(without.ok).toBe(false);
     expect(without.error).toMatch(/Workspace ID/);
     const withWs = await call({ 'x-anthropic-key': 'sk-ant-api03-org1', 'x-anthropic-workspace': ' wrkspc_abc123 ' });
-    expect(withWs).toMatchObject({ ok: true, model: 'Claude Opus 5' });
+    expect(withWs).toMatchObject({ ok: true, model: 'Claude Sonnet 5' });
     expect(seen).toEqual([null, 'wrkspc_abc123']);
   });
 });
