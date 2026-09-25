@@ -55,7 +55,8 @@ test/           Vitest unit tests (external APIs are mocked)
 At <https://www.strava.com/settings/api>:
 
 - **Authorization Callback Domain**: `localhost` for local dev, or your Vercel domain (e.g. `runthere-gothere.vercel.app`).
-- Note the **Client ID** and **Client Secret**.
+- Note the **Client ID** and **Client Secret**. That's all you need from Strava.
+- Ignore *Your Access Token* / *Your Refresh Token* on that page. They only carry the `read` scope, which can't read activities. The app gets its own access and refresh tokens (with `activity:read_all`) when you click **Connect with Strava**, and renews them automatically.
 
 ### 2. Run locally
 
@@ -65,7 +66,7 @@ npm install
 npm run dev                  # http://localhost:5173, the /api functions run inside Vite
 ```
 
-`SESSION_SECRET` can be any long random string (`openssl rand -hex 32`).
+`SESSION_SECRET` is **not** a Strava value: make up any long random string (`openssl rand -hex 32`). It encrypts the cookie that stores your Strava tokens.
 
 ### 3. Deploy to Vercel
 
