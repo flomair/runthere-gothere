@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Box, Chip, Dialog, IconButton, Link, Skeleton, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
-import { formatDate } from '../lib/format';
+import { formatDate, formatKm } from '../lib/format';
 import type { Photo } from '../lib/types';
 
 export default function PhotoStrip({ photos, loading }: { photos: Photo[] | undefined; loading: boolean }) {
@@ -64,7 +64,7 @@ export default function PhotoStrip({ photos, loading }: { photos: Photo[] | unde
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.85 }}>
                 {p.takenAt ? formatDate(p.takenAt, { year: 'numeric', month: 'short' }) : 'date unknown'} ·{' '}
-                {(p.distanceM / 1000).toFixed(1)} km away
+                {formatKm(p.distanceM)} away
               </Typography>
             </Box>
             <Chip

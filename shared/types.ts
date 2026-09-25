@@ -172,6 +172,21 @@ export interface ManualEntry {
   date: string;
   distanceM: number;
   note?: string;
+  movingTimeS?: number;
+  elevationGainM?: number;
+  /** Set when imported from a GPX/TCX/FIT file. */
+  source?: 'file';
+}
+
+/** "Reach <place> by <date>" */
+export interface Challenge {
+  id: string;
+  title: string;
+  /** Distance along the route (true metres) to reach. */
+  targetM: number;
+  /** YYYY-MM-DD */
+  deadline: string;
+  createdAt: string;
 }
 
 export interface Journey {
@@ -192,5 +207,12 @@ export interface Journey {
   route: { points: LatLon[]; totalM: number; provider: string };
   /** Progress when the journey was last opened – used for the "since last time" banner. */
   lastSeen?: { doneM: number; at: string };
+  /** Arrive by this date (YYYY-MM-DD). */
+  goalDate?: string;
+  challenges?: Challenge[];
+  /** Count climbing: every 100 m of ascent adds 1 km ("effort km"). */
+  countElevation?: boolean;
+  /** Elevation profile: `elevations[i]` is the altitude at i·stepM along the route (true metres). */
+  profile?: { stepM: number; elevations: number[] };
 }
 

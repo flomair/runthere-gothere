@@ -1,7 +1,7 @@
 import L from 'leaflet';
 import { useEffect, useMemo, useRef } from 'react';
 import { LayersControl, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
-import { type LatLon, haversine, positionAt, splitRoute } from '../../shared/geo';
+import { type LatLon, haversine, positionAt, sliceRoute, splitRoute } from '../../shared/geo';
 import type { Waypoint } from '../lib/types';
 
 const icon = (cls: string, html = '') =>
@@ -32,6 +32,14 @@ function FlyTo({ target, token }: { target: LatLon | null; token: number }) {
     if (target && token > 0) map.flyTo(target, Math.max(map.getZoom(), 12), { duration: 1.2 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+  return null;
+}
+
+function FitHighlight({ line }: { line: LatLon[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (line.length >= 2) map.flyToBounds(L.latLngBounds(line), { padding: [60, 60], duration: 1, maxZoom: 13 });
+  }, [map, line]);
   return null;
 }
 
@@ -67,10 +75,13 @@ interface Props {
   flyToken: number;
   flyTarget: LatLon | null;
   height?: number | string;
+  /** Stretch to highlight (stored-line metres), e.g. a selected run. */
+  highlight?: { fromM: number; toM: number } | null;
 }
 
-export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460 }: Props) {
+export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight }: Props) {
   const { done, ahead } = useMemo(() => splitRoute(points, cum, doneM), [points, cum, doneM]);
+  const hl = useMemo(() => (highlight ? sliceRoute(points, cum, highlight.fromM, highlight.toM) : []), [points, cum, highlight]);
   const me = done[done.length - 1];
   const peek = peekM != null ? positionAt(points, cum, peekM).point : null;
   const start = points[0];
@@ -104,6 +115,8 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
 
       <Polyline positions={ahead} pathOptions={{ color: '#1d3557', weight: 4, opacity: 0.55, dashArray: '6 8' }} />
       <Polyline positions={done} pathOptions={{ color: '#fc4c02', weight: 6, opacity: 0.95 }} />
+      {hl.length >= 2 && <Polyline positions={hl} pathOptions={{ color: '#f4b400', weight: 9, opacity: 0.9, lineCap: 'round' }} />}
+      {hl.length >= 2 && <FitHighlight line={hl} />}
 
       <Marker position={start} icon={ICONS.start}>
         <Tooltip>{waypoints[0]?.name ?? 'Start'}</Tooltip>

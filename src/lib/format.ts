@@ -1,4 +1,16 @@
-export { formatKm } from '../../shared/geo';
+import { getUnit, toUnit } from './units';
+
+/** Distance in the user's unit (km or mi), e.g. "12.3 km". */
+export function formatKm(meters: number, digits = 1): string {
+  const v = toUnit(meters);
+  return `${v.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: v < 100 ? digits : 0 })} ${getUnit()}`;
+}
+
+/** Pace in the user's unit, e.g. "5:12 /km". */
+export function formatPace(secPerKm: number): string {
+  const s = getUnit() === 'mi' ? secPerKm * 1.609344 : secPerKm;
+  return `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')} /${getUnit()}`;
+}
 
 export const formatDate = (d: Date | string, opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }) =>
   new Intl.DateTimeFormat(undefined, opts).format(typeof d === 'string' ? new Date(d.length === 10 ? `${d}T12:00:00` : d) : d);

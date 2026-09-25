@@ -299,3 +299,45 @@ export function decodePolyline(s: string, precision = 5): LatLon[] {
   }
   return out;
 }
+
+/**
+ * Evenly spaced sample points along the stored (simplified) route, expressed in true route
+ * metres. `scale` = stored-line length / true route length.
+ */
+export function samplePoints(points: LatLon[], cum: number[], totalM: number, count: number): { stepM: number; points: LatLon[] } {
+  const stepM = totalM / (count - 1);
+  const scale = cum[cum.length - 1] > 0 ? cum[cum.length - 1] / totalM : 1;
+  return { stepM, points: Array.from({ length: count }, (_, i) => positionAt(points, cum, i * stepM * scale).point) };
+}
+
+export interface ProfileStats {
+  ascentM: number;
+  descentM: number;
+  minM: number;
+  maxM: number;
+}
+
+/** Total ascent/descent with a small threshold to ignore DEM noise. */
+export function profileStats(elev: number[], thresholdM = 3): ProfileStats {
+  let ascent = 0;
+  let descent = 0;
+  let ref = elev[0] ?? 0;
+  for (const e of elev) {
+    if (e - ref >= thresholdM) {
+      ascent += e - ref;
+      ref = e;
+    } else if (ref - e >= thresholdM) {
+      descent += ref - e;
+      ref = e;
+    }
+  }
+  return { ascentM: ascent, descentM: descent, minM: Math.min(...elev), maxM: Math.max(...elev) };
+}
+
+/** The part of the route between two distances (in stored-line metres). */
+export function sliceRoute(points: LatLon[], cum: number[], fromM: number, toM: number): LatLon[] {
+  if (points.length < 2 || toM <= fromM) return [];
+  const a = positionAt(points, cum, fromM);
+  const b = positionAt(points, cum, toM);
+  return [a.point, ...points.slice(a.index + 1, b.index + 1), b.point];
+}

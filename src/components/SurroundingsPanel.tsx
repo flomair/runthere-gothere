@@ -18,9 +18,10 @@ import {
 } from '@mui/material';
 import type { LatLon } from '../../shared/geo';
 import { describeWeatherCode } from '../../shared/weather';
+import { formatKm } from '../lib/format';
 import type { SurroundingsResponse } from '../lib/types';
 
-const km = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`);
+const km = (m: number) => (m < 1000 ? `${Math.round(m)} m` : formatKm(m));
 
 export function WeatherBadge({ data }: { data: SurroundingsResponse['weather'] }) {
   if (!data) return null;

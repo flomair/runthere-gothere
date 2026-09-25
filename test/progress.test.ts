@@ -68,3 +68,50 @@ describe('computeProgress', () => {
     expect(p.eta).toBeUndefined();
   });
 });
+
+describe('goals, challenges, streaks, records', () => {
+  const now = new Date('2026-09-23T12:00:00'); // Wednesday
+
+  it('counts climbing as effort km when enabled', () => {
+    const a = { ...act(1, '2026-09-02', 10), elevationGainM: 300 };
+    expect(computeProgress(journey(), [a], now).doneM).toBe(10_000);
+    const p = computeProgress(journey({ countElevation: true }), [a], now);
+    expect(p.doneM).toBe(13_000);
+    expect(p.entries[0]).toMatchObject({ startM: 0, cumulativeM: 13_000, countedM: 13_000 });
+  });
+
+  it('computes the weekly distance needed for the goal date', () => {
+    const p = computeProgress(journey({ goalDate: '2026-10-21' }), [act(1, '2026-09-20', 30)], now);
+    expect(p.goal?.daysLeft).toBe(29);
+    expect(p.goal!.requiredWeeklyM / 1000).toBeCloseTo(70 / (29 / 7), 1);
+    expect(p.goal?.onTrack).toBe(false);
+    const easy = computeProgress(journey({ goalDate: '2027-06-01' }), [act(1, '2026-09-20', 30)], now);
+    expect(easy.goal?.onTrack).toBe(true);
+  });
+
+  it('tracks challenges', () => {
+    const challenges = [
+      { id: 'a', title: 'Reach km 20', targetM: 20_000, deadline: '2026-09-30', createdAt: '2026-09-01' },
+      { id: 'b', title: 'Reach km 90', targetM: 90_000, deadline: '2026-09-10', createdAt: '2026-09-01' },
+    ];
+    const p = computeProgress(journey({ challenges }), [act(1, '2026-09-05', 12), act(2, '2026-09-12', 12)], now);
+    expect(p.challenges[0]).toMatchObject({ achieved: true, remainingM: 0 });
+    expect(p.challenges[0].achievedOn?.slice(0, 10)).toBe('2026-09-12');
+    expect(p.challenges[1]).toMatchObject({ achieved: false, expired: true, remainingM: 66_000 });
+  });
+
+  it('computes streaks and personal records', () => {
+    const acts = [
+      act(1, '2026-09-01', 5), // week of Aug 31
+      act(2, '2026-09-08', 8), // week of Sep 7
+      act(3, '2026-09-15', 21), // week of Sep 14
+      act(4, '2026-09-21', 6), // week of Sep 21 (this week), Mon
+      act(5, '2026-09-22', 4), // Tue
+    ];
+    const p = computeProgress(journey(), acts, now);
+    expect(p.streaks).toEqual({ weeks: 4, bestWeeks: 4, days: 2 });
+    expect(p.records.longest?.distanceM).toBe(21_000);
+    expect(p.records.bestWeek).toEqual({ distanceM: 21_000, weekStart: '2026-09-14' });
+    expect(p.records.fastestPace?.secPerKm).toBeCloseTo(300, 5);
+  });
+});

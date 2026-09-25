@@ -14,6 +14,7 @@ export const ROUTES: Record<string, () => Promise<RouteModule>> = {
   'admin/strava-webhook': () => import('../routes/admin/strava-webhook.js'),
   'ai-key': () => import('../routes/ai-key.js'),
   'cron/sync': () => import('../routes/cron/sync.js'),
+  elevation: () => import('../routes/elevation.js'),
   geocode: () => import('../routes/geocode.js'),
   health: () => import('../routes/health.js'),
   journeys: () => import('../routes/journeys.js'),

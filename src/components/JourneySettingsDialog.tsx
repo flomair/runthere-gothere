@@ -21,12 +21,14 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
   const [startDate, setStartDate] = useState(journey.startDate);
   const [sportTypes, setSportTypes] = useState(journey.sportTypes);
   const [useStrava, setUseStrava] = useState(journey.useStrava);
+  const [countElevation, setCountElevation] = useState(!!journey.countElevation);
   useEffect(() => {
     if (open) {
       setName(journey.name);
       setStartDate(journey.startDate);
       setSportTypes(journey.sportTypes);
       setUseStrava(journey.useStrava);
+      setCountElevation(!!journey.countElevation);
     }
   }, [open, journey]);
 
@@ -57,6 +59,17 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
             </Stack>
           </Box>
           <FormControlLabel control={<Switch checked={useStrava} onChange={(e) => setUseStrava(e.target.checked)} />} label="Use my Strava activities" />
+          <FormControlLabel
+            control={<Switch checked={countElevation} onChange={(e) => setCountElevation(e.target.checked)} />}
+            label={
+              <Box>
+                Count climbing as distance
+                <Typography variant="caption" color="text.secondary" component="div">
+                  Every 100 m of ascent counts as 1 km extra ("effort km"). Hilly runs get you over the Alps faster.
+                </Typography>
+              </Box>
+            }
+          />
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -65,7 +78,7 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
           variant="contained"
           disabled={!sportTypes.length || !startDate}
           onClick={() => {
-            journeyStore.update(journey.id, { name: name.trim() || journey.name, startDate, sportTypes, useStrava });
+            journeyStore.update(journey.id, { name: name.trim() || journey.name, startDate, sportTypes, useStrava, countElevation });
             onClose();
           }}
         >

@@ -20,14 +20,17 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { cumulativeDistances, haversine, positionAt } from '../../shared/geo';
+import { cumulativeDistances, haversine, positionAt, samplePoints } from '../../shared/geo';
 import { navigate } from '../lib/nav';
-import { useActivities, useMe, useStravaActions } from '../lib/api';
+import { api, useActivities, useMe, useStravaActions } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
-import { computeProgress } from '../lib/progress';
+import { fromUnit, getUnit, toUnit } from '../lib/units';
+import { type ProgressEntry, computeProgress } from '../lib/progress';
 import { journeyStore } from '../lib/storage';
 import type { Journey } from '../lib/types';
 import ActivityLog from './ActivityLog';
+import ElevationProfile from './ElevationProfile';
+import GoalsCard from './GoalsCard';
 import JourneySettingsDialog from './JourneySettingsDialog';
 import LocationExplorer from './LocationExplorer';
 import RouteMap from './RouteMap';
@@ -89,6 +92,28 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selected, setSelected] = useState<ProgressEntry | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  // elevation profile: fetched once per journey and stored with it
+  const [profileState, setProfileState] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
+  useEffect(() => {
+    if (journey.profile || points.length < 2) return;
+    let cancelled = false;
+    setProfileState({ loading: true, error: null });
+    const n = Math.min(300, Math.max(60, Math.round(journey.route.totalM / 2000)));
+    const sample = samplePoints(points, cum, journey.route.totalM, n);
+    api<{ elevations: number[] }>('/api/elevation', { method: 'POST', json: { points: sample.points } })
+      .then((r) => {
+        if (!cancelled) journeyStore.update(journey.id, { profile: { stepM: sample.stepM, elevations: r.elevations } });
+      })
+      .catch((e) => !cancelled && setProfileState({ loading: false, error: e instanceof Error ? e.message : String(e) }))
+      .finally(() => !cancelled && setProfileState((st) => ({ ...st, loading: false })));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journey.id, !!journey.profile]);
   const peekPoint = positionAt(points, cum, peekM * scale).point;
 
   // "since your last visit" – computed once when the data is ready, then remembered
@@ -140,7 +165,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   };
 
   const quickPeeks = [5, 10, 25, 50, 100, 250]
-    .map((k) => progress.doneM + k * 1000)
+    .map((k) => progress.doneM + fromUnit(k))
     .filter((m) => m < progress.totalM);
 
 
@@ -223,7 +248,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
 
       <StatsRow p={progress} />
 
-      <Card sx={{ overflow: 'hidden', position: 'relative' }}>
+      <Card ref={mapRef} sx={{ overflow: 'hidden', position: 'relative', scrollMarginTop: 80 }}>
         <RouteMap
           points={points}
           cum={cum}
@@ -236,6 +261,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           }}
           flyToken={fly.token}
           flyTarget={fly.target}
+          highlight={selected ? { fromM: selected.startM * scale, toM: selected.cumulativeM * scale } : null}
         />
         <Button
           variant="contained"
@@ -246,7 +272,25 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         >
           Where am I?
         </Button>
+        {selected && (
+          <Chip
+            label={`${selected.label} · ${formatDate(selected.date)} · ${formatKm(selected.countedM)}`}
+            onDelete={() => setSelected(null)}
+            sx={{ position: 'absolute', right: 12, bottom: 12, zIndex: 1000, bgcolor: '#f4b400', color: '#1d1d1d', maxWidth: '60%' }}
+          />
+        )}
       </Card>
+
+      <ElevationProfile
+        profile={journey.profile}
+        loading={profileState.loading && !journey.profile}
+        error={profileState.error}
+        doneM={progress.doneM}
+        highlight={selected ? { fromM: selected.startM, toM: selected.cumulativeM } : null}
+        peekM={tab === 'ahead' ? peekM : null}
+      />
+
+      <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />
 
       <Box>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
@@ -260,18 +304,18 @@ export default function JourneyView({ journey }: { journey: Journey }) {
               Preview any point on the route: drag the slider, tap a chip, or click the line on the map.
             </Typography>
             <Slider
-              value={peekM / 1000}
+              value={peekM}
               min={0}
-              max={progress.totalM / 1000}
-              step={0.5}
-              onChange={(_, v) => setPeekM((v as number) * 1000)}
+              max={progress.totalM}
+              step={500}
+              onChange={(_, v) => setPeekM(v as number)}
               valueLabelDisplay="auto"
-              valueLabelFormat={(v) => `${v.toFixed(0)} km`}
-              marks={[{ value: progress.doneM / 1000, label: 'you' }]}
+              valueLabelFormat={(v) => formatKm(v, 0)}
+              marks={[{ value: progress.doneM, label: 'you' }]}
             />
             <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
               {quickPeeks.map((m) => (
-                <Chip key={m} label={`+${Math.round((m - progress.doneM) / 1000)} km`} onClick={() => setPeekM(m)} variant={Math.abs(m - peekM) < 1 ? 'filled' : 'outlined'} color="secondary" />
+                <Chip key={m} label={`+${formatKm(m - progress.doneM, 0)}`} onClick={() => setPeekM(m)} variant={Math.abs(m - peekM) < 1 ? 'filled' : 'outlined'} color="secondary" />
               ))}
               {waypointDist.slice(1).filter((w) => w.m > progress.doneM).map((w) => (
                 <Chip key={w.name} label={w.name} onClick={() => setPeekM(w.m)} variant={Math.abs(w.m - peekM) < 1 ? 'filled' : 'outlined'} />
@@ -285,7 +329,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             key="here"
             journeyId={journey.id}
             point={here}
-            eyebrow={progress.finished ? 'You have arrived' : `You are here · km ${(progress.doneM / 1000).toFixed(1)}`}
+            eyebrow={progress.finished ? 'You have arrived' : `You are here · ${getUnit()} ${toUnit(progress.doneM).toFixed(1)}`}
             narrate={narrateBase(progress.doneM)}
           />
         ) : (
@@ -295,15 +339,18 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             point={peekPoint}
             eyebrow={
               peekM > progress.doneM
-                ? `In ${formatKm(peekM - progress.doneM, 0)} · km ${(peekM / 1000).toFixed(0)}`
-                : `Behind you · km ${(peekM / 1000).toFixed(0)}`
+                ? `In ${formatKm(peekM - progress.doneM, 0)} · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
+                : `Behind you · ${getUnit()} ${toUnit(peekM).toFixed(0)}`
             }
             narrate={{ ...narrateBase(peekM), peek: { aheadM: peekM - progress.doneM } }}
           />
         )}
       </Box>
 
-      <ActivityLog journey={journey} progress={progress} />
+      <ActivityLog journey={journey} progress={progress} selectedKey={selected?.key} onSelect={(e) => {
+        setSelected(e);
+        if (e) mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }} />
       <Typography variant="caption" color="text.secondary">
         Route: {journey.route.provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{me?.features.mapillary ? ', Mapillary' : ''}. Weather: Open-Meteo.
       </Typography>

@@ -3,6 +3,7 @@ import DarkModeIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeIcon from '@mui/icons-material/LightModeOutlined';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import LogoutIcon from '@mui/icons-material/Logout';
+import StraightenIcon from '@mui/icons-material/Straighten';
 import SyncIcon from '@mui/icons-material/Sync';
 import {
   AppBar,
@@ -25,6 +26,7 @@ import { useMe, useStravaActions } from '../lib/api';
 import { signOutUser } from '../lib/firebase';
 import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
+import { getUnit, setUnit } from '../lib/units';
 import StravaButton from './StravaButton';
 
 export default function AppHeader() {
@@ -140,6 +142,12 @@ export default function AppHeader() {
                   <StravaButton size="small" fullWidth />
                 </Box>
               ) : null}
+              <MenuItem onClick={() => setUnit(getUnit() === 'km' ? 'mi' : 'km')}>
+                <ListItemIcon>
+                  <StraightenIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={getUnit() === 'km' ? 'Show miles' : 'Show kilometres'} secondary={`currently ${getUnit()}`} />
+              </MenuItem>
               {me.user.isAdmin && (
                 <MenuItem
                   onClick={() => {
