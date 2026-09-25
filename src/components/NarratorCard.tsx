@@ -23,14 +23,16 @@ import {
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { lang, useMe } from '../lib/api';
 import { formatDate } from '../lib/format';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   STYLE_LABELS,
-  authHeaders,
+  deleteAiKey,
   loadNarration,
   narrationKey,
+  saveAiKey,
   saveNarratorSettings,
-  storeNarration,
   streamNarration,
+  testAiKey,
   useNarratorSettings,
 } from '../lib/narrator';
 import type { NarrateRequest, NarrationStyle } from '../lib/types';
@@ -68,74 +70,102 @@ function Prose({ text }: { text: string }) {
   );
 }
 
-function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: () => void; serverKey: boolean }) {
+function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const s = useNarratorSettings();
   const voices = useVoices();
-  const [key, setKey] = useState(s.apiKey);
-  const [workspace, setWorkspace] = useState(s.workspaceId);
-  const [test, setTest] = useState<{ busy: boolean; ok?: boolean; text?: string }>({ busy: false });
+  const qc = useQueryClient();
+  const { data: me } = useMe();
+  const stored = me?.ai ?? null;
+  const [key, setKey] = useState('');
+  const [workspace, setWorkspace] = useState('');
+  const [result, setResult] = useState<{ busy: boolean; ok?: boolean; text?: string }>({ busy: false });
   useEffect(() => {
-    setKey(s.apiKey);
-    setWorkspace(s.workspaceId);
-    setTest({ busy: false });
-  }, [s.apiKey, s.workspaceId, open]);
-
-  const runTest = async () => {
-    setTest({ busy: true });
-    try {
-      const res = await fetch('/api/ai-check', { method: 'POST', headers: authHeaders(key, workspace) });
-      const r = (await res.json()) as { ok: boolean; source?: string; masked?: string; model?: string; error?: string };
-      setTest({
-        busy: false,
-        ok: r.ok,
-        text: r.ok ? `Works: ${r.source === 'yours' ? 'your key' : "the server's key"} (${r.masked}) can use ${r.model}.` : r.error,
-      });
-    } catch (e) {
-      setTest({ busy: false, ok: false, text: e instanceof Error ? e.message : String(e) });
+    if (open) {
+      setKey('');
+      setWorkspace(stored?.workspaceId ?? '');
+      setResult({ busy: false });
     }
-  };
+  }, [open, stored?.workspaceId]);
   const preferred = voices.filter((v) => v.lang.toLowerCase().startsWith(lang()));
   const list = preferred.length ? [...preferred, ...voices.filter((v) => !preferred.includes(v))] : voices;
+
+  const run = async (fn: () => ReturnType<typeof testAiKey>, okText: (model: string) => string) => {
+    setResult({ busy: true });
+    const r = await fn();
+    setResult({ busy: false, ok: r.ok, text: r.ok ? okText(r.model) : r.error });
+    await qc.invalidateQueries({ queryKey: ['me'] });
+    if (r.ok) setKey('');
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Narrator settings</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
+          <Box>
+            <Typography variant="subtitle2">Your Anthropic API key</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {stored ? (
+                <>
+                  Saved: <code>{stored.masked}</code>
+                  {stored.workspaceId ? ` · workspace ${stored.workspaceId}` : ''}. Stored encrypted in your account and used only for your stories.
+                </>
+              ) : (
+                'Each person uses their own key (console.anthropic.com → API Keys). It is checked, then stored encrypted in your account.'
+              )}
+            </Typography>
+          </Box>
           <TextField
-            label="Your Anthropic API key"
+            label={stored ? 'Replace with a new key' : 'API key'}
             type="password"
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            placeholder="sk-ant-…"
+            placeholder="sk-ant-api03-…"
             autoComplete="off"
-            helperText={
-              serverKey
-                ? 'Optional: this deployment already has a key. Add yours to use your own account. Leave empty to use the server key.'
-                : 'Stored only in this browser. It is sent along with narration requests and never saved on the server. Get a key at console.anthropic.com.'
-            }
           />
-          {key.trim() && (
-            <TextField
-              label="Workspace ID (only for organization-level keys)"
-              value={workspace}
-              onChange={(e) => setWorkspace(e.target.value)}
-              placeholder="wrkspc_…"
-              autoComplete="off"
-              size="small"
-              helperText="Leave empty unless Anthropic says the key is not scoped to a workspace. Find the ID under Console → Settings → Workspaces."
-            />
-          )}
-          <Box>
-            <Button size="small" variant="outlined" onClick={runTest} loading={test.busy} disabled={!key.trim() && !serverKey}>
-              {key.trim() ? 'Test this key' : "Test the server's key"}
+          <TextField
+            label="Workspace ID (only for organization-level keys)"
+            value={workspace}
+            onChange={(e) => setWorkspace(e.target.value)}
+            placeholder="wrkspc_…"
+            autoComplete="off"
+            size="small"
+            helperText="Leave empty unless Anthropic says the key is not scoped to a workspace."
+          />
+          <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              loading={result.busy}
+              disabled={!key.trim()}
+              onClick={() => run(() => saveAiKey(key, workspace), (m) => `Saved. The key works with ${m}.`)}
+            >
+              Check &amp; save key
             </Button>
-            {test.text && (
-              <Alert severity={test.ok ? 'success' : 'error'} sx={{ mt: 1.5, wordBreak: 'break-word' }}>
-                {test.text}
-              </Alert>
+            {stored && (
+              <Button variant="outlined" disabled={result.busy} onClick={() => run(testAiKey, (m) => `Your saved key works with ${m}.`)}>
+                Test saved key
+              </Button>
             )}
-          </Box>
+            {stored && (
+              <Button
+                color="error"
+                disabled={result.busy}
+                onClick={async () => {
+                  if (!confirm('Remove your saved API key?')) return;
+                  await deleteAiKey();
+                  setResult({ busy: false });
+                  await qc.invalidateQueries({ queryKey: ['me'] });
+                }}
+              >
+                Remove key
+              </Button>
+            )}
+          </Stack>
+          {result.text && (
+            <Alert severity={result.ok ? 'success' : 'error'} sx={{ wordBreak: 'break-word' }}>
+              {result.text}
+            </Alert>
+          )}
           <TextField select label="Style" value={s.style} onChange={(e) => saveNarratorSettings({ style: e.target.value as NarrationStyle })}>
             {Object.entries(STYLE_LABELS).map(([v, l]) => (
               <MenuItem key={v} value={v}>
@@ -144,7 +174,7 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
             ))}
           </TextField>
           {list.length > 0 && (
-            <TextField select label="Voice for reading aloud" value={s.voiceURI ?? ''} onChange={(e) => saveNarratorSettings({ voiceURI: e.target.value || null })}>
+            <TextField select label="Voice for reading aloud (this device)" value={s.voiceURI ?? ''} onChange={(e) => saveNarratorSettings({ voiceURI: e.target.value || null })}>
               <MenuItem value="">Browser default</MenuItem>
               {list.map((v) => (
                 <MenuItem key={v.voiceURI} value={v.voiceURI}>
@@ -162,19 +192,8 @@ function SettingsDialog({ open, onClose, serverKey }: { open: boolean; onClose: 
         </Stack>
       </DialogContent>
       <DialogActions>
-        {s.apiKey && (
-          <Button color="error" onClick={() => saveNarratorSettings({ apiKey: '', workspaceId: '' })}>
-            Remove key
-          </Button>
-        )}
-        <Button
-          variant="contained"
-          onClick={() => {
-            saveNarratorSettings({ apiKey: key.trim(), workspaceId: workspace.trim() });
-            onClose();
-          }}
-        >
-          Save
+        <Button variant="contained" onClick={onClose}>
+          Done
         </Button>
       </DialogActions>
     </Dialog>
@@ -191,10 +210,9 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
   const settings = useNarratorSettings();
   const { data: me } = useMe();
   const voices = useVoices();
-  const serverKey = !!me?.features.ai;
   const key = narrationKey(journeyId, request.lat, request.lon, settings.style);
-  const [text, setText] = useState<string>(() => loadNarration(key)?.text ?? '');
-  const [savedAt, setSavedAt] = useState<string | null>(() => loadNarration(key)?.at ?? null);
+  const [text, setText] = useState('');
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
@@ -203,11 +221,22 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
 
   // new point or style → show the saved story for it, if any
   useEffect(() => {
-    const saved = loadNarration(key);
-    setText(saved?.text ?? '');
-    setSavedAt(saved?.at ?? null);
+    let cancelled = false;
+    setText('');
+    setSavedAt(null);
     setError(null);
     abortRef.current?.abort();
+    loadNarration(key)
+      .then((n) => {
+        if (!cancelled && n) {
+          setText(n.text);
+          setSavedAt(n.at);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [key]);
 
   useEffect(() => () => {
@@ -215,7 +244,7 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }, []);
 
-  const canRun = serverKey || !!settings.apiKey;
+  const canRun = !!me?.ai;
 
   const generate = async () => {
     if (!canRun) {
@@ -229,11 +258,8 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
     setError(null);
     setText('');
     try {
-      const full = await streamNarration({ ...request, style: settings.style, language: lang() }, settings, setText, ac.signal);
-      if (full.trim()) {
-        storeNarration(key, full);
-        setSavedAt(new Date().toISOString());
-      }
+      const full = await streamNarration({ ...request, style: settings.style, language: lang(), saveKey: key }, setText, ac.signal);
+      if (full.trim() && !full.includes('\n\n[')) setSavedAt(new Date().toISOString());
     } catch (e) {
       if (!ac.signal.aborted) setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -320,7 +346,7 @@ export default function NarratorCard({ journeyId, request, title }: Props) {
           )}
         </Stack>
       </CardContent>
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} serverKey={serverKey} />
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </Card>
   );
 }

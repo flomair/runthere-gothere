@@ -1,0 +1,10 @@
+rules_version = '2';
+// Run There · Go There: all data access goes through the app's server (Firebase Admin SDK),
+// which bypasses these rules. Browsers get no direct database access at all.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

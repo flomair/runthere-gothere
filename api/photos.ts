@@ -1,8 +1,9 @@
-import { handle, json, latLonParams } from '../server/http.js';
+import { json, latLonParams } from '../server/http.js';
+import { authed } from '../server/access.js';
 import { commonsPhotos, mapillaryPhotos } from '../server/photos.js';
 
 /** GET /api/photos?lat&lon – street-level (Mapillary) + geotagged Commons photos near a point. */
-export const GET = handle(async (req) => {
+export const GET = authed(async (req) => {
   const [lat, lon] = latLonParams(new URL(req.url));
   const [mly, wm] = await Promise.allSettled([mapillaryPhotos(lat, lon), commonsPhotos(lat, lon)]);
   const photos = [

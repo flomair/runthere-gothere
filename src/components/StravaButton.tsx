@@ -1,10 +1,22 @@
 import { Button, type ButtonProps } from '@mui/material';
+import { useState } from 'react';
+import { connectStrava } from '../lib/api';
 
 export default function StravaButton(props: ButtonProps) {
+  const [busy, setBusy] = useState(false);
   return (
     <Button
       variant="contained"
-      href="/api/auth/login"
+      loading={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await connectStrava();
+        } catch (e) {
+          alert(`Could not start the Strava connection: ${e instanceof Error ? e.message : e}`);
+          setBusy(false);
+        }
+      }}
       sx={{ bgcolor: '#fc4c02', '&:hover': { bgcolor: '#e34402' }, color: '#fff', whiteSpace: 'nowrap' }}
       startIcon={
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>

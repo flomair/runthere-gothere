@@ -1,12 +1,18 @@
+import AdminIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import DarkModeIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeIcon from '@mui/icons-material/LightModeOutlined';
+import LinkOffIcon from '@mui/icons-material/LinkOff';
+import LogoutIcon from '@mui/icons-material/Logout';
+import SyncIcon from '@mui/icons-material/Sync';
 import {
   AppBar,
   Avatar,
   Box,
-  Button,
+  Divider,
   IconButton,
   Link,
+  ListItemIcon,
+  ListItemText,
   Menu,
   MenuItem,
   Toolbar,
@@ -15,16 +21,20 @@ import {
   useColorScheme,
 } from '@mui/material';
 import { useState } from 'react';
+import { useMe, useStravaActions } from '../lib/api';
+import { signOutUser } from '../lib/firebase';
+import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
-import { useLogout, useMe } from '../lib/api';
 import StravaButton from './StravaButton';
 
 export default function AppHeader() {
   const { data: me } = useMe();
-  const logout = useLogout();
+  const strava = useStravaActions();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const { mode, systemMode, setMode } = useColorScheme();
   const effective = mode === 'system' ? systemMode : mode;
+  const close = () => setAnchor(null);
 
   return (
     <AppBar
@@ -70,36 +80,94 @@ export default function AppHeader() {
           </IconButton>
         </Tooltip>
 
-        {me?.athlete ? (
+        {me && !me.strava && me.features.strava && (
+          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <StravaButton size="small" />
+          </Box>
+        )}
+
+        {me && (
           <>
-            <Button
-              color="inherit"
-              onClick={(e) => setAnchor(e.currentTarget)}
-              startIcon={<Avatar src={me.athlete.profile} sx={{ width: 28, height: 28 }} />}
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-            >
-              {me.athlete.firstname}
-            </Button>
-            <IconButton onClick={(e) => setAnchor(e.currentTarget)} sx={{ display: { sm: 'none' } }}>
-              <Avatar src={me.athlete.profile} sx={{ width: 28, height: 28 }} />
+            <IconButton onClick={(e) => setAnchor(e.currentTarget)} aria-label="account menu">
+              <Avatar src={me.user.picture} alt={me.user.name} sx={{ width: 32, height: 32 }} />
             </IconButton>
-            <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
-              <MenuItem component="a" href={`https://www.strava.com/athletes/${me.athlete.id}`} target="_blank">
-                Open Strava profile
-              </MenuItem>
+            <Menu anchorEl={anchor} open={!!anchor} onClose={close} slotProps={{ paper: { sx: { minWidth: 260 } } }}>
+              <Box sx={{ px: 2, py: 1 }}>
+                <Typography sx={{ fontWeight: 600 }}>{me.user.name ?? me.user.email}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {me.user.email}
+                </Typography>
+              </Box>
+              <Divider />
+              {me.strava ? (
+                [
+                  <MenuItem
+                    key="sync"
+                    disabled={syncing}
+                    onClick={async () => {
+                      setSyncing(true);
+                      try {
+                        await strava.sync();
+                      } finally {
+                        setSyncing(false);
+                        close();
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      <SyncIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={syncing ? 'Syncing…' : 'Sync Strava now'}
+                      secondary={me.strava.lastSyncAt ? `last: ${formatDate(me.strava.lastSyncAt, { dateStyle: 'short', timeStyle: 'short' })}` : undefined}
+                    />
+                  </MenuItem>,
+                  <MenuItem
+                    key="disconnect"
+                    onClick={async () => {
+                      close();
+                      if (confirm('Disconnect Strava? Runs already synced stay; new runs stop arriving.')) await strava.disconnect();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <LinkOffIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="Disconnect Strava" secondary={[me.strava.athlete.firstname, me.strava.athlete.lastname].filter(Boolean).join(' ')} />
+                  </MenuItem>,
+                ]
+              ) : me.features.strava ? (
+                <Box sx={{ px: 2, py: 1 }}>
+                  <StravaButton size="small" fullWidth />
+                </Box>
+              ) : null}
+              {me.user.isAdmin && (
+                <MenuItem
+                  onClick={() => {
+                    close();
+                    navigate('/admin');
+                  }}
+                >
+                  <ListItemIcon>
+                    <AdminIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="Admin" secondary="Who can use the app, Strava sync" />
+                </MenuItem>
+              )}
+              <Divider />
               <MenuItem
                 onClick={() => {
-                  setAnchor(null);
-                  void logout();
+                  close();
+                  void signOutUser();
                 }}
               >
-                Disconnect Strava
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Sign out
               </MenuItem>
             </Menu>
           </>
-        ) : me?.features.strava ? (
-          <StravaButton size="small" />
-        ) : null}
+        )}
       </Toolbar>
     </AppBar>
   );

@@ -71,7 +71,7 @@ export default function JourneyList() {
   const [dialog, setDialog] = useState<{ open: boolean; preset?: JourneyPreset }>({ open: false });
   const fileRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
-  const connected = !!me?.athlete;
+  const connected = !!me?.strava;
 
   const exportAll = () => {
     const blob = new Blob([JSON.stringify(journeys, null, 2)], { type: 'application/json' });
@@ -88,7 +88,7 @@ export default function JourneyList() {
       const data = JSON.parse(await f.text());
       const list = (Array.isArray(data) ? data : [data]) as Journey[];
       if (!list.every((j) => j.id && j.route?.points?.length)) throw new Error('Not a journey export');
-      journeyStore.import(list);
+      await journeyStore.import(list);
       setImportError(null);
     } catch (e) {
       setImportError(`Import failed: ${e instanceof Error ? e.message : e}`);
@@ -141,8 +141,8 @@ export default function JourneyList() {
 
       {me && !me.features.strava && (
         <Alert severity="info">
-          Strava isn't configured on this deployment yet (set <code>STRAVA_CLIENT_ID</code>,{' '}
-          <code>STRAVA_CLIENT_SECRET</code> and <code>SESSION_SECRET</code>). You can still add distances manually.
+          Strava isn't configured on this deployment yet (set <code>STRAVA_CLIENT_ID</code> and{' '}
+          <code>STRAVA_CLIENT_SECRET</code>). You can still add distances manually.
         </Alert>
       )}
       {importError && (
@@ -199,7 +199,7 @@ export default function JourneyList() {
           </Box>
         )}
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-          Journeys are saved in this browser. Use Export / Import to move them to another device.
+          Journeys are saved in your account and available on every device you sign in on.
         </Typography>
       </Box>
 

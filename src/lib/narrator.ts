@@ -1,18 +1,16 @@
 import { useSyncExternalStore } from 'react';
+import { api, authHeaders } from './api';
 import type { NarrateRequest, NarrationStyle } from './types';
 
+/** Per-device preferences (voices differ per device). The API key lives encrypted on the server. */
 export interface NarratorSettings {
-  /** User's own Anthropic API key – stays in this browser, sent only with narrate requests. */
-  apiKey: string;
-  /** Needed only for organization-level keys that aren't scoped to a workspace. */
-  workspaceId: string;
   style: NarrationStyle;
   voiceURI: string | null;
   rate: number;
 }
 
 const KEY = 'rtgt.narrator.v1';
-const DEFAULTS: NarratorSettings = { apiKey: '', workspaceId: '', style: 'travelogue', voiceURI: null, rate: 1 };
+const DEFAULTS: NarratorSettings = { style: 'travelogue', voiceURI: null, rate: 1 };
 const listeners = new Set<() => void>();
 let cache: NarratorSettings | null = null;
 
@@ -55,23 +53,15 @@ export const STYLE_LABELS: Record<NarrationStyle, string> = {
   kids: 'Story for kids',
 };
 
-export function authHeaders(apiKey: string, workspaceId: string): Record<string, string> {
-  const h: Record<string, string> = {};
-  if (apiKey.trim()) h['x-anthropic-key'] = apiKey.trim();
-  if (apiKey.trim() && workspaceId.trim()) h['x-anthropic-workspace'] = workspaceId.trim();
-  return h;
-}
-
 /** Streams narration text; calls onText with the accumulated text. */
 export async function streamNarration(
-  req: NarrateRequest,
-  auth: { apiKey: string; workspaceId: string },
+  req: NarrateRequest & { saveKey: string },
   onText: (full: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
   const res = await fetch('/api/narrate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(auth.apiKey, auth.workspaceId) },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(req),
     signal,
   });
@@ -91,28 +81,29 @@ export async function streamNarration(
   return full;
 }
 
-// ---- saved narrations (so a story survives a reload) ----
-const SAVED = 'rtgt.narrations.v1';
-type Saved = Record<string, { text: string; at: string }>;
+// ---- saved stories (stored in the user's account) ----
 
 export const narrationKey = (journeyId: string, lat: number, lon: number, style: string) =>
   `${journeyId}|${lat.toFixed(3)}|${lon.toFixed(3)}|${style}`;
 
-export function loadNarration(key: string) {
-  try {
-    return (JSON.parse(localStorage.getItem(SAVED) ?? '{}') as Saved)[key] ?? null;
-  } catch {
-    return null;
-  }
+export const loadNarration = (key: string) =>
+  api<{ narration: { text: string; at: string } | null }>(`/api/narrations?key=${encodeURIComponent(key)}`).then((r) => r.narration);
+
+// ---- the user's Anthropic key (encrypted on the server) ----
+
+export type KeyResult = { ok: true; model: string } | { ok: false; error: string };
+
+async function keyCall(method: 'PUT' | 'POST' | 'DELETE', json?: unknown): Promise<KeyResult> {
+  const res = await fetch('/api/ai-key', {
+    method,
+    headers: { ...(json ? { 'Content-Type': 'application/json' } : {}), ...(await authHeaders()) },
+    body: json ? JSON.stringify(json) : undefined,
+  });
+  const body = (await res.json().catch(() => null)) as { ok?: boolean; model?: string; error?: string } | null;
+  if (body?.ok === true) return { ok: true, model: body.model ?? 'the narrator model' };
+  return { ok: false, error: body?.error ?? `Request failed (${res.status})` };
 }
 
-export function storeNarration(key: string, text: string) {
-  try {
-    const all = JSON.parse(localStorage.getItem(SAVED) ?? '{}') as Saved;
-    all[key] = { text, at: new Date().toISOString() };
-    const trimmed = Object.fromEntries(Object.entries(all).sort((a, b) => b[1].at.localeCompare(a[1].at)).slice(0, 40));
-    localStorage.setItem(SAVED, JSON.stringify(trimmed));
-  } catch {
-    /* ignore */
-  }
-}
+export const saveAiKey = (key: string, workspaceId: string) => keyCall('PUT', { key, workspaceId });
+export const testAiKey = () => keyCall('POST');
+export const deleteAiKey = () => keyCall('DELETE');

@@ -1,3 +1,4 @@
+import { api } from './api';
 import type { TrailRoute, TrailSearchResult } from './types';
 
 export interface TrailRecommendation {
@@ -57,16 +58,8 @@ export const TRAIL_RECOMMENDATIONS: TrailCategory[] = [
   },
 ];
 
-export async function searchTrails(q: string): Promise<TrailSearchResult[]> {
-  const res = await fetch(`/api/trails/search?q=${encodeURIComponent(q)}`);
-  const body = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((body as { error?: string } | null)?.error ?? `Search failed (${res.status})`);
-  return (body as { results: TrailSearchResult[] }).results;
-}
+export const searchTrails = (q: string) =>
+  api<{ results: TrailSearchResult[] }>(`/api/trails/search?q=${encodeURIComponent(q)}`).then((r) => r.results);
 
-export async function loadTrailRoute(osmId: number, reverse: boolean): Promise<TrailRoute> {
-  const res = await fetch(`/api/trails/route?id=${osmId}${reverse ? '&reverse=1' : ''}`);
-  const body = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((body as { error?: string } | null)?.error ?? `Loading the trail failed (${res.status})`);
-  return body as TrailRoute;
-}
+export const loadTrailRoute = (osmId: number, reverse: boolean) =>
+  api<TrailRoute>(`/api/trails/route?id=${osmId}${reverse ? '&reverse=1' : ''}`);

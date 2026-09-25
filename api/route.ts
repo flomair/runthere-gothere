@@ -1,9 +1,10 @@
 import type { LatLon } from '../shared/geo.js';
-import { HttpError, handle, json } from '../server/http.js';
+import { HttpError, json } from '../server/http.js';
+import { authed } from '../server/access.js';
 import { type RouteMode, planRoute } from '../server/routing.js';
 
 /** POST /api/route  { waypoints: [[lat,lon], ...], mode: 'foot' | 'hike' | 'bike' | 'direct' } */
-export const POST = handle(async (req) => {
+export const POST = authed(async (req) => {
   const body = (await req.json().catch(() => null)) as { waypoints?: unknown; mode?: unknown } | null;
   const wps = body?.waypoints;
   const valid =

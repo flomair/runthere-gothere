@@ -1,7 +1,8 @@
-import { HttpError, handle, json } from '../server/http.js';
+import { HttpError, json } from '../server/http.js';
+import { authed } from '../server/access.js';
 import { geocode } from '../server/places.js';
 
-export const GET = handle(async (req) => {
+export const GET = authed(async (req) => {
   const url = new URL(req.url);
   const q = url.searchParams.get('q')?.trim();
   if (!q || q.length < 2) throw new HttpError(400, 'query too short');

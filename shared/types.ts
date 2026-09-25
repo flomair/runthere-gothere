@@ -95,8 +95,11 @@ export interface Athlete {
 }
 
 export interface MeResponse {
-  athlete: Athlete | null;
-  features: { strava: boolean; mapillary: boolean; googlePlaces: boolean; ai: boolean };
+  user: { uid: string; email: string; name?: string; picture?: string; isAdmin: boolean };
+  strava: { athlete: Athlete; lastSyncAt?: string; syncedFrom?: number } | null;
+  /** The user's own stored Anthropic key (masked), if any. */
+  ai: { masked: string; workspaceId?: string } | null;
+  features: { strava: boolean; mapillary: boolean; googlePlaces: boolean };
 }
 
 export interface SurroundingsResponse {
@@ -154,3 +157,40 @@ export interface TrailRoute extends PlannedRoute {
   startName: string;
   endName: string;
 }
+
+// ---------- journeys (stored per user in Firestore) ----------
+
+export interface Waypoint {
+  name: string;
+  lat: number;
+  lon: number;
+}
+
+export interface ManualEntry {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  distanceM: number;
+  note?: string;
+}
+
+export interface Journey {
+  id: string;
+  name: string;
+  createdAt: string;
+  /** Only activities on/after this local date (YYYY-MM-DD) count. */
+  startDate: string;
+  /** Strava sport types that move you forward, e.g. Run, TrailRun. */
+  sportTypes: string[];
+  useStrava: boolean;
+  manualEntries: ManualEntry[];
+  excludedActivityIds: number[];
+  waypoints: Waypoint[];
+  mode: RouteMode | 'gpx' | 'trail';
+  /** Set for journeys along a named OSM trail. */
+  trail?: { osmId: number; name: string; ref?: string; website?: string; wikipedia?: string };
+  route: { points: LatLon[]; totalM: number; provider: string };
+  /** Progress when the journey was last opened – used for the "since last time" banner. */
+  lastSeen?: { doneM: number; at: string };
+}
+

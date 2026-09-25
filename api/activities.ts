@@ -1,15 +1,12 @@
-import { HttpError, handle, json, numParam } from '../server/http.js';
-import { readSession, sessionCookie } from '../server/session.js';
-import { ensureFresh, listActivities } from '../server/strava.js';
+import { authed } from '../server/access.js';
+import { json } from '../server/http.js';
+import { repo } from '../server/repo.js';
 
-/** GET /api/activities?after=<epoch seconds> – the athlete's activities since then. */
-export const GET = handle(async (req) => {
-  const stored = readSession(req);
-  if (!stored) throw new HttpError(401, 'Not connected to Strava');
-  const after = numParam(new URL(req.url), 'after', 0, 1e11);
-  const { session, refreshed } = await ensureFresh(stored);
-  const activities = await listActivities(session, after);
-  const headers = new Headers({ 'Cache-Control': 'private, no-store' });
-  if (refreshed) headers.append('Set-Cookie', sessionCookie(req, session));
-  return json({ activities }, { headers });
+/** GET /api/activities?since=YYYY-MM-DD – synced Strava activities (from Firestore, not Strava). */
+export const GET = authed(async (req, user) => {
+  const since = new URL(req.url).searchParams.get('since');
+  const sinceIso = since && /^\d{4}-\d{2}-\d{2}$/.test(since) ? `${since}T00:00:00Z` : undefined;
+  // one day of slack for time zones; journeys filter on the local date
+  const from = sinceIso ? new Date(Date.parse(sinceIso) - 86_400_000).toISOString() : undefined;
+  return json({ activities: await repo.listActivities(user.uid, from) }, { headers: { 'Cache-Control': 'no-store' } });
 });

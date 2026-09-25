@@ -1,14 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LatLon } from '../../shared/geo';
-import type {
-  Activity,
-  GeoResult,
-  MeResponse,
-  Photo,
-  PlannedRoute,
-  RouteMode,
-  SurroundingsResponse,
-} from './types';
+import { idToken } from './firebase';
+import type { Activity, GeoResult, MeResponse, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -19,8 +12,18 @@ export class ApiError extends Error {
   }
 }
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, { credentials: 'same-origin', ...init });
+export async function authHeaders(): Promise<Record<string, string>> {
+  const t = await idToken();
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
+/** Fetch an /api endpoint with the signed-in user's token; JSON in, JSON out. */
+export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
+  const { json, ...rest } = init;
+  const headers = new Headers(rest.headers);
+  for (const [k, v] of Object.entries(await authHeaders())) headers.set(k, v);
+  if (json !== undefined) headers.set('Content-Type', 'application/json');
+  const res = await fetch(path, { ...rest, headers, body: json !== undefined ? JSON.stringify(json) : rest.body });
   const text = await res.text();
   let body: unknown = null;
   try {
@@ -29,8 +32,8 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     /* non-JSON error page */
   }
   if (!res.ok) {
-    const msg = (body as { error?: string } | null)?.error ?? `${res.status} ${res.statusText}`;
-    throw new ApiError(res.status, msg);
+    const b = body as { error?: string } | null;
+    throw new ApiError(res.status, b?.error ?? `${res.status} ${res.statusText}`);
   }
   return body as T;
 }
@@ -40,44 +43,52 @@ export const lang = () => (typeof navigator !== 'undefined' ? navigator.language
 /** Round coordinates so nearby look-ups share a cache entry (~100 m). */
 const r3 = (n: number) => n.toFixed(3);
 
-export function useMe() {
+export function useMe(enabled = true) {
   return useQuery({
     queryKey: ['me'],
     queryFn: () => api<MeResponse>('/api/me'),
     staleTime: 5 * 60_000,
     retry: false,
+    enabled,
   });
-}
-
-export function useLogout() {
-  const qc = useQueryClient();
-  return async () => {
-    await api('/api/auth/logout', { method: 'POST' });
-    await qc.invalidateQueries();
-  };
 }
 
 export function useActivities(startDate: string, enabled: boolean) {
-  // one day of slack for time zones; exact filtering happens on the local date
-  const after = Math.floor(new Date(`${startDate}T00:00:00Z`).getTime() / 1000) - 86_400;
   return useQuery({
-    queryKey: ['activities', after],
-    queryFn: () => api<{ activities: Activity[] }>(`/api/activities?after=${after}`).then((r) => r.activities),
+    queryKey: ['activities', startDate],
+    queryFn: () => api<{ activities: Activity[] }>(`/api/activities?since=${startDate}`).then((r) => r.activities),
     enabled,
-    staleTime: 5 * 60_000,
-    retry: (count, err) => !(err instanceof ApiError && err.status === 401) && count < 2,
+    staleTime: 60_000,
   });
 }
 
+// ---- Strava ----
+export async function connectStrava() {
+  const { url } = await api<{ url: string }>('/api/strava/connect', { method: 'POST' });
+  window.location.href = url;
+}
+
+export function useStravaActions() {
+  const qc = useQueryClient();
+  return {
+    sync: async (since?: string) => {
+      const r = await api<{ fetched: number }>('/api/strava/sync', { method: 'POST', json: since ? { since } : {} });
+      await Promise.all([qc.invalidateQueries({ queryKey: ['activities'] }), qc.invalidateQueries({ queryKey: ['me'] })]);
+      return r;
+    },
+    disconnect: async () => {
+      await api('/api/strava/disconnect', { method: 'POST' });
+      await qc.invalidateQueries({ queryKey: ['me'] });
+    },
+  };
+}
+
+// ---- helpers used by the journey planner and explorer ----
 export const geocode = (q: string) =>
   api<{ results: GeoResult[] }>(`/api/geocode?q=${encodeURIComponent(q)}&lang=${lang()}`).then((r) => r.results);
 
 export const planRoute = (waypoints: LatLon[], mode: RouteMode) =>
-  api<PlannedRoute>('/api/route', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ waypoints, mode }),
-  });
+  api<PlannedRoute>('/api/route', { method: 'POST', json: { waypoints, mode } });
 
 export function usePhotos(point: LatLon | null) {
   return useQuery({

@@ -19,30 +19,47 @@ Once you arrive, go there for real. 🏁
 ## Stack
 
 - **React 19 + TypeScript + Vite + MUI**, with Leaflet / react-leaflet for the map
-- **Vercel Functions** in `/api` (Web-standard `Request → Response` handlers)
-- No database: Strava tokens live in an **AES-GCM encrypted httpOnly cookie**, and journeys are stored in the browser (`localStorage`, with JSON export/import)
+- **Vercel Functions** in `/api` (Web-standard `Request → Response` handlers), plus a daily **Vercel Cron**
+- **Firebase Authentication** (Google sign-in) and **Cloud Firestore**. Only the server talks to Firestore (Admin SDK); the database rules deny all browser access.
+- Sign-in is required, and only admins (`ADMIN_EMAILS`) and people on the in-app **allowlist** can use the app.
+- Strava tokens and each user's own Anthropic key are stored **AES-256-GCM encrypted** in Firestore.
 
 ```
-api/            Vercel functions (thin handlers)
-  auth/         Strava OAuth: login, callback, logout
-  activities.ts Strava activities since a date
+api/            Vercel functions (thin handlers; all require sign-in except Strava's callbacks and the cron)
+  me.ts         the signed-in user, connections, features
+  journeys.ts   list / save / delete journeys
+  activities.ts synced Strava activities (from Firestore)
+  strava/       connect, callback, sync, disconnect, webhook (Strava push events)
+  cron/sync.ts  daily safety-net sync for everyone connected
+  admin/        allowlist, Strava webhook registration (admins only)
+  ai-key.ts     save / test / delete your own Anthropic key (encrypted)
+  narrate.ts    AI narrator (streams text, saves the story)
+  narrations.ts saved stories
   route.ts      route planning (OSRM foot/bike, BRouter hiking trails, great circle fallback)
   trails/       classic trails: search (Waymarked Trails / Nominatim) and route geometry (Overpass)
   geocode.ts    place search (Nominatim)
   photos.ts     Mapillary + Wikimedia Commons photos near a point
   surroundings.ts  place name, weather, Wikipedia, Google places
-  narrate.ts    AI narrator (streams text)
-server/         server-side logic used by the functions
+server/         server-side logic (access control, Firestore repository, Strava sync, crypto)
 shared/         code shared by client and server (geo math, types, weather codes)
 src/            React app
-test/           Vitest unit tests (external APIs are mocked)
+test/           Vitest tests (Firebase and external APIs mocked); test/e2e: browser smoke-test config
+firestore.rules deny-all rules for direct database access
 ```
+
+### How runs are synced
+
+1. **Connect Strava** once. The app stores the refresh token encrypted and backfills your runs from the earliest journey start.
+2. **Strava webhook:** Strava notifies `/api/strava/webhook` within seconds about new, edited or deleted activities of every connected user. The app re-fetches the activity with that user's token and stores it.
+3. **Daily cron** (`/api/cron/sync`, 04:30 UTC) catches anything a webhook missed. **Sync now** in the account menu does the same on demand.
+4. Journeys calculate progress from the stored activities, so no Strava calls are needed to show your progress.
 
 ## Data sources
 
 | What | Source | Key needed |
 | --- | --- | --- |
-| Activities | Strava API | Strava API app (required for syncing) |
+| Sign-in & data | Firebase Authentication (Google) + Cloud Firestore | Firebase project (free tier is plenty) |
+| Activities | Strava API + webhooks | Strava API app |
 | Routing | [routing.openstreetmap.de](https://routing.openstreetmap.de) (OSRM foot/bike), [BRouter](https://brouter.de) (hiking trails) | no |
 | Classic trails | [Waymarked Trails](https://hiking.waymarkedtrails.org) search, [Overpass API](https://overpass-api.de) for the OSM relation geometry | no |
 | Place search / names | OpenStreetMap Nominatim | no (set `CONTACT_EMAIL` as their policy asks) |
@@ -50,41 +67,55 @@ test/           Vitest unit tests (external APIs are mocked)
 | Wikipedia | Wikipedia geosearch (in your browser language, English fallback) | no |
 | Photos | Wikimedia Commons, [Mapillary](https://www.mapillary.com/developer) | Mapillary optional |
 | Places & reviews | Google Places API (New) | optional |
-| AI narrator | Anthropic Claude (`claude-sonnet-5`) | server key **or** your own key in the app |
+| AI narrator | Anthropic Claude (`claude-sonnet-5`) | each user's own key (stored encrypted) |
 | Read aloud | Browser Web Speech API | no |
 
 ## Setup
 
-### 1. Create a Strava API application
+### 1. Firebase (Google sign-in + database)
+
+1. Create a project at <https://console.firebase.google.com>. Google Analytics is not needed.
+2. **Build → Authentication → Get started → Sign-in method → Google → Enable.**
+3. **Authentication → Settings → Authorized domains:** add your Vercel domain (e.g. `runthere-gothere-dev.vercel.app`). `localhost` is already there.
+4. **Build → Firestore Database → Create database** (production mode, a region near you). Under **Rules**, paste the contents of `firestore.rules` and publish.
+5. **Project settings → General → Your apps → Web (`</>`):** register an app and copy `apiKey`, `authDomain`, `projectId` and `appId` into the `VITE_FIREBASE_*` variables.
+6. **Project settings → Service accounts → Generate new private key:** put the whole JSON into `FIREBASE_SERVICE_ACCOUNT` (raw, or base64 with `base64 -w0 key.json`). Keep it secret.
+7. Set `ADMIN_EMAILS` to your Google address.
+
+### 2. Strava API application
 
 At <https://www.strava.com/settings/api>:
 
-- **Authorization Callback Domain**: `localhost` for local dev, or your Vercel domain (e.g. `runthere-gothere.vercel.app`).
-- Note the **Client ID** and **Client Secret**. That's all you need from Strava.
-- Ignore *Your Access Token* / *Your Refresh Token* on that page. They only carry the `read` scope, which can't read activities. The app gets its own access and refresh tokens (with `activity:read_all`) when you click **Connect with Strava**, and renews them automatically.
+- **Authorization Callback Domain**: your Vercel domain, or `localhost` for local dev. Strava allows one domain per app; create a second app for development if you like.
+- Copy the **Client ID** and **Client Secret**. Ignore *Your Access Token* / *Your Refresh Token*: the app gets its own tokens when you click **Connect with Strava**.
 
-### 2. Run locally
+### 3. Secrets
+
+- `SESSION_SECRET`: any long random string (`openssl rand -hex 32`). It encrypts stored tokens and keys; don't change it later.
+- `CRON_SECRET`: any random string; protects the daily sync job.
+
+### 4. Run locally
 
 ```bash
-cp .env.example .env.local   # fill in STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, SESSION_SECRET
+cp .env.example .env.local   # fill in the values from steps 1–3
 npm install
 npm run dev                  # http://localhost:5173, the /api functions run inside Vite
 ```
 
-`SESSION_SECRET` is **not** a Strava value: make up any long random string (`openssl rand -hex 32`). It encrypts the cookie that stores your Strava tokens.
+Webhooks can't reach `localhost`; use **Sync now** in the account menu while developing.
 
-### 3. Deploy to Vercel
+### 5. Deploy to Vercel
 
-1. Import the GitHub repo in Vercel. The framework (Vite) is detected from `vercel.json`.
-2. Add the environment variables from `.env.example` under *Settings → Environment Variables*.
-3. Deploy, then set your Strava app's callback domain to the Vercel domain.
+1. Add all variables from `.env.example` under *Settings → Environment Variables* (Production, and Preview if you use it), then redeploy.
+2. Sign in with your admin account, open **Admin** in the account menu and click **Turn on** under *Automatic Strava sync*. This registers the webhook for your domain.
+3. Add your friends' Google addresses on the same page.
 
 ### Optional extras
 
 - `MAPILLARY_TOKEN`: recent street-level photos along the route.
 - `GOOGLE_PLACES_API_KEY`: top-rated cafés, sights and parks with a review snippet. Without it the app links to Google Maps searches.
-- `ANTHROPIC_WORKSPACE_ID`: only needed if that key is an organization-level key not scoped to a workspace (Anthropic then answers "This API key is not scoped to a workspace"). Users with such a key enter the Workspace ID in the narrator settings.
-- `ANTHROPIC_API_KEY`: turns on the AI narrator for everyone using the deployment. Alternatively, each user can paste **their own Anthropic key** in the narrator settings. It stays in their browser, is sent only with narration requests (`x-anthropic-key` header) and is never stored on the server.
+
+These two are shared by everyone using the deployment. The AI narrator is not: **each user adds their own Anthropic key** in the narrator settings. The key is checked, stored encrypted in their account, and used only for their own stories. Organization-level keys also need the Workspace ID (Anthropic says "not scoped to a workspace" otherwise).
 
 ## Route options
 
@@ -106,7 +137,7 @@ When you press **"Tell me about this place"**, the server gathers context for th
 - **Travelogue with excursus** (default): arrival, a digression into one story tied to the place, then back on the road
 - **Postcard**, **Running coach**, **Story for kids**
 
-It is written in your browser's language and streamed as it is generated. **Read aloud** uses the browser's built-in voices (you pick the voice and speed in settings). Stories are cached per spot, so reopening doesn't cost another call.
+It is written in your browser's language and streamed as it is generated. **Read aloud** uses the browser's built-in voices (you pick the voice and speed in settings). Stories are saved in your account per spot and style, so reopening one doesn't cost another call, on any device.
 
 ## Scripts
 
@@ -119,7 +150,7 @@ npm run build      # production build
 
 ## Notes & limits
 
-- **Single-browser storage**: journeys live in `localStorage`. Use *Export / Import* to move them to another device.
+- Journeys saved in the browser by earlier versions are uploaded to your account on first sign-in. *Export / Import* still works for backups.
 - Public routing servers have fair-use limits. For very long routes the app falls back to another router or a great-circle line and tells you it did.
-- Strava's API allows 100 requests / 15 min and 1000 / day per app. Activities are cached for 5 minutes in the client.
+- Strava's API allows 100 requests / 15 min and 1000 / day per app, shared by all users. Webhooks plus stored activities keep usage low.
 - Only activities with the selected sport types, on or after the journey's start date, count. Individual activities can be excluded in the logbook, and distance can be added manually (e.g. for a treadmill run you didn't record).

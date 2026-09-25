@@ -12,6 +12,21 @@
     },
     "api/trails/route.ts": {
       "maxDuration": 60
+    },
+    "api/strava/callback.ts": {
+      "maxDuration": 60
+    },
+    "api/strava/sync.ts": {
+      "maxDuration": 60
+    },
+    "api/cron/sync.ts": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/sync",
+      "schedule": "30 4 * * *"
+    }
+  ]
 }

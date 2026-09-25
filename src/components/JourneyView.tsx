@@ -22,7 +22,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cumulativeDistances, haversine, positionAt } from '../../shared/geo';
 import { navigate } from '../lib/nav';
-import { ApiError, useActivities, useMe } from '../lib/api';
+import { useActivities, useMe, useStravaActions } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
 import { computeProgress } from '../lib/progress';
 import { journeyStore } from '../lib/storage';
@@ -47,8 +47,36 @@ function downloadGpx(j: Journey) {
 
 export default function JourneyView({ journey }: { journey: Journey }) {
   const { data: me } = useMe();
-  const connected = !!me?.athlete;
+  const connected = !!me?.strava;
+  const strava = useStravaActions();
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const activitiesQ = useActivities(journey.startDate, connected && journey.useStrava);
+  const syncNow = async () => {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      await strava.sync(journey.startDate);
+    } catch (e) {
+      setSyncError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSyncing(false);
+    }
+  };
+  // journeys can start before the earliest synced run: fetch the older runs once
+  const needsBackfill =
+    connected &&
+    journey.useStrava &&
+    me?.strava?.syncedFrom !== undefined &&
+    Date.parse(`${journey.startDate}T00:00:00Z`) / 1000 - 86_400 < me.strava.syncedFrom;
+  const backfillStarted = useRef(false);
+  useEffect(() => {
+    if (needsBackfill && !backfillStarted.current) {
+      backfillStarted.current = true;
+      void syncNow();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsBackfill]);
   const progress = useMemo(() => computeProgress(journey, activitiesQ.data), [journey, activitiesQ.data]);
   const { points } = journey.route;
   const cum = useMemo(() => cumulativeDistances(points), [points]);
@@ -115,7 +143,6 @@ export default function JourneyView({ journey }: { journey: Journey }) {
     .map((k) => progress.doneM + k * 1000)
     .filter((m) => m < progress.totalM);
 
-  const authError = activitiesQ.error instanceof ApiError && activitiesQ.error.status === 401;
 
   return (
     <Stack spacing={3}>
@@ -141,8 +168,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         </Box>
         {connected && journey.useStrava && (
           <Tooltip title="Sync Strava">
-            <IconButton onClick={() => activitiesQ.refetch()} disabled={activitiesQ.isFetching} aria-label="sync strava">
-              <RefreshIcon sx={{ animation: activitiesQ.isFetching ? 'spin 1s linear infinite' : undefined, '@keyframes spin': { to: { transform: 'rotate(360deg)' } } }} />
+            <IconButton onClick={syncNow} disabled={syncing} aria-label="sync strava">
+              <RefreshIcon sx={{ animation: syncing ? 'spin 1s linear infinite' : undefined, '@keyframes spin': { to: { transform: 'rotate(360deg)' } } }} />
             </IconButton>
           </Tooltip>
         )}
@@ -172,8 +199,12 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           Connect Strava so your runs move you along this route.
         </Alert>
       )}
-      {authError && <Alert severity="warning">Your Strava session expired. Please connect again.</Alert>}
-      {activitiesQ.error && !authError && <Alert severity="error">Could not load Strava activities: {activitiesQ.error.message}</Alert>}
+      {syncError && (
+        <Alert severity="error" onClose={() => setSyncError(null)}>
+          Strava sync failed: {syncError}
+        </Alert>
+      )}
+      {activitiesQ.error && <Alert severity="error">Could not load activities: {activitiesQ.error.message}</Alert>}
 
       {progress.finished && (
         <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>

@@ -16,7 +16,8 @@ export function json(data: unknown, init: ResponseInit & { cacheSeconds?: number
   const headers = new Headers(rest.headers);
   headers.set('Content-Type', 'application/json; charset=utf-8');
   if (cacheSeconds && !headers.has('Cache-Control')) {
-    headers.set('Cache-Control', `public, s-maxage=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 4}`);
+    // private: responses are only served to signed-in users, so no shared CDN caching
+    headers.set('Cache-Control', `private, max-age=${cacheSeconds}`);
   }
   return new Response(JSON.stringify(data), { ...rest, headers });
 }
@@ -72,4 +73,20 @@ export function stripHtml(s: string | undefined): string {
     .replace(/&gt;/g, '>')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** Public origin of the deployment, respecting Vercel's forwarding headers. */
+export function originOf(req: Request): string {
+  const url = new URL(req.url);
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? url.host;
+  const proto = req.headers.get('x-forwarded-proto') ?? url.protocol.replace(':', '');
+  return `${proto}://${host}`;
+}
+
+export async function readJson<T>(req: Request): Promise<T> {
+  try {
+    return (await req.json()) as T;
+  } catch {
+    throw new HttpError(400, 'invalid JSON body');
+  }
 }

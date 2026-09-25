@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { formatKm } from '../shared/geo.js';
 import type { NarrateRequest, NarrationStyle } from '../shared/types.js';
-import { HttpError } from './http.js';
 import { reverseGeocode } from './places.js';
 import { googlePlaces, weather, wikipedia } from './surroundings.js';
 import { describeWeatherCode } from '../shared/weather.js';
@@ -80,28 +79,28 @@ export function cleanKey(raw: string | undefined | null): string {
   return (raw ?? '').replace(/[\s"'`\u200B-\u200D\u2060\uFEFF]/g, '');
 }
 
+export function cleanWorkspace(raw: string | undefined | null): string | undefined {
+  const w = cleanKey(raw);
+  return /^[A-Za-z0-9_-]{1,128}$/.test(w) ? w : undefined;
+}
+
 export interface ResolvedKey {
   key: string;
   /** Workspace for organization-level keys (sent as anthropic-workspace-id). */
   workspaceId?: string;
-  source: 'yours' | 'server';
   /** Safe to show: prefix and last 4 characters. */
   masked: string;
 }
 
-const cleanWorkspace = (raw: string | undefined | null) => {
-  const w = cleanKey(raw);
-  return /^[A-Za-z0-9_-]{1,128}$/.test(w) ? w : undefined;
-};
-
-export function resolveKey(userKey: string | undefined | null, userWorkspace?: string | null): ResolvedKey | null {
-  const mine = cleanKey(userKey);
-  const server = cleanKey(process.env.ANTHROPIC_API_KEY);
-  const key = mine || server;
-  if (!key) return null;
+export function maskKey(key: string): string {
   const prefix = /^sk-ant-[a-z]+\d*-/.exec(key)?.[0] ?? key.slice(0, 7);
-  const workspaceId = mine ? cleanWorkspace(userWorkspace) : cleanWorkspace(process.env.ANTHROPIC_WORKSPACE_ID);
-  return { key, workspaceId, source: mine ? 'yours' : 'server', masked: `${prefix}…${key.slice(-4)}` };
+  return `${prefix}…${key.slice(-4)}`;
+}
+
+export function resolveKey(rawKey: string, rawWorkspace?: string | null): ResolvedKey | null {
+  const key = cleanKey(rawKey);
+  if (!key) return null;
+  return { key, workspaceId: cleanWorkspace(rawWorkspace), masked: maskKey(key) };
 }
 
 function client(k: ResolvedKey) {
@@ -115,7 +114,7 @@ function client(k: ResolvedKey) {
 
 /** Human-readable explanation of an API failure, naming which key was used. */
 export function explainError(e: unknown, k: ResolvedKey): string {
-  const who = k.source === 'yours' ? `your key (${k.masked})` : `the server's ANTHROPIC_API_KEY (${k.masked})`;
+  const who = `your key (${k.masked})`;
   if (e instanceof Anthropic.AuthenticationError) {
     return `Anthropic rejected ${who}: ${e.message}. Check that it is an API key from console.anthropic.com (starts with "sk-ant-api"), that it hasn't been disabled, and that it was copied completely.`;
   }
@@ -123,9 +122,10 @@ export function explainError(e: unknown, k: ResolvedKey): string {
   if (e instanceof Anthropic.NotFoundError) return `${NARRATOR_MODEL} is not available for ${who}: ${e.message}`;
   if (e instanceof Anthropic.RateLimitError) return 'The AI is rate-limited right now. Try again in a minute.';
   if (e instanceof Anthropic.BadRequestError && /anthropic-workspace-id|not scoped to a workspace/i.test(e.message)) {
-    return k.source === 'yours'
-      ? `${who} is an organization-level key. Enter your Workspace ID in the narrator settings (Console → Settings → Workspaces), or create a key inside a workspace.`
-      : `The server's key (${k.masked}) is an organization-level key. Set ANTHROPIC_WORKSPACE_ID on the server, or use a key created inside a workspace.`;
+    return `${who} is an organization-level key. Enter your Workspace ID in the narrator settings (Console → Settings → Workspaces), or create a key inside a workspace.`;
+  }
+  if (e instanceof Anthropic.BadRequestError && /credit balance/i.test(e.message)) {
+    return `The Anthropic account behind ${who} has no credits left. Add credits at console.anthropic.com → Settings → Billing.`;
   }
   if (e instanceof Anthropic.BadRequestError) return `Anthropic refused the request for ${who}: ${e.message}`;
   if (e instanceof Anthropic.APIError) return `AI error ${e.status ?? ''} with ${who}: ${e.message}`;
@@ -133,24 +133,21 @@ export function explainError(e: unknown, k: ResolvedKey): string {
 }
 
 /** Cheap check that a key works and can use the narrator model (no tokens spent). */
-export async function checkKey(userKey: string | undefined | null, userWorkspace?: string | null) {
-  const k = resolveKey(userKey, userWorkspace);
-  if (!k) return { ok: false as const, error: 'No key: add one here or set ANTHROPIC_API_KEY on the server.' };
+export async function checkKey(k: ResolvedKey): Promise<{ ok: true; model: string } | { ok: false; error: string }> {
   try {
     const m = await client(k).models.retrieve(NARRATOR_MODEL);
-    return { ok: true as const, source: k.source, masked: k.masked, model: m.display_name ?? m.id };
+    return { ok: true, model: m.display_name ?? m.id };
   } catch (e) {
-    return { ok: false as const, source: k.source, masked: k.masked, error: explainError(e, k) };
+    return { ok: false, error: explainError(e, k) };
   }
 }
 
+/** Streams the narration as plain UTF-8 text; `onDone` receives the full text. */
 export async function narrate(
   req: NarrateRequest,
-  apiKey: string | undefined,
-  workspaceId?: string | null,
+  resolved: ResolvedKey,
+  onDone?: (text: string) => Promise<void>,
 ): Promise<ReadableStream<Uint8Array>> {
-  const resolved = resolveKey(apiKey, workspaceId);
-  if (!resolved) throw new HttpError(400, 'No AI key configured. Add your Anthropic API key in the narrator settings, or set ANTHROPIC_API_KEY on the server.');
 
   const gathered = await gather(req);
   const anthropic = client(resolved);
@@ -175,9 +172,14 @@ export async function narrate(
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        stream.on('text', (t) => controller.enqueue(enc.encode(t)));
+        let full = '';
+        stream.on('text', (t) => {
+          full += t;
+          controller.enqueue(enc.encode(t));
+        });
         const final = await stream.finalMessage();
         if (final.stop_reason === 'refusal') controller.enqueue(enc.encode('\n\n[The narrator declined to describe this place.]'));
+        else if (full.trim() && onDone) await onDone(full).catch((e) => console.error('saving narration failed', e));
         controller.close();
       } catch (e) {
         const msg = explainError(e, resolved);

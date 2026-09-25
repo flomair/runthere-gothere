@@ -249,3 +249,53 @@ export function chainLines(lines: LatLon[][], maxGapM = 5000): ChainResult {
   const joined = growChains(sections, maxGapM).sort((a, b) => b.len - a.len)[0];
   return { points: joined.pts, used: joined.count, skippedM: Math.max(0, total - joined.len), maxGapM: joined.maxGap };
 }
+
+/** Google encoded-polyline (precision 5). Compact storage for routes (Firestore has no nested arrays). */
+export function encodePolyline(points: LatLon[], precision = 5): string {
+  const f = 10 ** precision;
+  let out = '';
+  let pLat = 0;
+  let pLon = 0;
+  const enc = (v: number) => {
+    let n = v < 0 ? ~(v << 1) : v << 1;
+    while (n >= 0x20) {
+      out += String.fromCharCode((0x20 | (n & 0x1f)) + 63);
+      n >>= 5;
+    }
+    out += String.fromCharCode(n + 63);
+  };
+  for (const [la, lo] of points) {
+    const lat = Math.round(la * f);
+    const lon = Math.round(lo * f);
+    enc(lat - pLat);
+    enc(lon - pLon);
+    pLat = lat;
+    pLon = lon;
+  }
+  return out;
+}
+
+export function decodePolyline(s: string, precision = 5): LatLon[] {
+  const f = 10 ** precision;
+  const out: LatLon[] = [];
+  let i = 0;
+  let lat = 0;
+  let lon = 0;
+  const dec = () => {
+    let shift = 0;
+    let result = 0;
+    let b;
+    do {
+      b = s.charCodeAt(i++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    return result & 1 ? ~(result >> 1) : result >> 1;
+  };
+  while (i < s.length) {
+    lat += dec();
+    lon += dec();
+    out.push([lat / f, lon / f]);
+  }
+  return out;
+}

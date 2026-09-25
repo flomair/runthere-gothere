@@ -1,12 +1,14 @@
 import { Alert, Box, CircularProgress, Container, Snackbar } from '@mui/material';
 import { Suspense, lazy, useEffect, useState } from 'react';
+import AdminPage from './components/AdminPage';
 import AppHeader from './components/AppHeader';
+import AuthGate from './components/AuthGate';
 import JourneyList from './components/JourneyList';
-import { useJourneys } from './lib/storage';
+import { journeyStore, useJourneyState } from './lib/storage';
 
 const JourneyView = lazy(() => import('./components/JourneyView'));
 
-/** Tiny hash router: #/ (list) and #/j/<id> (journey). */
+/** Tiny hash router: #/ (list), #/j/<id> (journey), #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -15,14 +17,14 @@ function useHashRoute() {
     return () => window.removeEventListener('hashchange', on);
   }, []);
   const m = /^#\/j\/([^/]+)/.exec(hash);
-  return m ? { journeyId: decodeURIComponent(m[1]) } : { journeyId: null };
+  return { journeyId: m ? decodeURIComponent(m[1]) : null, admin: hash.startsWith('#/admin') };
 }
 
 function useStravaFlash() {
   const [msg, setMsg] = useState<{ severity: 'success' | 'error'; text: string } | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    if (p.get('strava') === 'connected') setMsg({ severity: 'success', text: 'Strava connected – your runs now move you forward!' });
+    if (p.get('strava') === 'connected') setMsg({ severity: 'success', text: 'Strava connected. Your runs now move you forward, and new ones arrive automatically.' });
     else if (p.get('strava_error'))
       setMsg({ severity: 'error', text: `Strava connection failed: ${p.get('strava_error')}` });
     if (p.has('strava') || p.has('strava_error')) {
@@ -32,9 +34,9 @@ function useStravaFlash() {
   return [msg, () => setMsg(null)] as const;
 }
 
-export default function App() {
-  const { journeyId } = useHashRoute();
-  const journeys = useJourneys();
+function Main() {
+  const { journeyId, admin } = useHashRoute();
+  const { journeys, status, error } = useJourneyState();
   const journey = journeyId ? journeys.find((j) => j.id === journeyId) : undefined;
   const [flash, clearFlash] = useStravaFlash();
 
@@ -42,7 +44,16 @@ export default function App() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', pb: 8 }}>
       <AppHeader />
       <Container maxWidth="lg" sx={{ pt: { xs: 2, sm: 4 } }}>
-        {journey ? (
+        {error && (
+          <Alert severity="error" onClose={() => journeyStore.clearError()} sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+        {admin ? (
+          <AdminPage />
+        ) : status !== 'ready' && status !== 'error' ? (
+          <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />
+        ) : journey ? (
           <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
             <JourneyView key={journey.id} journey={journey} />
           </Suspense>
@@ -58,5 +69,13 @@ export default function App() {
         ) : undefined}
       </Snackbar>
     </Box>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthGate>
+      <Main />
+    </AuthGate>
   );
 }

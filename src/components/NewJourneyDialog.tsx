@@ -121,7 +121,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
     }
   };
 
-  const create = () => {
+  const create = async () => {
     if (!route) return;
     const pts = route.points;
     const endpoints = (a: string, b: string) => [
@@ -156,7 +156,11 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
         : undefined,
       route: { points: route.points, totalM: route.totalM, provider: route.provider },
     };
-    journeyStore.add(j);
+    try {
+      await journeyStore.add(j);
+    } catch {
+      return; // the error is shown by the app shell
+    }
     onClose();
     navigate(`/j/${j.id}`);
   };

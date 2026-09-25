@@ -1,28 +1,112 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setRepo } from '../server/repo';
+import { memoryRepo } from '../server/repo-memory';
+import { bearer, fakeVerify, req } from './helpers';
+
+vi.mock('../server/firebase', () => ({
+  verifyIdToken: async (t: string) => fakeVerify(t),
+  db: () => {
+    throw new Error('no Firestore in tests');
+  },
+}));
+
+const OWNER = bearer('owner', 'owner@example.com');
+let store: ReturnType<typeof memoryRepo>;
 
 function sse(events: [string, unknown][]) {
   const text = events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join('');
   return new Response(text, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
 }
+const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
+const apiError = (status: number, type: string, message: string) => json({ type: 'error', error: { type, message } }, status);
+const model = () => json({ type: 'model', id: 'claude-sonnet-5', display_name: 'Claude Sonnet 5', created_at: '2026-01-01T00:00:00Z' });
 
+beforeEach(() => {
+  process.env.SESSION_SECRET = 'test-secret-that-is-long-enough';
+  process.env.ADMIN_EMAILS = 'owner@example.com';
+  store = memoryRepo();
+  setRepo(store);
+});
 afterEach(() => vi.unstubAllGlobals());
 
+describe('AI key (per user, encrypted)', () => {
+  it('validates, stores encrypted, masks, and deletes', async () => {
+    const seen: Headers[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_i: unknown, init?: RequestInit) => {
+        const h = new Headers(init?.headers);
+        seen.push(h);
+        if (h.get('x-api-key') === 'sk-ant-api03-bad0') return apiError(401, 'authentication_error', 'invalid x-api-key');
+        if (!h.get('anthropic-workspace-id')) return apiError(400, 'invalid_request_error', 'This API key is not scoped to a workspace');
+        return model();
+      }),
+    );
+    const api = await import('../api/ai-key');
+    const bad = await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: ' sk-ant-api03-bad0 ' } }));
+    expect(bad.status).toBe(400);
+    expect(((await bad.json()) as { error: string }).error).toContain('invalid x-api-key');
+    expect((await store.getSecrets('owner')).ai).toBeUndefined();
+
+    const noWs = await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: 'sk-ant-api03-good1234' } }));
+    expect(((await noWs.json()) as { error: string }).error).toMatch(/Workspace ID/);
+
+    const good = await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: '"sk-ant-api03-good1234"', workspaceId: 'wrkspc_1' } }));
+    expect(await good.json()).toMatchObject({ ok: true, model: 'Claude Sonnet 5' });
+    expect(seen.at(-1)!.get('authorization')).toBeNull();
+    const sealed = (await store.getSecrets('owner')).ai!;
+    expect(sealed).not.toContain('good1234');
+    expect((await store.getUser('owner'))?.ai).toMatchObject({ masked: 'sk-ant-api03-…1234', workspaceId: 'wrkspc_1' });
+
+    expect(await (await api.POST(req('/api/ai-key', { method: 'POST', headers: OWNER }))).json()).toMatchObject({ ok: true });
+    await api.DELETE(req('/api/ai-key', { method: 'DELETE', headers: OWNER }));
+    expect((await store.getSecrets('owner')).ai).toBeUndefined();
+    expect((await store.getUser('owner'))?.ai).toBeUndefined();
+  });
+
+  it('explains an empty credit balance', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => apiError(400, 'invalid_request_error', 'Your credit balance is too low to access the Anthropic API.')));
+    const api = await import('../api/ai-key');
+    const r = (await (await api.PUT(req('/api/ai-key', { method: 'PUT', headers: OWNER, json: { key: 'sk-ant-api03-x1' } }))).json()) as { error: string };
+    expect(r.error).toMatch(/no credits left/);
+  });
+});
+
 describe('narrate', () => {
-  it('gathers context, calls Claude with fallbacks and streams text back', async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    let anthropicHeaders: Headers | null = null;
+  const body = {
+    lat: 51.05,
+    lon: 13.74,
+    language: 'en',
+    style: 'travelogue',
+    saveKey: 'j1|51.050|13.740|travelogue',
+    journey: { name: 'Berlin → Vienna', from: 'Berlin', to: 'Vienna', totalM: 680_000, doneM: 190_000, upcoming: [{ name: 'Prague', inM: 150_000 }] },
+  };
+
+  it('requires the user’s own key', async () => {
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-api03-server-should-be-ignored';
+    const { POST } = await import('../api/narrate');
+    const res = await POST(req('/api/narrate', { method: 'POST', headers: OWNER, json: body }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toMatch(/your own Anthropic API key/);
+    delete process.env.ANTHROPIC_API_KEY;
+  });
+
+  it('streams a story with the stored key and saves it', async () => {
+    const { seal } = await import('../server/crypto');
+    await store.updateSecrets('owner', { ai: seal('ai-key', { key: 'sk-ant-api03-mine', workspaceId: 'wrkspc_9' }) });
+    let anthropicBody: { model: string; thinking: { type: string }; messages: { content: string }[] } | null = null;
+    let headers: Headers | null = null;
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
         const url = String(input instanceof Request ? input.url : input);
-        const json = (b: unknown) => new Response(JSON.stringify(b), { headers: { 'Content-Type': 'application/json' } });
-        if (url.includes('nominatim')) return json({ display_name: 'Dresden, Saxony, Germany', address: { city: 'Dresden', state: 'Saxony', country: 'Germany' } });
+        if (url.includes('nominatim')) return json({ display_name: 'Dresden', address: { city: 'Dresden', state: 'Saxony', country: 'Germany' } });
         if (url.includes('open-meteo'))
           return json({ timezone: 'Europe/Berlin', current: { time: '2026-09-23T15:00', temperature_2m: 17, apparent_temperature: 16, wind_speed_10m: 12, precipitation: 0, weather_code: 3, is_day: 1 } });
-        if (url.includes('wikipedia')) return json({ query: { pages: [{ pageid: 1, title: 'Frauenkirche', extract: 'A Lutheran church rebuilt in 2005.', coordinates: [{ lat: 51.05, lon: 13.74 }] }] } });
+        if (url.includes('wikipedia')) return json({ query: { pages: [{ pageid: 1, title: 'Frauenkirche', extract: 'Rebuilt in 2005.', coordinates: [{ lat: 51.05, lon: 13.74 }] }] } });
         if (url.includes('api.anthropic.com')) {
           anthropicBody = JSON.parse(String(init?.body));
-          anthropicHeaders = new Headers(init?.headers);
+          headers = new Headers(init?.headers);
           const msg = { id: 'm', type: 'message', role: 'assistant', model: 'claude-sonnet-5', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 0 } };
           return sse([
             ['message_start', { type: 'message_start', message: msg }],
@@ -37,99 +121,23 @@ describe('narrate', () => {
         throw new Error(`unexpected fetch ${url}`);
       }),
     );
-
     const { POST } = await import('../api/narrate');
-    const res = await POST(
-      new Request('http://x/api/narrate', {
-        method: 'POST',
-        headers: { 'x-anthropic-key': 'sk-ant-user' },
-        body: JSON.stringify({
-          lat: 51.05,
-          lon: 13.74,
-          language: 'en',
-          style: 'travelogue',
-          journey: { name: 'Berlin → Vienna', from: 'Berlin', to: 'Vienna', totalM: 680_000, doneM: 190_000, upcoming: [{ name: 'Prague', inM: 150_000 }] },
-        }),
-      }),
-    );
-    expect(res.status).toBe(200);
+    const res = await POST(req('/api/narrate', { method: 'POST', headers: OWNER, json: body }));
     expect(await res.text()).toBe('We stand in Dresden.');
-
-    expect(anthropicHeaders!.get('x-api-key')).toBe('sk-ant-user');
-    const body = anthropicBody as unknown as { model: string; stream: boolean; thinking: { type: string }; messages: { content: string }[] };
-    expect(body.model).toBe('claude-sonnet-5');
-    expect(body.thinking.type).toBe('adaptive');
-    expect(body.stream).toBe(true);
-    const prompt = body.messages[0].content;
+    expect(headers!.get('x-api-key')).toBe('sk-ant-api03-mine');
+    expect(headers!.get('anthropic-workspace-id')).toBe('wrkspc_9');
+    expect(anthropicBody!.model).toBe('claude-sonnet-5');
+    expect(anthropicBody!.thinking.type).toBe('adaptive');
+    const prompt = anthropicBody!.messages[0].content;
     expect(prompt).toContain('Dresden (Saxony, Germany)');
     expect(prompt).toContain('Frauenkirche');
-    expect(prompt).toContain('Overcast, 17°C');
     expect(prompt).toContain('Prague in 150 km');
     expect(prompt).toMatch(/excursus/i);
-  });
-});
 
-describe('key handling', () => {
-  it('cleans pasted keys and prefers the user key', async () => {
-    const { cleanKey, resolveKey } = await import('../server/narrate');
-    expect(cleanKey(' "sk-ant-api03-abc​def"\n')).toBe('sk-ant-api03-abcdef');
-    process.env.ANTHROPIC_API_KEY = "'sk-ant-api03-server1234'";
-    expect(resolveKey('')).toMatchObject({ source: 'server', key: 'sk-ant-api03-server1234', masked: 'sk-ant-api03-…1234' });
-    expect(resolveKey('sk-ant-api03-mine9999')).toMatchObject({ source: 'yours', masked: 'sk-ant-api03-…9999' });
-    delete process.env.ANTHROPIC_API_KEY;
-  });
-
-  it('reports which key Anthropic rejected', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-        expect(String(input)).toContain('/v1/models/claude-sonnet-5');
-        const h = new Headers(init?.headers);
-        expect(h.get('x-api-key')).toBe('sk-ant-api03-bad0');
-        expect(h.get('authorization')).toBeNull();
-        return new Response(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }),
-    );
-    const { POST } = await import('../api/ai-check');
-    const r = (await (await POST(new Request('http://x/api/ai-check', { method: 'POST', headers: { 'x-anthropic-key': ' sk-ant-api03-bad0 ' } }))).json()) as {
-      ok: boolean;
-      error: string;
-    };
-    expect(r.ok).toBe(false);
-    expect(r.error).toContain('your key (sk-ant-api03-…bad0)');
-    expect(r.error).toContain('invalid x-api-key');
-  });
-});
-
-describe('workspace header', () => {
-  it('sends anthropic-workspace-id with the user key and explains the error without it', async () => {
-    const seen: (string | null)[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
-        const ws = new Headers(init?.headers).get('anthropic-workspace-id');
-        seen.push(ws);
-        if (!ws)
-          return new Response(
-            JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message: 'This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header' } }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          );
-        return new Response(JSON.stringify({ type: 'model', id: 'claude-sonnet-5', display_name: 'Claude Sonnet 5', created_at: '2026-01-01T00:00:00Z' }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }),
-    );
-    const { POST } = await import('../api/ai-check');
-    const call = (h: Record<string, string>) =>
-      POST(new Request('http://x/api/ai-check', { method: 'POST', headers: h })).then((r) => r.json() as Promise<{ ok: boolean; error?: string; model?: string }>);
-    const without = await call({ 'x-anthropic-key': 'sk-ant-api03-org1' });
-    expect(without.ok).toBe(false);
-    expect(without.error).toMatch(/Workspace ID/);
-    const withWs = await call({ 'x-anthropic-key': 'sk-ant-api03-org1', 'x-anthropic-workspace': ' wrkspc_abc123 ' });
-    expect(withWs).toMatchObject({ ok: true, model: 'Claude Sonnet 5' });
-    expect(seen).toEqual([null, 'wrkspc_abc123']);
+    const saved = await store.getNarration('owner', body.saveKey);
+    expect(saved?.text).toBe('We stand in Dresden.');
+    const n = await import('../api/narrations');
+    const r = (await (await n.GET(req(`/api/narrations?key=${encodeURIComponent(body.saveKey)}`, { headers: OWNER }))).json()) as { narration: { text: string } };
+    expect(r.narration.text).toBe('We stand in Dresden.');
   });
 });

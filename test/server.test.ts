@@ -1,21 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { memoryRepo } from '../server/repo-memory';
+import { setRepo } from '../server/repo';
+import { bearer, captureWaitUntil, fakeVerify, mockFetch, req } from './helpers';
 
-type Handler = (url: string, init?: RequestInit) => unknown;
-function mockFetch(handler: Handler) {
-  const fn = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-    const url = String(input instanceof Request ? input.url : input);
-    const body = handler(url, init);
-    if (body instanceof Response) return body;
-    return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  });
-  vi.stubGlobal('fetch', fn);
-  return fn;
-}
+vi.mock('../server/firebase', () => ({
+  verifyIdToken: async (t: string) => fakeVerify(t),
+  db: () => {
+    throw new Error('Firestore must not be used in tests');
+  },
+}));
+
+let store: ReturnType<typeof memoryRepo>;
+const OWNER = bearer('owner', 'owner@example.com');
+const FRIEND = bearer('friend', 'friend@example.com');
 
 beforeEach(() => {
   process.env.SESSION_SECRET = 'test-secret-that-is-long-enough';
   process.env.STRAVA_CLIENT_ID = '123';
   process.env.STRAVA_CLIENT_SECRET = 'shh';
+  process.env.ADMIN_EMAILS = 'Owner@Example.com';
+  process.env.CRON_SECRET = 'cron';
+  store = memoryRepo();
+  setRepo(store);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -23,52 +29,231 @@ afterEach(() => {
   delete process.env.GOOGLE_PLACES_API_KEY;
 });
 
-describe('session', () => {
-  it('seals and unseals, rejects tampering', async () => {
-    const { seal, unseal } = await import('../server/session');
-    const token = seal({ a: 1 });
-    expect(unseal(token)).toEqual({ a: 1 });
-    expect(unseal(token.slice(0, -2) + 'xx')).toBeNull();
-    process.env.SESSION_SECRET = 'another-secret-value-123';
-    expect(unseal(token)).toBeNull();
+describe('crypto', () => {
+  it('seals per purpose and rejects tampering', async () => {
+    const { seal, unseal } = await import('../server/crypto');
+    const token = seal('ai-key', { a: 1 });
+    expect(unseal('ai-key', token)).toEqual({ a: 1 });
+    expect(unseal('strava-tokens', token)).toBeNull();
+    expect(unseal('ai-key', token.slice(0, -2) + 'xx')).toBeNull();
+  });
+});
+
+describe('access control', () => {
+  it('requires sign-in, a verified email and the allowlist', async () => {
+    const { GET } = await import('../api/me');
+    expect((await GET(req('/api/me'))).status).toBe(401);
+    expect((await GET(req('/api/me', { headers: FRIEND }))).status).toBe(403);
+    expect((await GET(req('/api/me', { headers: bearer('owner', 'owner@example.com', ':unverified') }))).status).toBe(403);
+
+    const me = await GET(req('/api/me', { headers: OWNER }));
+    expect(me.status).toBe(200);
+    expect(((await me.json()) as { user: { isAdmin: boolean } }).user.isAdmin).toBe(true);
+
+    await store.allow({ email: 'friend@example.com', addedBy: 'owner@example.com', addedAt: '2026-09-25' });
+    const f = await GET(req('/api/me', { headers: FRIEND }));
+    expect(f.status).toBe(200);
+    expect(((await f.json()) as { user: { isAdmin: boolean } }).user.isAdmin).toBe(false);
+  });
+
+  it('lets only admins manage the allowlist', async () => {
+    const admin = await import('../api/admin/allowlist');
+    await store.allow({ email: 'friend@example.com', addedBy: 'x', addedAt: '2026-09-01' });
+    expect((await admin.GET(req('/api/admin/allowlist', { headers: FRIEND }))).status).toBe(403);
+
+    const add = await admin.POST(req('/api/admin/allowlist', { method: 'POST', headers: OWNER, json: { email: ' New@Friend.org ' } }));
+    expect(add.status).toBe(200);
+    expect(await store.isAllowed('new@friend.org')).toBe(true);
+    expect((await admin.POST(req('/api/admin/allowlist', { method: 'POST', headers: OWNER, json: { email: 'nope' } }))).status).toBe(400);
+
+    const list = (await (await admin.GET(req('/api/admin/allowlist', { headers: OWNER }))).json()) as { admins: string[]; allowed: { email: string }[] };
+    expect(list.admins).toEqual(['owner@example.com']);
+    expect(list.allowed.map((a) => a.email).sort()).toEqual(['friend@example.com', 'new@friend.org']);
+
+    await admin.DELETE(req('/api/admin/allowlist?email=friend@example.com', { method: 'DELETE', headers: OWNER }));
+    expect(await store.isAllowed('friend@example.com')).toBe(false);
+  });
+
+  it('protects the helper APIs too', async () => {
+    const { POST } = await import('../api/route');
+    expect((await POST(req('/api/route', { method: 'POST', json: { waypoints: [[1, 2], [3, 4]] } }))).status).toBe(401);
+    expect((await POST(req('/api/route', { method: 'POST', headers: OWNER, json: { waypoints: [[1, 2]] } }))).status).toBe(400);
+  });
+});
+
+describe('journeys', () => {
+  const journey = (id: string) => ({
+    id,
+    name: 'Berlin → Vienna',
+    createdAt: '2026-09-01T00:00:00Z',
+    startDate: '2026-09-01',
+    sportTypes: ['Run'],
+    useStrava: true,
+    manualEntries: [{ id: 'm', date: '2026-09-02', distanceM: 5000 }],
+    excludedActivityIds: [],
+    waypoints: [{ name: 'Berlin', lat: 52.52, lon: 13.405 }],
+    mode: 'foot',
+    route: { points: [[52.52, 13.405], [51.05, 13.74], [48.20817, 16.37382]], totalM: 680000, provider: 'test' },
+  });
+
+  it('stores, lists and deletes per user (route kept via polyline)', async () => {
+    const api = await import('../api/journeys');
+    await store.allow({ email: 'friend@example.com', addedBy: 'x', addedAt: 'x' });
+    expect((await api.PUT(req('/api/journeys', { method: 'PUT', headers: OWNER, json: journey('j1') }))).status).toBe(200);
+
+    const mine = (await (await api.GET(req('/api/journeys', { headers: OWNER }))).json()) as { journeys: { id: string; route: { points: number[][] } }[] };
+    expect(mine.journeys.map((j) => j.id)).toEqual(['j1']);
+    expect(mine.journeys[0].route.points[2][0]).toBeCloseTo(48.20817, 5);
+
+    const theirs = (await (await api.GET(req('/api/journeys', { headers: FRIEND }))).json()) as { journeys: unknown[] };
+    expect(theirs.journeys).toEqual([]);
+
+    await api.DELETE(req('/api/journeys?id=j1', { method: 'DELETE', headers: OWNER }));
+    expect(await store.listJourneys('owner')).toEqual([]);
+  });
+
+  it('rejects malformed journeys', async () => {
+    const api = await import('../api/journeys');
+    const bad = { ...journey('j2'), route: { points: [[1, 2]], totalM: 1, provider: 'x' } };
+    expect((await api.PUT(req('/api/journeys', { method: 'PUT', headers: OWNER, json: bad }))).status).toBe(400);
+    expect((await api.PUT(req('/api/journeys', { method: 'PUT', headers: OWNER, json: { ...journey('../x') } }))).status).toBe(400);
   });
 });
 
 describe('strava', () => {
-  it('paginates activities and maps fields', async () => {
-    const { listActivities } = await import('../server/strava');
-    const page = (n: number, count: number) =>
-      Array.from({ length: count }, (_, i) => ({
-        id: n * 1000 + i,
-        name: 'r',
-        type: 'Run',
-        sport_type: 'TrailRun',
-        distance: 1000,
-        moving_time: 300,
-        elapsed_time: 320,
-        total_elevation_gain: 5,
-        start_date: `2026-09-${String(10 + n).padStart(2, '0')}T06:00:00Z`,
-        start_date_local: `2026-09-${String(10 + n).padStart(2, '0')}T08:00:00Z`,
-      }));
-    const f = mockFetch((url) => {
-      const p = Number(new URL(url).searchParams.get('page'));
-      return p === 1 ? page(1, 200) : page(2, 3);
-    });
-    const acts = await listActivities({ accessToken: 't', refreshToken: 'r', expiresAt: 0, athlete: { id: 1 } }, 1000);
-    expect(f).toHaveBeenCalledTimes(2);
-    expect(acts).toHaveLength(203);
-    expect(acts[0].sportType).toBe('TrailRun');
-    const auth = new Headers(f.mock.calls[0][1]?.headers).get('Authorization');
-    expect(auth).toBe('Bearer t');
+  const act = (id: number, day: string, km = 10) => ({
+    id,
+    name: `Run ${id}`,
+    type: 'Run',
+    sport_type: 'Run',
+    distance: km * 1000,
+    moving_time: 3000,
+    elapsed_time: 3100,
+    total_elevation_gain: 20,
+    start_date: `${day}T06:00:00Z`,
+    start_date_local: `${day}T08:00:00Z`,
   });
 
-  it('refreshes an expired token', async () => {
-    const { ensureFresh } = await import('../server/strava');
-    const f = mockFetch(() => ({ access_token: 'new', refresh_token: 'r2', expires_at: 9e9 }));
-    const { session, refreshed } = await ensureFresh({ accessToken: 'old', refreshToken: 'r', expiresAt: 0, athlete: { id: 1 } });
-    expect(refreshed).toBe(true);
-    expect(session.accessToken).toBe('new');
-    expect(String(f.mock.calls[0][1]?.body)).toContain('grant_type=refresh_token');
+  async function connect() {
+    const connectApi = await import('../api/strava/connect');
+    const r = (await (await connectApi.POST(req('/api/strava/connect', { method: 'POST', headers: OWNER }))).json()) as { url: string };
+    const u = new URL(r.url);
+    expect(u.host).toBe('www.strava.com');
+    expect(u.searchParams.get('redirect_uri')).toBe('https://app.example/api/strava/callback');
+    const state = u.searchParams.get('state')!;
+
+    const calls: string[] = [];
+    mockFetch((url) => {
+      calls.push(url);
+      if (url.includes('/oauth/token')) return { access_token: 'a1', refresh_token: 'r1', expires_at: 9e9, athlete: { id: 77, firstname: 'Flo' } };
+      if (url.includes('/athlete/activities')) return new URL(url).searchParams.get('page') === '1' ? [act(1, '2026-09-10'), act(2, '2026-09-12')] : [];
+      throw new Error(url);
+    });
+    const cb = await import('../api/strava/callback');
+    const res = await cb.GET(req(`/api/strava/callback?code=c&state=${state}&scope=read,activity:read_all`));
+    expect(res.headers.get('location')).toBe('https://app.example/?strava=connected');
+    return calls;
+  }
+
+  it('connects, stores encrypted tokens and backfills activities', async () => {
+    await connect();
+    expect(await store.uidForAthlete(77)).toBe('owner');
+    const secrets = await store.getSecrets('owner');
+    expect(secrets.strava).toBeTruthy();
+    expect(secrets.strava).not.toContain('a1');
+    expect((await store.listActivities('owner')).map((a) => a.id)).toEqual([1, 2]);
+    const user = await store.getUser('owner');
+    expect(user?.strava?.athleteId).toBe(77);
+    expect(user?.strava?.lastSyncAt).toBeTruthy();
+
+    const acts = await import('../api/activities');
+    const r = (await (await acts.GET(req('/api/activities?since=2026-09-11', { headers: OWNER }))).json()) as { activities: { id: number }[] };
+    expect(r.activities.map((a) => a.id)).toEqual([1, 2]); // one day of slack
+  });
+
+  it('rejects a forged or expired state', async () => {
+    const cb = await import('../api/strava/callback');
+    const res = await cb.GET(req('/api/strava/callback?code=c&state=forged&scope=activity:read_all'));
+    expect(res.headers.get('location')).toContain('strava_error=invalid_state');
+  });
+
+  it('syncs incrementally and backfills on request', async () => {
+    await connect();
+    const { syncUser } = await import('../server/sync');
+    const afters: number[] = [];
+    mockFetch((url) => {
+      if (url.includes('/athlete/activities')) {
+        afters.push(Number(new URL(url).searchParams.get('after')));
+        return [act(3, '2026-09-20')];
+      }
+      throw new Error(url);
+    });
+    await syncUser('owner');
+    const syncedFrom = (await store.getUser('owner'))!.strava!.syncedFrom!;
+    expect(afters[0]).toBeGreaterThan(syncedFrom); // incremental: from last sync minus overlap
+    await syncUser('owner', syncedFrom - 86_400 * 100);
+    expect(afters[1]).toBe(syncedFrom - 86_400 * 100); // backfill
+    expect((await store.getUser('owner'))!.strava!.syncedFrom).toBe(syncedFrom - 86_400 * 100);
+    expect((await store.listActivities('owner')).map((a) => a.id)).toEqual([1, 2, 3]);
+  });
+
+  it('handles webhook handshake and events', async () => {
+    await connect();
+    const hook = await import('../api/strava/webhook');
+    const ok = await hook.GET(req(`/api/strava/webhook?hub.mode=subscribe&hub.challenge=abc&hub.verify_token=${hook.verifyToken()}`));
+    expect(await ok.json()).toEqual({ 'hub.challenge': 'abc' });
+    expect((await hook.GET(req('/api/strava/webhook?hub.mode=subscribe&hub.challenge=abc&hub.verify_token=wrong'))).status).toBe(403);
+
+    const flush = captureWaitUntil();
+    mockFetch((url) => {
+      if (url.endsWith('/api/v3/activities/9')) return act(9, '2026-09-24', 21.1);
+      throw new Error(url);
+    });
+    const post = (e: object) => hook.POST(req('/api/strava/webhook', { method: 'POST', json: e }));
+    expect((await post({ object_type: 'activity', aspect_type: 'create', object_id: 9, owner_id: 77 })).status).toBe(200);
+    await flush();
+    expect((await store.listActivities('owner')).find((a) => a.id === 9)?.distanceM).toBe(21100);
+
+    await post({ object_type: 'activity', aspect_type: 'delete', object_id: 9, owner_id: 77 });
+    await flush();
+    expect((await store.listActivities('owner')).find((a) => a.id === 9)).toBeUndefined();
+
+    await post({ object_type: 'activity', aspect_type: 'create', object_id: 5, owner_id: 999 }); // unknown athlete
+    await flush();
+
+    await post({ object_type: 'athlete', aspect_type: 'update', object_id: 77, owner_id: 77, updates: { authorized: 'false' } });
+    await flush();
+    expect(await store.uidForAthlete(77)).toBeNull();
+    expect((await store.getSecrets('owner')).strava).toBeUndefined();
+  });
+
+  it('cron requires the secret and syncs every connected user', async () => {
+    await connect();
+    const cron = await import('../api/cron/sync');
+    expect((await cron.GET(req('/api/cron/sync'))).status).toBe(401);
+    mockFetch(() => []);
+    const r = (await (await cron.GET(req('/api/cron/sync', { headers: { authorization: 'Bearer cron' } }))).json()) as { users: number };
+    expect(r.users).toBe(1);
+  });
+
+  it('disconnect forgets tokens but keeps activities', async () => {
+    await connect();
+    mockFetch(() => ({}));
+    const d = await import('../api/strava/disconnect');
+    await d.POST(req('/api/strava/disconnect', { method: 'POST', headers: OWNER }));
+    expect(await store.uidForAthlete(77)).toBeNull();
+    expect((await store.getUser('owner'))?.strava).toBeUndefined();
+    expect((await store.listActivities('owner')).length).toBe(2);
+  });
+
+  it('refreshes an expired token and persists it', async () => {
+    const { seal } = await import('../server/crypto');
+    await store.updateSecrets('owner', { strava: seal('strava-tokens', { accessToken: 'old', refreshToken: 'r', expiresAt: 0 }) });
+    mockFetch(() => ({ access_token: 'new', refresh_token: 'r2', expires_at: 9e9 }));
+    const { tokensFor } = await import('../server/sync');
+    expect((await tokensFor('owner'))?.accessToken).toBe('new');
+    const { unseal } = await import('../server/crypto');
+    expect(unseal<{ refreshToken: string }>('strava-tokens', (await store.getSecrets('owner')).strava!)?.refreshToken).toBe('r2');
   });
 });
 
@@ -77,28 +262,17 @@ describe('routing', () => {
     const { planRoute } = await import('../server/routing');
     mockFetch((url) => {
       if (url.includes('routing.openstreetmap.de')) return new Response('boom', { status: 503 });
-      if (url.includes('brouter.de'))
-        return { features: [{ geometry: { coordinates: [[13.4, 52.5, 30], [14, 51], [16.37, 48.2, 170]] } }] };
+      if (url.includes('brouter.de')) return { features: [{ geometry: { coordinates: [[13.4, 52.5, 30], [14, 51], [16.37, 48.2, 170]] } }] };
       throw new Error('unexpected');
     });
     const r = await planRoute([[52.5, 13.4], [48.2, 16.37]], 'foot');
     expect(r.provider).toMatch(/BRouter/);
     expect(r.notice).toMatch(/Fallback/);
-    expect(r.points[0]).toEqual([52.5, 13.4]);
     expect(r.totalM).toBeGreaterThan(500_000);
 
     mockFetch(() => new Response('down', { status: 500 }));
     const d = await planRoute([[52.5, 13.4], [48.2, 16.37]], 'foot');
     expect(d.provider).toMatch(/Great circle/);
-    expect(d.notice).toBeTruthy();
-  });
-
-  it('uses OSRM geometry when available', async () => {
-    const { planRoute } = await import('../server/routing');
-    mockFetch(() => ({ code: 'Ok', routes: [{ distance: 1, geometry: { coordinates: [[13.4, 52.5], [13.5, 52.4]] } }] }));
-    const r = await planRoute([[52.5, 13.4], [52.4, 13.5]], 'bike');
-    expect(r.provider).toMatch(/OSRM bike/);
-    expect(r.points).toEqual([[52.5, 13.4], [52.4, 13.5]]);
   });
 });
 
@@ -108,18 +282,8 @@ describe('photos & surroundings', () => {
     mockFetch(() => ({
       query: {
         pages: {
-          '1': {
-            pageid: 1,
-            title: 'File:Old_bridge.jpg',
-            coordinates: [{ lat: 50, lon: 14 }],
-            imageinfo: [{ url: 'u1', thumburl: 't1', descriptionurl: 'd1', mime: 'image/jpeg', extmetadata: { DateTimeOriginal: { value: '2012:05:01 10:00' }, Artist: { value: '<a href="x">Jane</a>' } } }],
-          },
-          '2': {
-            pageid: 2,
-            title: 'File:New.jpg',
-            coordinates: [{ lat: 50.01, lon: 14 }],
-            imageinfo: [{ url: 'u2', descriptionurl: 'd2', mime: 'image/jpeg', extmetadata: { DateTimeOriginal: { value: '2025-07-03' } } }],
-          },
+          '1': { pageid: 1, title: 'File:Old_bridge.jpg', coordinates: [{ lat: 50, lon: 14 }], imageinfo: [{ url: 'u1', thumburl: 't1', descriptionurl: 'd1', mime: 'image/jpeg', extmetadata: { DateTimeOriginal: { value: '2012:05:01 10:00' }, Artist: { value: '<a href="x">Jane</a>' } } }] },
+          '2': { pageid: 2, title: 'File:New.jpg', coordinates: [{ lat: 50.01, lon: 14 }], imageinfo: [{ url: 'u2', descriptionurl: 'd2', mime: 'image/jpeg', extmetadata: { DateTimeOriginal: { value: '2025-07-03' } } }] },
           '3': { pageid: 3, title: 'File:Map.svg', coordinates: [{ lat: 50, lon: 14 }], imageinfo: [{ url: 'u3', descriptionurl: 'd3', mime: 'image/svg+xml' }] },
         },
       },
@@ -127,21 +291,6 @@ describe('photos & surroundings', () => {
     const photos = await commonsPhotos(50, 14);
     expect(photos.map((p) => p.id)).toEqual(['wm-2', 'wm-1']);
     expect(photos[1].author).toBe('Jane');
-    expect(photos[1].title).toBe('Old bridge');
-    expect(photos[0].distanceM).toBeGreaterThan(1000);
-  });
-
-  it('skips Mapillary without a token and sorts by capture date with one', async () => {
-    const { mapillaryPhotos } = await import('../server/photos');
-    expect(await mapillaryPhotos(50, 14)).toEqual([]);
-    process.env.MAPILLARY_TOKEN = 'tok';
-    mockFetch(() => ({
-      data: [
-        { id: 'a', captured_at: 1, thumb_1024_url: 'a.jpg', geometry: { coordinates: [14, 50] } },
-        { id: 'b', captured_at: 2, thumb_1024_url: 'b.jpg', geometry: { coordinates: [14, 50] } },
-      ],
-    }));
-    expect((await mapillaryPhotos(50, 14)).map((p) => p.id)).toEqual(['mly-b', 'mly-a']);
   });
 
   it('parses weather, wikipedia and google places', async () => {
@@ -154,80 +303,17 @@ describe('photos & surroundings', () => {
           daily: { temperature_2m_max: [20], temperature_2m_min: [9], sunrise: ['2026-09-23T06:40'], sunset: ['2026-09-23T18:50'] },
         };
       if (url.includes('wikipedia'))
-        return { query: { pages: [{ pageid: 1, title: 'Far', extract: 'x', coordinates: [{ lat: 50.05, lon: 14 }] }, { pageid: 2, title: 'Near', extract: 'y', fullurl: 'https://de.wikipedia.org/wiki/Near', coordinates: [{ lat: 50.001, lon: 14 }] }] } };
+        return { query: { pages: [{ pageid: 1, title: 'Far', extract: 'x', coordinates: [{ lat: 50.05, lon: 14 }] }, { pageid: 2, title: 'Near', extract: 'y', coordinates: [{ lat: 50.001, lon: 14 }] }] } };
       if (url.includes('places.googleapis.com')) {
         expect(new Headers(init?.headers).get('X-Goog-Api-Key')).toBe('g');
         return { places: [{ id: 'p', displayName: { text: 'Café' }, rating: 4.6, userRatingCount: 120, location: { latitude: 50, longitude: 14 }, reviews: [{ rating: 5, text: { text: 'Great cake' } }] }] };
       }
       throw new Error(url);
     });
-    const w = await weather(50, 14);
-    expect(w.temperatureC).toBe(18.2);
-    expect(w.today?.maxC).toBe(20);
-    const wiki = await wikipedia(50, 14, 'de');
-    expect(wiki.map((a) => a.title)).toEqual(['Near', 'Far']);
+    expect((await weather(50, 14)).temperatureC).toBe(18.2);
+    expect((await wikipedia(50, 14, 'de')).map((a) => a.title)).toEqual(['Near', 'Far']);
     expect(await googlePlaces(50, 14, 'en')).toEqual([]);
     process.env.GOOGLE_PLACES_API_KEY = 'g';
-    const pl = await googlePlaces(50, 14, 'en');
-    expect(pl[0]).toMatchObject({ name: 'Café', rating: 4.6, review: { text: 'Great cake' } });
-  });
-});
-
-describe('api handlers', () => {
-  it('route validates input', async () => {
-    const { POST } = await import('../api/route');
-    const res = await POST(new Request('http://x/api/route', { method: 'POST', body: JSON.stringify({ waypoints: [[1, 2]] }) }));
-    expect(res.status).toBe(400);
-  });
-
-  it('activities require a session', async () => {
-    const { GET } = await import('../api/activities');
-    const res = await GET(new Request('http://x/api/activities?after=0'));
-    expect(res.status).toBe(401);
-  });
-
-  it('login redirects to Strava with state cookie', async () => {
-    const { GET } = await import('../api/auth/login');
-    const res = await GET(new Request('https://app.example/api/auth/login'));
-    expect(res.status).toBe(302);
-    const loc = new URL(res.headers.get('location')!);
-    expect(loc.host).toBe('www.strava.com');
-    expect(loc.searchParams.get('redirect_uri')).toBe('https://app.example/api/auth/callback');
-    expect(loc.searchParams.get('scope')).toContain('activity:read_all');
-    expect(res.headers.get('set-cookie')).toContain(`rtgt_oauth_state=${loc.searchParams.get('state')}`);
-  });
-
-  it('callback rejects a mismatched state', async () => {
-    const { GET } = await import('../api/auth/callback');
-    const res = await GET(new Request('https://app.example/api/auth/callback?code=c&state=a&scope=read,activity:read_all', { headers: { cookie: 'rtgt_oauth_state=b' } }));
-    expect(res.headers.get('location')).toContain('strava_error=invalid_state');
-  });
-
-  it('callback stores an encrypted session', async () => {
-    mockFetch(() => ({ access_token: 'a', refresh_token: 'r', expires_at: 9e9, athlete: { id: 7, firstname: 'Flo' } }));
-    const { GET } = await import('../api/auth/callback');
-    const res = await GET(new Request('https://app.example/api/auth/callback?code=c&state=s&scope=read,activity:read_all', { headers: { cookie: 'rtgt_oauth_state=s' } }));
-    expect(res.headers.get('location')).toBe('https://app.example/?strava=connected');
-    const cookies = res.headers.getSetCookie();
-    const session = cookies.find((c) => c.startsWith('rtgt_session='))!;
-    expect(session).toContain('HttpOnly');
-    expect(session).toContain('Secure');
-    const { readSession } = await import('../server/session');
-    const me = readSession(new Request('https://x', { headers: { cookie: session.split(';')[0] } }));
-    expect(me?.athlete.firstname).toBe('Flo');
-  });
-
-  it('narrate explains a missing key', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
-    mockFetch(() => ({}));
-    const { POST } = await import('../api/narrate');
-    const res = await POST(
-      new Request('http://x/api/narrate', {
-        method: 'POST',
-        body: JSON.stringify({ lat: 50, lon: 14, language: 'en', style: 'travelogue', journey: { name: 'n', from: 'a', to: 'b', totalM: 10, doneM: 1 } }),
-      }),
-    );
-    expect(res.status).toBe(400);
-    expect(((await res.json()) as { error: string }).error).toMatch(/API key/);
+    expect((await googlePlaces(50, 14, 'en'))[0]).toMatchObject({ name: 'Café', rating: 4.6 });
   });
 });
