@@ -74,13 +74,13 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate }:
       </Card>
 
       <Section title="What it looks like">
-        <PhotoStrip photos={photos.data} loading={photos.isLoading} />
+        <PhotoStrip photos={photos.data?.photos} historic={photos.data?.historic} loading={photos.isLoading} />
       </Section>
 
       <NarratorCard
         journeyId={journeyId}
         title={`The story of ${place?.name ?? 'this place'}`}
-        request={{ ...narrate, lat, lon, photoTitles: photos.data?.map((p) => p.title) }}
+        request={{ ...narrate, lat, lon, photoTitles: photos.data?.photos.map((p) => p.title) }}
       />
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>

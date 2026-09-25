@@ -1,4 +1,4 @@
-import type { Activity, Journey } from '../shared/types.js';
+import type { Activity, Journey, Milestone } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, toStored } from './repo.js';
 
 const merge = <T extends object>(base: T, patch: object): T => {
@@ -19,12 +19,13 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const journeys = new Map<string, Map<string, ReturnType<typeof toStored>>>();
   const activities = new Map<string, Map<number, Activity>>();
   const narrations = new Map<string, Map<string, { text: string; at: string }>>();
+  const milestones = new Map<string, Map<string, Milestone>>();
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
     return m.get(uid)!;
   };
   return {
-    dump: () => ({ allow, users, secrets, athletes, journeys, activities, narrations }),
+    dump: () => ({ allow, users, secrets, athletes, journeys, activities, narrations, milestones }),
     isAllowed: async (e) => allow.has(e),
     listAllowed: async () => [...allow.values()].sort((a, b) => b.addedAt.localeCompare(a.addedAt)),
     allow: async (e) => void allow.set(e.email, e),
@@ -49,5 +50,14 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     deleteActivity: async (uid, id) => void sub(activities, uid).delete(id),
     getNarration: async (uid, key) => sub(narrations, uid).get(key) ?? null,
     putNarration: async (uid, key, text) => void sub(narrations, uid).set(key, { text, at: new Date().toISOString() }),
+    listNarrations: async (uid, journeyId) =>
+      [...sub(narrations, uid).entries()]
+        .filter(([k]) => k.startsWith(`${journeyId}|`))
+        .map(([key, v]) => ({ key, ...v }))
+        .sort((a, b) => a.at.localeCompare(b.at)),
+    listMilestones: async (uid, journeyId) =>
+      [...sub(milestones, uid).values()].filter((m) => !journeyId || m.journeyId === journeyId).sort((a, b) => a.atM - b.atM),
+    getMilestone: async (uid, id) => sub(milestones, uid).get(id) ?? null,
+    putMilestone: async (uid, m) => void sub(milestones, uid).set(m.id, structuredClone(m)),
   };
 }

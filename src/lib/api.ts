@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LatLon } from '../../shared/geo';
 import { idToken } from './firebase';
-import type { Activity, GeoResult, MeResponse, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
+import type { Activity, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -95,7 +95,8 @@ export const planRoute = (waypoints: LatLon[], mode: RouteMode) =>
 export function usePhotos(point: LatLon | null) {
   return useQuery({
     queryKey: ['photos', point && r3(point[0]), point && r3(point[1])],
-    queryFn: () => api<{ photos: Photo[] }>(`/api/photos?lat=${point![0]}&lon=${point![1]}`).then((r) => r.photos),
+    queryFn: () =>
+      api<{ photos: Photo[]; historic?: Photo[] }>(`/api/photos?lat=${point![0]}&lon=${point![1]}`).then((r) => ({ photos: r.photos, historic: r.historic ?? [] })),
     enabled: !!point,
     staleTime: 60 * 60_000,
   });
@@ -107,5 +108,45 @@ export function useSurroundings(point: LatLon | null) {
     queryFn: () => api<SurroundingsResponse>(`/api/surroundings?lat=${point![0]}&lon=${point![1]}&lang=${lang()}`),
     enabled: !!point,
     staleTime: 10 * 60_000,
+  });
+}
+
+// ---- milestones, postcards, diary ----
+export const flag = (cc: string) => (/^[A-Za-z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '🏳️');
+
+export function useMilestones(journeyId?: string) {
+  return useQuery({
+    queryKey: ['milestones', journeyId ?? 'all'],
+    queryFn: () =>
+      api<{ milestones: Milestone[]; countries?: string[] }>(`/api/milestones${journeyId ? `?journeyId=${encodeURIComponent(journeyId)}` : ''}`),
+    staleTime: 60_000,
+  });
+}
+
+export function useMilestoneActions() {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ['milestones'] });
+  return {
+    check: async (journeyId: string) => {
+      const r = await api<{ created: Milestone[] }>('/api/milestones/check', { method: 'POST', json: { journeyId, lang: lang() } });
+      if (r.created.length) await refresh();
+      return r.created;
+    },
+    writePostcard: async (id: string) => {
+      await api('/api/milestones/postcard', { method: 'POST', json: { id, lang: lang() } });
+      await refresh();
+    },
+    markSeen: async (journeyId: string) => {
+      await api('/api/milestones/seen', { method: 'POST', json: { journeyId } });
+      await refresh();
+    },
+  };
+}
+
+export function useJourneyStories(journeyId: string) {
+  return useQuery({
+    queryKey: ['stories', journeyId],
+    queryFn: () =>
+      api<{ narrations: { key: string; text: string; at: string }[] }>(`/api/narrations?journeyId=${encodeURIComponent(journeyId)}`).then((r) => r.narrations),
   });
 }

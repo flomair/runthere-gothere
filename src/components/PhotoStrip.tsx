@@ -1,12 +1,20 @@
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Box, Chip, Dialog, IconButton, Link, Skeleton, Stack, Typography } from '@mui/material';
+import { Box, Chip, Dialog, IconButton, Link, Skeleton, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { useState } from 'react';
 import { formatDate, formatKm } from '../lib/format';
 import type { Photo } from '../lib/types';
 
-export default function PhotoStrip({ photos, loading }: { photos: Photo[] | undefined; loading: boolean }) {
+export default function PhotoStrip({ photos: recent, historic, loading }: { photos: Photo[] | undefined; historic?: Photo[]; loading: boolean }) {
   const [open, setOpen] = useState<Photo | null>(null);
+  const [era, setEra] = useState<'now' | 'then'>('now');
+  const photos = era === 'then' && historic?.length ? historic : recent;
+  const eraSwitch = historic && historic.length > 0 && (
+    <ToggleButtonGroup size="small" exclusive value={era} onChange={(_, v) => v && setEra(v)} sx={{ mb: 1.5 }}>
+      <ToggleButton value="now">Today</ToggleButton>
+      <ToggleButton value="then">Then ({historic.length} historic)</ToggleButton>
+    </ToggleButtonGroup>
+  );
 
   if (loading) {
     return (
@@ -27,6 +35,7 @@ export default function PhotoStrip({ photos, loading }: { photos: Photo[] | unde
 
   return (
     <>
+      {eraSwitch}
       <Box
         sx={{
           display: 'grid',

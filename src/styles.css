@@ -48,3 +48,28 @@ body,
     box-shadow: 0 0 0 0 rgb(252 76 2 / 0%);
   }
 }
+
+/* travel diary print / PDF */
+@media print {
+  header,
+  .no-print,
+  .MuiSnackbar-root {
+    display: none !important;
+  }
+  body,
+  #root {
+    background: #fff !important;
+  }
+  .diary .MuiCard-root {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .diary .MuiTypography-root {
+    color: #111 !important;
+  }
+  @page {
+    margin: 16mm;
+  }
+}

@@ -7,8 +7,9 @@ import JourneyList from './components/JourneyList';
 import { journeyStore, useJourneyState } from './lib/storage';
 
 const JourneyView = lazy(() => import('./components/JourneyView'));
+const DiaryPage = lazy(() => import('./components/DiaryPage'));
 
-/** Tiny hash router: #/ (list), #/j/<id> (journey), #/admin. */
+/** Tiny hash router: #/ (list), #/j/<id> (journey), #/j/<id>/diary, #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -16,8 +17,8 @@ function useHashRoute() {
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  const m = /^#\/j\/([^/]+)/.exec(hash);
-  return { journeyId: m ? decodeURIComponent(m[1]) : null, admin: hash.startsWith('#/admin') };
+  const m = /^#\/j\/([^/]+)(\/diary)?/.exec(hash);
+  return { journeyId: m ? decodeURIComponent(m[1]) : null, diary: !!m?.[2], admin: hash.startsWith('#/admin') };
 }
 
 function useStravaFlash() {
@@ -35,7 +36,7 @@ function useStravaFlash() {
 }
 
 function Main() {
-  const { journeyId, admin } = useHashRoute();
+  const { journeyId, diary, admin } = useHashRoute();
   const { journeys, status, error } = useJourneyState();
   const journey = journeyId ? journeys.find((j) => j.id === journeyId) : undefined;
   const [flash, clearFlash] = useStravaFlash();
@@ -55,7 +56,7 @@ function Main() {
           <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />
         ) : journey ? (
           <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
-            <JourneyView key={journey.id} journey={journey} />
+            {diary ? <DiaryPage key={`d-${journey.id}`} journey={journey} /> : <JourneyView key={journey.id} journey={journey} />}
           </Suspense>
         ) : (
           <JourneyList />

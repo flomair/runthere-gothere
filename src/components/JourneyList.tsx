@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import { navigate } from '../lib/nav';
-import { useActivities, useMe } from '../lib/api';
+import { useActivities, useMe, useMilestones } from '../lib/api';
 import { formatDate, formatKm, pct } from '../lib/format';
 import { computeProgress } from '../lib/progress';
 import { journeyStore, useJourneys } from '../lib/storage';
@@ -32,7 +32,7 @@ const PRESETS: JourneyPreset[] = [
   { name: 'Camino Francés', from: 'Saint-Jean-Pied-de-Port', to: 'Santiago de Compostela' },
 ];
 
-function JourneyCard({ journey, connected }: { journey: Journey; connected: boolean }) {
+function JourneyCard({ journey, connected, newPostcards }: { journey: Journey; connected: boolean; newPostcards: number }) {
   const { data: activities } = useActivities(journey.startDate, connected && journey.useStrava);
   const p = computeProgress(journey, activities);
   const from = journey.waypoints[0]?.name;
@@ -53,7 +53,10 @@ function JourneyCard({ journey, connected }: { journey: Journey; connected: bool
                 {from && to ? `${from} → ${to}` : journey.route.provider}
               </Typography>
             </Box>
-            {p.finished ? <Chip label="Arrived 🎉" color="success" size="small" /> : <Chip label={pct(p.fraction)} size="small" color="primary" />}
+            <Stack direction="row" sx={{ gap: 0.5 }}>
+              {newPostcards > 0 && <Chip label={`📮 ${newPostcards}`} size="small" color="secondary" />}
+              {p.finished ? <Chip label="Arrived 🎉" color="success" size="small" /> : <Chip label={pct(p.fraction)} size="small" color="primary" />}
+            </Stack>
           </Stack>
           <LinearProgress variant="determinate" value={p.fraction * 100} sx={{ my: 1.5, height: 8, borderRadius: 4 }} />
           <Typography variant="body2" color="text.secondary">
@@ -72,6 +75,8 @@ export default function JourneyList() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const connected = !!me?.strava;
+  const allMilestones = useMilestones();
+  const unseenBy = (id: string) => (allMilestones.data?.milestones ?? []).filter((m) => m.journeyId === id && !m.seen).length;
 
   const exportAll = () => {
     const blob = new Blob([JSON.stringify(journeys, null, 2)], { type: 'application/json' });
@@ -194,7 +199,7 @@ export default function JourneyList() {
         ) : (
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' } }}>
             {journeys.map((j) => (
-              <JourneyCard key={j.id} journey={j} connected={connected} />
+              <JourneyCard key={j.id} journey={j} connected={connected} newPostcards={unseenBy(j.id)} />
             ))}
           </Box>
         )}

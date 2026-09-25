@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Journey } from '../shared/types.js';
+import type { Activity, Journey, Milestone } from '../shared/types.js';
 import { db } from './firebase.js';
 
 /**
@@ -74,6 +74,12 @@ export interface Repo {
 
   getNarration(uid: string, key: string): Promise<{ text: string; at: string } | null>;
   putNarration(uid: string, key: string, text: string): Promise<void>;
+  /** Saved stories of one journey (keys start with `${journeyId}|`). */
+  listNarrations(uid: string, journeyId: string): Promise<{ key: string; text: string; at: string }[]>;
+
+  listMilestones(uid: string, journeyId?: string): Promise<Milestone[]>;
+  getMilestone(uid: string, id: string): Promise<Milestone | null>;
+  putMilestone(uid: string, m: Milestone): Promise<void>;
 }
 
 /** Firestore doc ids can't contain "/"; keep them short and safe. */
@@ -181,7 +187,27 @@ export const firestoreRepo: Repo = {
       .doc(uid)
       .collection('narrations')
       .doc(docId(key))
-      .set({ text, at: new Date().toISOString() });
+      .set({ text, at: new Date().toISOString(), key, journeyId: key.split('|')[0] });
+  },
+  async listNarrations(uid, journeyId) {
+    const snap = await db().collection('users').doc(uid).collection('narrations').where('journeyId', '==', journeyId).get();
+    return snap.docs
+      .map((d) => d.data() as { key: string; text: string; at: string })
+      .sort((a, b) => a.at.localeCompare(b.at));
+  },
+
+  async listMilestones(uid, journeyId) {
+    let q: FirebaseFirestore.Query = db().collection('users').doc(uid).collection('milestones');
+    if (journeyId) q = q.where('journeyId', '==', journeyId);
+    const snap = await q.get();
+    return snap.docs.map((d) => d.data() as Milestone).sort((a, b) => a.atM - b.atM);
+  },
+  async getMilestone(uid, id) {
+    const d = await db().collection('users').doc(uid).collection('milestones').doc(docId(id)).get();
+    return d.exists ? (d.data() as Milestone) : null;
+  },
+  async putMilestone(uid, m) {
+    await db().collection('users').doc(uid).collection('milestones').doc(docId(m.id)).set(m);
   },
 };
 

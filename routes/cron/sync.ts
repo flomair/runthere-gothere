@@ -11,10 +11,18 @@ export const GET = handle(async (req) => {
   if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) throw new HttpError(401, 'unauthorized');
   const uids = [...new Set(await repo.listStravaUsers())];
   const results: Record<string, string> = {};
+  const started = Date.now();
+  const { detectMilestones } = await import('../../server/milestones.js');
   for (const uid of uids) {
+    // stay well within the function time limit; the rest is picked up tomorrow or by webhooks
+    if (Date.now() - started > 40_000) {
+      results[uid] = 'skipped (time budget)';
+      continue;
+    }
     try {
       const r = await syncUser(uid);
-      results[uid] = `${r.fetched} activities`;
+      const m = await detectMilestones(uid, { maxNew: 3, maxPostcards: 0 });
+      results[uid] = `${r.fetched} activities, ${m.length} milestone(s)`;
     } catch (e) {
       results[uid] = `error: ${e instanceof Error ? e.message : e}`;
     }

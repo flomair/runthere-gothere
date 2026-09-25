@@ -82,6 +82,19 @@ function parseCommonsDate(s: string): string | undefined {
 
 /** Geotagged photos from Wikimedia Commons within 10 km, newest first. */
 export async function commonsPhotos(lat: number, lon: number, limit = 12): Promise<Photo[]> {
+  return (await commonsSearch(lat, lon, 40)).slice(0, limit);
+}
+
+/** Old photos (taken before 1960), oldest first – for "then & now". */
+export function historicOf(photos: Photo[], limit = 8): Photo[] {
+  return photos
+    .filter((p) => p.takenAt && p.takenAt < '1960')
+    .sort((a, b) => (a.takenAt ?? '').localeCompare(b.takenAt ?? ''))
+    .slice(0, limit);
+}
+
+/** Geotagged Commons photos within 10 km (up to `max` looked at), newest first. */
+export async function commonsSearch(lat: number, lon: number, max: number): Promise<Photo[]> {
   const u = new URL('https://commons.wikimedia.org/w/api.php');
   Object.entries({
     action: 'query',
@@ -90,7 +103,7 @@ export async function commonsPhotos(lat: number, lon: number, limit = 12): Promi
     ggscoord: `${lat}|${lon}`,
     ggsradius: '10000',
     ggsnamespace: '6',
-    ggslimit: '40',
+    ggslimit: String(max),
     prop: 'imageinfo|coordinates',
     iiprop: 'url|extmetadata|mime',
     iiurlwidth: '800',
@@ -122,5 +135,5 @@ export async function commonsPhotos(lat: number, lon: number, limit = 12): Promi
       distanceM: haversine([lat, lon], [c.lat, c.lon]),
     });
   }
-  return photos.sort((a, b) => (b.takenAt ?? '').localeCompare(a.takenAt ?? '')).slice(0, limit);
+  return photos.sort((a, b) => (b.takenAt ?? '').localeCompare(a.takenAt ?? ''));
 }

@@ -126,7 +126,12 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
   try {
     const a = await getActivity(tokens, e.object_id);
     await repo.putActivities(uid, [a]);
-    return 'saved';
+    const { detectMilestones } = await import('./milestones.js');
+    const created = await detectMilestones(uid, { maxNew: 4, maxPostcards: 1 }).catch((err) => {
+      console.error('milestone detection failed', err);
+      return [];
+    });
+    return created.length ? `saved, ${created.length} milestone(s)` : 'saved';
   } catch (err) {
     // made private without read_all, or deleted meanwhile
     if (err instanceof HttpError && (err.status === 404 || err.status === 403 || err.status === 401)) {

@@ -216,3 +216,28 @@ export interface Journey {
   profile?: { stepM: number; elevations: number[] };
 }
 
+
+// ---------- milestones & postcards ----------
+
+export type MilestoneKind = 'waypoint' | 'distance' | 'halfway' | 'border' | 'finish';
+
+export interface Milestone {
+  /** `${journeyId}_${kind}_${key}` – stable, so a milestone is only created once */
+  id: string;
+  journeyId: string;
+  kind: MilestoneKind;
+  /** Distance along the route (true metres). */
+  atM: number;
+  title: string;
+  lat: number;
+  lon: number;
+  /** Date of the run that got you there (YYYY-MM-DD or ISO). */
+  reachedAt: string;
+  createdAt: string;
+  place?: { name: string; context: string };
+  /** ISO 3166-1 alpha-2, for border crossings. */
+  countryCode?: string;
+  photo?: { url: string; credit?: string; pageUrl?: string };
+  postcard?: { text: string; at: string };
+  seen?: boolean;
+}

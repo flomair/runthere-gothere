@@ -1,10 +1,12 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert,
   AlertTitle,
+  Badge,
   Box,
   Button,
   Card,
@@ -22,7 +24,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cumulativeDistances, haversine, positionAt, samplePoints } from '../../shared/geo';
 import { navigate } from '../lib/nav';
-import { api, useActivities, useMe, useStravaActions } from '../lib/api';
+import { api, flag, useActivities, useMe, useMilestoneActions, useMilestones, useStravaActions } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
 import { fromUnit, getUnit, toUnit } from '../lib/units';
 import { type ProgressEntry, computeProgress } from '../lib/progress';
@@ -130,6 +132,20 @@ export default function JourneyView({ journey }: { journey: Journey }) {
     }
   }, [ready, journey.id, journey.lastSeen, progress.doneM]);
 
+  // milestones: check once the runs are loaded (also covers manually added runs)
+  const milestones = useMilestones(journey.id);
+  const milestoneActions = useMilestoneActions();
+  const checked = useRef(false);
+  useEffect(() => {
+    if (!ready || checked.current) return;
+    checked.current = true;
+    void milestoneActions.check(journey.id).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, journey.id]);
+  const unseen = (milestones.data?.milestones ?? []).filter((m) => !m.seen);
+  const countries = milestones.data?.countries ?? [];
+  const reachedCountries = new Set([countries[0], ...(milestones.data?.milestones ?? []).filter((m) => m.kind === 'border').map((m) => m.countryCode)]);
+
   // distance of each waypoint along the route, for the narrator's "coming up" list
   const waypointDist = useMemo(
     () =>
@@ -198,6 +214,13 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             </IconButton>
           </Tooltip>
         )}
+        <Tooltip title="Travel diary">
+          <IconButton onClick={() => navigate(`/j/${journey.id}/diary`)} aria-label="travel diary">
+            <Badge color="primary" badgeContent={unseen.length} invisible={!unseen.length}>
+              <AutoStoriesIcon />
+            </Badge>
+          </IconButton>
+        </Tooltip>
         <IconButton onClick={(e) => setMenu(e.currentTarget)} aria-label="journey menu">
           <MoreIcon />
         </IconButton>
@@ -244,6 +267,34 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         <Alert severity="success" onClose={() => setSinceLast(null)}>
           Since your last visit ({formatDate(sinceLast.at)}) you've moved <strong>{formatKm(sinceLast.m)}</strong> further along the route.
         </Alert>
+      )}
+
+      {unseen.length > 0 && (
+        <Alert
+          severity="info"
+          icon={<span style={{ fontSize: 22 }}>📮</span>}
+          action={
+            <Button color="inherit" onClick={() => navigate(`/j/${journey.id}/diary`)}>
+              Open diary
+            </Button>
+          }
+        >
+          {unseen.length === 1 ? `New postcard: ${unseen[0].title}` : `${unseen.length} new postcards, latest: ${unseen[unseen.length - 1].title}`}
+        </Alert>
+      )}
+      {countries.length > 1 && (
+        <Stack direction="row" sx={{ gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>
+            Countries:
+          </Typography>
+          {countries.map((c) => (
+            <Tooltip key={c} title={`${new Intl.DisplayNames([navigator.language], { type: 'region' }).of(c) ?? c}${reachedCountries.has(c) ? '' : ' (ahead)'}`}>
+              <Box component="span" sx={{ fontSize: 22, lineHeight: 1, opacity: reachedCountries.has(c) ? 1 : 0.35, filter: reachedCountries.has(c) ? 'none' : 'grayscale(1)' }}>
+                {flag(c)}
+              </Box>
+            </Tooltip>
+          ))}
+        </Stack>
       )}
 
       <StatsRow p={progress} />
