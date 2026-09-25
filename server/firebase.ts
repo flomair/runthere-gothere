@@ -1,23 +1,45 @@
 import { type App, cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { HttpError } from './http.js';
+import { verifyFirebaseIdToken } from './idtoken.js';
+
+/** The app's Firebase project (matches the web config in src/lib/firebase.ts). */
+const DEFAULT_PROJECT_ID = 'run-there-go-threre';
 
 /**
  * Firebase Admin, configured from FIREBASE_SERVICE_ACCOUNT: the service-account JSON either
  * raw or base64-encoded (Firebase console → Project settings → Service accounts → Generate key).
  */
-function app(): App {
-  const existing = getApps()[0];
-  if (existing) return existing;
+interface ServiceAccount {
+  project_id?: string;
+  client_email?: string;
+  private_key?: string;
+}
+
+function serviceAccount(): ServiceAccount {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
   if (!raw) throw new HttpError(500, 'FIREBASE_SERVICE_ACCOUNT is not configured');
-  let json: { project_id?: string; client_email?: string; private_key?: string };
   try {
-    json = JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'));
+    return JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8')) as ServiceAccount;
   } catch {
     throw new HttpError(500, 'FIREBASE_SERVICE_ACCOUNT is not valid JSON (raw or base64)');
   }
+}
+
+/** Project whose ID tokens we accept: FIREBASE_PROJECT_ID, else the service account's, else the default. */
+export function projectId(): string {
+  if (process.env.FIREBASE_PROJECT_ID?.trim()) return process.env.FIREBASE_PROJECT_ID.trim();
+  try {
+    return serviceAccount().project_id || DEFAULT_PROJECT_ID;
+  } catch {
+    return DEFAULT_PROJECT_ID;
+  }
+}
+
+function app(): App {
+  const existing = getApps()[0];
+  if (existing) return existing;
+  const json = serviceAccount();
   return initializeApp({
     credential: cert({
       projectId: json.project_id,
@@ -48,6 +70,5 @@ export interface VerifiedToken {
 }
 
 export async function verifyIdToken(token: string): Promise<VerifiedToken> {
-  const t = await getAuth(app()).verifyIdToken(token);
-  return { uid: t.uid, email: t.email, emailVerified: t.email_verified === true, name: t.name, picture: t.picture };
+  return verifyFirebaseIdToken(token, projectId());
 }
