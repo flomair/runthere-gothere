@@ -510,4 +510,5 @@ export const DE: Record<string, string> = {
   "deep, male": "tief, männlich",
   "soft, female": "sanft, weiblich",
   "lively, male": "lebhaft, männlich",
+  "Street map": "Straßenkarte",
 };

@@ -35,7 +35,7 @@ import { formatKm, todayIso } from '../lib/format';
 import { journeyStore, newId } from '../lib/storage';
 import { type GeoResult, type Journey, type PlannedRoute, type RouteMode, SPORT_TYPES, type TrailRoute } from '../lib/types';
 import PlaceField from './PlaceField';
-import RouteSketch from './RouteSketch';
+import MiniMap from './MiniMap';
 import TrailPicker from './TrailPicker';
 import { t } from '../lib/i18n';
 
@@ -263,8 +263,8 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
           {route && (
             <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'action.hover' }}>
               <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Box sx={{ width: 120, flexShrink: 0, color: 'text.primary' }}>
-                  <RouteSketch points={route.points} doneM={0} height={90} />
+                <Box sx={{ width: 140, flexShrink: 0, borderRadius: '12px', overflow: 'hidden' }}>
+                  <MiniMap points={route.points} doneM={0} height={100} />
                 </Box>
                 <Box>
                   <Typography variant="h4" component="div">

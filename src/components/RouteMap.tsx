@@ -4,7 +4,9 @@ import { LayersControl, MapContainer, Marker, Polyline, TileLayer, Tooltip, useM
 import { type LatLon, haversine, positionAt, sliceRoute, splitRoute } from '../../shared/geo';
 import type { Waypoint } from '../lib/types';
 import { t } from '../lib/i18n';
-import { VIOLET, HIGHLIGHT, INDIGO } from '../theme';
+import { HIGHLIGHT } from '../theme';
+import BaseTiles from './BaseTiles';
+import { routeColors, useDarkMap } from '../lib/mapStyle';
 
 const icon = (cls: string, html = '') =>
   L.divIcon({ className: '', html: `<div class="rtgt-marker ${cls}">${html}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
@@ -85,6 +87,7 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
   const { done, ahead } = useMemo(() => splitRoute(points, cum, doneM), [points, cum, doneM]);
   const hl = useMemo(() => (highlight ? sliceRoute(points, cum, highlight.fromM, highlight.toM) : []), [points, cum, highlight]);
   const me = done[done.length - 1];
+  const col = routeColors(useDarkMap());
   const peek = peekM != null ? positionAt(points, cum, peekM).point : null;
   const start = points[0];
   const goal = points[points.length - 1];
@@ -93,6 +96,9 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
     <MapContainer center={start} zoom={6} style={{ height, width: '100%' }} scrollWheelZoom worldCopyJump>
       <LayersControl position="topright">
         <LayersControl.BaseLayer checked name={t('Map')}>
+          <BaseTiles />
+        </LayersControl.BaseLayer>
+        <LayersControl.BaseLayer name={t('Street map')}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -115,9 +121,9 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
         </LayersControl.BaseLayer>
       </LayersControl>
 
-      <Polyline positions={ahead} pathOptions={{ color: INDIGO, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
-      <Polyline positions={done} pathOptions={{ color: '#fff', weight: 8, opacity: 0.9 }} />
-      <Polyline positions={done} pathOptions={{ color: VIOLET, weight: 4.5 }} />
+      <Polyline positions={ahead} pathOptions={{ color: col.ahead, weight: 3, opacity: 0.75, dashArray: '2 7', lineCap: 'round' }} />
+      <Polyline positions={done} pathOptions={{ color: col.casing, weight: 8, opacity: 0.9 }} />
+      <Polyline positions={done} pathOptions={{ color: col.done, weight: 4.5 }} />
       {hl.length >= 2 && <Polyline positions={hl} pathOptions={{ color: HIGHLIGHT, weight: 8, opacity: 0.95, lineCap: 'round' }} />}
       {hl.length >= 2 && <FitHighlight line={hl} />}
 

@@ -25,7 +25,7 @@ import {
 import L from 'leaflet';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip } from 'react-leaflet';
+import { MapContainer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import type { LatLon } from '../../shared/geo';
 import { flag, useMe } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
@@ -36,7 +36,8 @@ import { AnimatedBar, CountUp, Stagger, StaggerItem } from './motion';
 import { getLang, t } from '../lib/i18n';
 import { milestoneTitle } from '../../shared/milestoneTitle';
 import HeroSurface from './HeroSurface';
-import { INDIGO } from '../theme';
+import BaseTiles from './BaseTiles';
+import { routeColors, useDarkMap } from '../lib/mapStyle';
 
 // runner colours: violet first (usually you), then calm, well-separated tones
 const COLORS = ['#5B5BF0', '#3D6FA8', '#149A80', '#8C5A3C', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
@@ -152,6 +153,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
 }
 
 export default function GroupView({ id }: { id: string }) {
+  const mapCol = routeColors(useDarkMap());
   const { data: me } = useMe();
   const st = useStandings(id);
   const feed = useFeed(id);
@@ -230,8 +232,8 @@ export default function GroupView({ id }: { id: string }) {
       <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: '1.3fr 1fr' }, alignItems: 'start' }}>
         <Card sx={{ overflow: 'hidden', p: 0 }}>
           <MapContainer bounds={bounds} boundsOptions={{ padding: [30, 30] }} style={{ height: 420, width: '100%' }} scrollWheelZoom>
-            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Polyline positions={g.route.points as LatLon[]} pathOptions={{ color: INDIGO, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
+            <BaseTiles />
+            <Polyline positions={g.route.points as LatLon[]} pathOptions={{ color: mapCol.ahead, weight: 3, opacity: 0.75, dashArray: '2 7', lineCap: 'round' }} />
             {race
               ? standings.map((s, i) => (
                   <Marker key={s.uid} position={s.point} icon={avatarIcon(s, colorOf(s.uid), i === 0 && s.doneM > 0)} zIndexOffset={1000 - i}>

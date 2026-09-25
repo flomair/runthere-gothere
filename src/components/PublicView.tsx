@@ -2,15 +2,17 @@ import { Alert, Box, Button, Card, CircularProgress, Container, Stack, Typograph
 import L from 'leaflet';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip } from 'react-leaflet';
+import { MapContainer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import { cumulativeDistances, splitRoute } from '../../shared/geo';
 import { formatDate, formatKm } from '../lib/format';
 import { loadPublic } from '../lib/groups';
 import type { PublicJourney } from '../lib/types';
 import { AnimatedBar, CountUp } from './motion';
 import { t } from '../lib/i18n';
-import { ROUNDED, VIOLET, INDIGO } from '../theme';
+import { ROUNDED } from '../theme';
 import HeroSurface from './HeroSurface';
+import BaseTiles from './BaseTiles';
+import { routeColors, useDarkMap } from '../lib/mapStyle';
 
 /** Read-only journey page for public share links (no sign-in). */
 export default function PublicView({ token }: { token: string }) {
@@ -71,12 +73,13 @@ function PublicMap({ data }: { data: PublicJourney }) {
   const cum = cumulativeDistances(data.points);
   const scale = cum[cum.length - 1] / data.totalM;
   const { done, ahead } = splitRoute(data.points, cum, data.doneM * scale);
+  const col = routeColors(useDarkMap());
   return (
     <MapContainer bounds={L.latLngBounds(data.points)} boundsOptions={{ padding: [30, 30] }} style={{ height: 420, width: '100%' }}>
-      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <Polyline positions={ahead} pathOptions={{ color: INDIGO, weight: 3, opacity: 0.6, dashArray: '2 7', lineCap: 'round' }} />
-      <Polyline positions={done} pathOptions={{ color: '#fff', weight: 8, opacity: 0.9 }} />
-      <Polyline positions={done} pathOptions={{ color: VIOLET, weight: 4.5 }} />
+      <BaseTiles />
+      <Polyline positions={ahead} pathOptions={{ color: col.ahead, weight: 3, opacity: 0.75, dashArray: '2 7', lineCap: 'round' }} />
+      <Polyline positions={done} pathOptions={{ color: col.casing, weight: 8, opacity: 0.9 }} />
+      <Polyline positions={done} pathOptions={{ color: col.done, weight: 4.5 }} />
       <Marker position={data.position} icon={L.divIcon({ className: '', html: '<div class="rtgt-marker me">🏃</div>', iconSize: [34, 34], iconAnchor: [17, 17] })}>
         <Tooltip permanent direction="top" offset={[0, -18]}>
           {data.ownerFirstName}

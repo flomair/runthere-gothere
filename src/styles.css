@@ -20,12 +20,19 @@ body,
   --rtgt-dest: #4fd1b5;
   --rtgt-track: rgb(231 233 255 / 32%);
 }
+/* base map tinted towards the app's indigo (CARTO Positron / Dark Matter tiles) */
+.rtgt-tiles {
+  filter: grayscale(0.6) sepia(0.22) hue-rotate(195deg) saturate(1.6);
+}
+.dark .rtgt-tiles {
+  filter: grayscale(1) sepia(0.4) hue-rotate(195deg) saturate(2.4) brightness(1.1);
+}
 .leaflet-container {
   font: inherit;
-  background: #e6e8f0;
+  background: #eef0fb;
 }
 .dark .leaflet-container {
-  background: #161a2a;
+  background: #191c2e;
 }
 .rtgt-marker {
   display: grid;
@@ -92,4 +99,49 @@ body,
   @page {
     margin: 16mm;
   }
+}
+
+/* Leaflet controls in the app's style (light and dark) */
+.leaflet-control-attribution {
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 1px 6px !important;
+  border-radius: 8px 0 0 0;
+  background: rgb(255 255 255 / 72%) !important;
+  backdrop-filter: blur(6px);
+}
+.leaflet-control-attribution a {
+  color: inherit !important;
+}
+.leaflet-bar,
+.leaflet-control-layers {
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 14px -6px rgb(35 40 98 / 35%) !important;
+}
+.leaflet-bar a {
+  border-color: rgb(35 40 98 / 8%) !important;
+}
+.dark .leaflet-control-attribution {
+  background: rgb(10 11 20 / 72%) !important;
+  color: #9a9db8;
+}
+.dark .leaflet-bar a,
+.dark .leaflet-control-layers,
+.dark .leaflet-control-layers-toggle {
+  background-color: #141627 !important;
+  color: #e7e9ff !important;
+  border-color: rgb(255 255 255 / 8%) !important;
+}
+.dark .leaflet-control-layers-toggle {
+  filter: invert(1) hue-rotate(180deg);
+}
+.dark .leaflet-tooltip {
+  background: #141627;
+  color: #e7e9ff;
+  border-color: rgb(255 255 255 / 12%);
+}
+.dark .leaflet-tooltip-top::before {
+  border-top-color: #141627;
 }

@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import L from 'leaflet';
 import { useMemo } from 'react';
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip } from 'react-leaflet';
+import { MapContainer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import { simplifyToMax } from '../../shared/geo';
 import { useBookmarks } from '../lib/api';
 import { formatDate } from '../lib/format';
@@ -28,7 +28,8 @@ import { navigate } from '../lib/nav';
 import type { Bookmark, Journey } from '../lib/types';
 import { Reveal, Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
-import { INDIGO } from '../theme';
+import BaseTiles from './BaseTiles';
+import { routeColors, useDarkMap } from '../lib/mapStyle';
 
 const KIND_ICON: Record<Bookmark['kind'], string> = { wiki: '📖', place: '⭐', spot: '📍' };
 
@@ -91,6 +92,7 @@ function LinkButton({ href, children }: { href: string; children: React.ReactNod
 }
 
 export default function TripPage({ journey }: { journey: Journey }) {
+  const mapCol = routeColors(useDarkMap());
   const bm = useBookmarks(journey.id);
   const bookmarks = bm.data ?? [];
   const dest = journey.waypoints[journey.waypoints.length - 1];
@@ -184,8 +186,8 @@ export default function TripPage({ journey }: { journey: Journey }) {
             </Stack>
           </CardContent>
           <MapContainer bounds={bounds} boundsOptions={{ padding: [30, 30] }} style={{ height: 380, width: '100%' }} scrollWheelZoom={false}>
-            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <Polyline positions={route} pathOptions={{ color: INDIGO, weight: 3, opacity: 0.7, dashArray: '2 7', lineCap: 'round' }} />
+            <BaseTiles />
+            <Polyline positions={route} pathOptions={{ color: mapCol.ahead, weight: 3, opacity: 0.75, dashArray: '2 7', lineCap: 'round' }} />
             <Marker position={[dlat, dlon]} icon={GOAL} />
             {bookmarks.map((b) => (
               <Marker key={b.id} position={[b.lat, b.lon]} icon={pin(KIND_ICON[b.kind])}>

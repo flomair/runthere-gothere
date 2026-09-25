@@ -21,7 +21,7 @@ import { computeProgress } from '../lib/progress';
 import { journeyStore, useJourneys } from '../lib/storage';
 import type { Journey } from '../lib/types';
 import NewJourneyDialog, { type JourneyPreset } from './NewJourneyDialog';
-import RouteSketch from './RouteSketch';
+import MiniMap from './MiniMap';
 import { AnimatedBar, Stagger, StaggerItem } from './motion';
 import SharedJourneys from './SharedJourneys';
 import StravaButton from './StravaButton';
@@ -51,8 +51,8 @@ function JourneyCard({ journey, connected, newPostcards }: { journey: Journey; c
   return (
     <Card sx={{ height: '100%', '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 18px 36px -24px rgba(35, 40, 98, 0.35)' } }}>
       <CardActionArea onClick={() => navigate(`/j/${journey.id}`)} sx={{ height: '100%' }}>
-        <Box sx={{ m: 1, mb: 0, borderRadius: '14px', bgcolor: 'action.hover', color: 'text.primary' }}>
-          <RouteSketch points={journey.route.points} doneM={p.doneM} height={130} />
+        <Box sx={{ m: 1, mb: 0, borderRadius: '14px', overflow: 'hidden', isolation: 'isolate' }}>
+          <MiniMap points={journey.route.points} doneM={p.doneM} height={150} />
         </Box>
         <CardContent>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5 }}>

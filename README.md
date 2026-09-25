@@ -71,6 +71,7 @@ firestore.rules deny-all rules for direct database access
 | Routing | [routing.openstreetmap.de](https://routing.openstreetmap.de) (OSRM foot/bike), [BRouter](https://brouter.de) (hiking trails) | no |
 | Classic trails | [Waymarked Trails](https://hiking.waymarkedtrails.org) search, [Overpass API](https://overpass-api.de) for the OSM relation geometry | no |
 | Place search / names | OpenStreetMap Nominatim | no (set `CONTACT_EMAIL` as their policy asks) |
+| Base map | [CARTO](https://carto.com/basemaps) Positron / Dark Matter tiles (OpenStreetMap data), tinted to the app colours; OSM, satellite and terrain as alternatives | no |
 | Weather | [Open-Meteo](https://open-meteo.com) | no |
 | Wikipedia | Wikipedia geosearch (in your browser language, English fallback) | no |
 | Photos | Wikimedia Commons, [Mapillary](https://www.mapillary.com/developer) | Mapillary optional |

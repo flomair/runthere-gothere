@@ -1,6 +1,6 @@
 /* Run There · Go There service worker: offline app shell, cached map tiles, push notifications.
    API responses are private and never cached here. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `rtgt-shell-${VERSION}`;
 const ASSETS = `rtgt-assets-${VERSION}`;
 const TILES = `rtgt-tiles-${VERSION}`;
@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // map tiles: serve cached tiles instantly, refresh in the background
-  if (/tile\.openstreetmap\.org|arcgisonline\.com|elevation-tiles-prod|opentopomap\.org/.test(url.hostname)) {
+  if (/basemaps\.cartocdn\.com|tile\.openstreetmap\.org|arcgisonline\.com|elevation-tiles-prod|opentopomap\.org/.test(url.hostname)) {
     event.respondWith(
       caches.open(TILES).then((cache) =>
         cache.match(req).then((hit) => {
