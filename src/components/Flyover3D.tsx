@@ -274,7 +274,7 @@ export default function Flyover3D({ open, onClose, points, cum, doneM, title, jo
             size="small"
             value={range}
             onChange={(_, v) => v && setRange(v)}
-            sx={{ mt: 0.5, flexWrap: 'wrap', '& .MuiToggleButton-root': { color: 'rgb(255 255 255 / 75%)', borderColor: 'rgb(255 255 255 / 25%)', py: 0.25 }, '& .Mui-selected': { color: '#fff !important', bgcolor: 'rgb(106 77 244 / 55%) !important' } }}
+            sx={{ mt: 0.5, flexWrap: 'wrap', '& .MuiToggleButton-root': { color: 'rgb(255 255 255 / 75%)', borderColor: 'rgb(255 255 255 / 25%)', py: 0.25 }, '& .Mui-selected': { color: '#fff !important', bgcolor: 'rgb(126 87 194 / 55%) !important' } }}
           >
             <ToggleButton value="last" disabled={doneM <= 0}>
               {t('Last 20 km')}

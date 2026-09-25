@@ -321,10 +321,10 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       <Button
         variant="contained"
         size="small"
-        color="primary"
+        color="inherit"
         startIcon={<ThreeDRotationIcon />}
         onClick={() => setFlyover(true)}
-        sx={{ position: 'absolute', zIndex: 1000, left: { xs: 12, sm: 148 }, bottom: { xs: 22, sm: 12 } }}
+        sx={{ position: 'absolute', zIndex: 1000, left: { xs: 12, sm: 148 }, bottom: { xs: 22, sm: 12 }, bgcolor: 'background.paper', color: 'text.primary', boxShadow: 2, '&:hover': { bgcolor: 'background.paper' } }}
       >
         3D
       </Button>

@@ -93,7 +93,7 @@ export default function AppHeader() {
         </Link>
 
         <Tooltip title={effective === 'dark' ? t('Light mode') : t('Dark mode')}>
-          <IconButton onClick={() => setMode(effective === 'dark' ? 'light' : 'dark')} aria-label="toggle color mode">
+          <IconButton onClick={() => setMode(effective === 'dark' ? 'light' : 'dark')} aria-label="toggle color mode" sx={{ width: 40, height: 40, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }}>
             {effective === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
         </Tooltip>

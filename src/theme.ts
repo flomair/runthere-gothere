@@ -9,7 +9,7 @@ import { alpha, createTheme } from '@mui/material/styles';
  * Neutrals are cool paper tones so photos and maps stay the most colourful thing on screen.
  */
 export const PINE = '#0F3B35';
-export const IRIS = '#6A4DF4';
+export const IRIS = '#7E57C2';
 export const MINT = '#149A80';
 /** Selected run / rating stars. */
 export const HIGHLIGHT = '#E8B03A';
@@ -37,7 +37,7 @@ export const theme = createTheme({
     light: {
       palette: {
         primary: { main: PINE, light: '#1E5249', dark: '#082722', contrastText: '#fff' },
-        secondary: { main: IRIS, light: '#8B74F7', dark: '#5236D6', contrastText: '#fff' },
+        secondary: { main: IRIS, light: '#9575CD', dark: '#6A45B0', contrastText: '#fff' },
         success: { main: MINT, contrastText: '#fff' },
         info: { main: '#3D6FA8' },
         background: { default: '#F4F6F4', paper: '#FFFFFF' },
@@ -49,7 +49,7 @@ export const theme = createTheme({
     dark: {
       palette: {
         primary: { main: '#E6EFEC', light: '#FFFFFF', dark: '#C3D2CD', contrastText: '#0B1210' },
-        secondary: { main: '#A08CFF', light: '#B9AAFF', dark: '#8570F0', contrastText: '#0B1210' },
+        secondary: { main: '#B39DDB', light: '#D1C4E9', dark: '#9E86D0', contrastText: '#0B1210' },
         success: { main: '#4FD1B5', contrastText: '#0B1210' },
         info: { main: '#7FA7D6' },
         background: { default: '#0B1210', paper: '#121B18' },
@@ -106,14 +106,34 @@ export const theme = createTheme({
             { props: { size: 'small' }, style: { paddingInline: 12 } },
             { props: { size: 'large' }, style: { paddingInline: 24, minHeight: 48 } },
             { props: { variant: 'outlined' }, style: { borderColor: 'var(--mui-palette-divider)', '&:hover': { borderColor: 'currentColor' } } },
+            // main actions wear the avatar's violet: a solid pill with white text
+            {
+              props: { variant: 'contained', color: 'primary' },
+              style: {
+                backgroundColor: 'var(--rtgt-you)',
+                color: '#fff',
+                boxShadow: '0 6px 16px -8px rgb(126 87 194 / 70%)',
+                '&:hover': { backgroundColor: 'var(--rtgt-you-strong)', boxShadow: '0 8px 20px -8px rgb(126 87 194 / 75%)' },
+              },
+            },
           ],
         },
       },
     },
     MuiIconButton: { styleOverrides: { root: { transition: 'background-color .2s ease, transform .15s ease', '&:active': { transform: 'scale(0.92)' } } } },
+    MuiAvatar: { styleOverrides: { colorDefault: { backgroundColor: 'var(--rtgt-you)', color: '#fff', fontWeight: 600 } } },
+    MuiBadge: { styleOverrides: { colorPrimary: { backgroundColor: 'var(--rtgt-you)', color: '#fff' }, colorSecondary: { backgroundColor: 'var(--rtgt-you)', color: '#fff' } } },
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 600, borderRadius: 999 },
+        root: {
+          fontWeight: 600,
+          borderRadius: 999,
+          variants: [
+            // filled chips: soft violet tint, like the avatar
+            { props: { variant: 'filled', color: 'default' }, style: { backgroundColor: 'rgb(126 87 194 / 12%)', color: 'var(--rtgt-you-text)' } },
+            { props: { variant: 'filled', color: 'primary' }, style: { backgroundColor: 'var(--rtgt-you)', color: '#fff' } },
+          ],
+        },
         outlined: { borderColor: 'var(--mui-palette-divider)' },
       },
     },

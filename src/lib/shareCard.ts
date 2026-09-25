@@ -36,7 +36,7 @@ export async function renderShareCard(c: CardInput): Promise<Blob> {
   ctx.fillStyle = PINE;
   ctx.fillRect(0, 0, W, H);
   for (const [x, y, r, color] of [
-    [W * 0.95, H * 0.05, W * 0.8, 'rgba(106, 77, 244,0.30)'],
+    [W * 0.95, H * 0.05, W * 0.8, 'rgba(126, 87, 194,0.30)'],
     [0, H, W * 0.8, 'rgba(20,154,128,0.22)'],
   ] as const) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);

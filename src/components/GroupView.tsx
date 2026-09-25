@@ -39,7 +39,7 @@ import HeroSurface from './HeroSurface';
 import { PINE } from '../theme';
 
 // runner colours: iris first (usually you), then calm, well-separated tones
-const COLORS = ['#6A4DF4', '#3D6FA8', '#149A80', '#8C5A3C', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
+const COLORS = ['#7E57C2', '#3D6FA8', '#149A80', '#8C5A3C', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
 const initials = (n: string) => n.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
 
 function avatarIcon(s: Standing, color: string, leader: boolean) {
@@ -84,7 +84,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
                 onClick={() => kudos(groupId, item.id)}
                 component={motion.button}
                 whileTap={{ scale: 0.85 }}
-                sx={{ minWidth: 0, px: 1.25, bgcolor: mine ? 'rgba(106, 77, 244,0.12)' : 'transparent', color: mine ? 'secondary.main' : 'text.secondary' }}
+                sx={{ minWidth: 0, px: 1.25, bgcolor: mine ? 'rgba(126, 87, 194,0.12)' : 'transparent', color: mine ? 'secondary.main' : 'text.secondary' }}
               >
                 <motion.span key={String(mine)} initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 15 }} style={{ marginRight: 6 }}>
                   👏

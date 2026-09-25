@@ -10,7 +10,7 @@ import { t } from '../lib/i18n';
 
 const LOOK: Record<WorkoutType, { emoji: string; color: string; label: string }> = {
   easy: { emoji: '🙂', color: '#149A80', label: 'Easy' },
-  long: { emoji: '🛣️', color: '#6A4DF4', label: 'Long' },
+  long: { emoji: '🛣️', color: '#7E57C2', label: 'Long' },
   tempo: { emoji: '⚡', color: '#C2477A', label: 'Tempo' },
   intervals: { emoji: '🔁', color: '#C98F12', label: 'Intervals' },
   recovery: { emoji: '🌿', color: '#5C7A29', label: 'Recovery' },
@@ -83,7 +83,7 @@ export default function CoachCard({ journeyId }: { journeyId: string }) {
                       p: 1.25,
                       borderRadius: '14px',
                       border: 2,
-                      borderColor: today ? 'primary.main' : 'transparent',
+                      borderColor: today ? 'secondary.main' : 'transparent',
                       bgcolor: 'action.hover',
                       position: 'relative',
                       overflow: 'hidden',
@@ -92,7 +92,7 @@ export default function CoachCard({ journeyId }: { journeyId: string }) {
                   >
                     <Stack direction={{ xs: 'row', sm: 'column' }} sx={{ gap: { xs: 1.5, sm: 0.5 }, alignItems: { xs: 'center', sm: 'flex-start' } }}>
                       <Box sx={{ minWidth: { xs: 44, sm: 0 } }}>
-                        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', color: today ? 'primary.main' : 'text.secondary' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', color: today ? 'secondary.main' : 'text.secondary' }}>
                           {formatDate(new Date(2024, 0, 1 + i), { weekday: 'short' })}
                           {today ? ` · ${t('today')}` : ''}
                         </Typography>

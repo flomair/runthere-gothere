@@ -6,13 +6,17 @@ body,
 /* colour tokens (see theme.ts): pine = brand, iris = you/progress, mint = destination */
 :root {
   --rtgt-brand: #0F3B35;
-  --rtgt-you: #6A4DF4;
+  --rtgt-you: #7E57C2;
+  --rtgt-you-strong: #6a45b0;
+  --rtgt-you-text: #5e3ea6;
   --rtgt-dest: #149A80;
   --rtgt-track: rgb(15 59 53 / 30%);
 }
 .dark {
   --rtgt-brand: #e6efec;
-  --rtgt-you: #a08cff;
+  --rtgt-you: #8f6fd6;
+  --rtgt-you-strong: #7e5ccb;
+  --rtgt-you-text: #d1c4e9;
   --rtgt-dest: #4fd1b5;
   --rtgt-track: rgb(230 239 236 / 32%);
 }
@@ -35,7 +39,7 @@ body,
   font-size: 16px;
 }
 .rtgt-marker.me {
-  background: #6A4DF4;
+  background: #7E57C2;
   animation: rtgt-pulse 2s infinite;
 }
 .rtgt-marker.start {
@@ -55,13 +59,13 @@ body,
 }
 @keyframes rtgt-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgb(106 77 244 / 50%);
+    box-shadow: 0 0 0 0 rgb(126 87 194 / 50%);
   }
   70% {
-    box-shadow: 0 0 0 16px rgb(106 77 244 / 0%);
+    box-shadow: 0 0 0 16px rgb(126 87 194 / 0%);
   }
   100% {
-    box-shadow: 0 0 0 0 rgb(106 77 244 / 0%);
+    box-shadow: 0 0 0 0 rgb(126 87 194 / 0%);
   }
 }
 

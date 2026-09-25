@@ -174,13 +174,13 @@ export default function StreetSlideshow({ open, onClose, points, cum, doneM, jou
                   initial={{ width: i < idx ? '100%' : '0%' }}
                   animate={{ width: i < idx ? '100%' : i === idx ? (playing ? '100%' : '50%') : '0%' }}
                   transition={{ duration: i === idx && playing ? SLIDE_MS / 1000 : 0.2, ease: 'linear' }}
-                  sx={{ height: '100%', bgcolor: '#6A4DF4' }}
+                  sx={{ height: '100%', bgcolor: '#7E57C2' }}
                 />
               </Box>
             ))}
           </Stack>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <IconButton aria-label={playing ? t('Pause') : t('Play')} onClick={() => (idx >= frames.length - 1 ? (setIdx(0), setPlaying(true)) : setPlaying((p) => !p))} disabled={frames.length < 2} sx={{ color: '#fff', bgcolor: '#6A4DF4', '&:hover': { bgcolor: '#6A4DF4', filter: 'brightness(1.08)' } }}>
+            <IconButton aria-label={playing ? t('Pause') : t('Play')} onClick={() => (idx >= frames.length - 1 ? (setIdx(0), setPlaying(true)) : setPlaying((p) => !p))} disabled={frames.length < 2} sx={{ color: '#fff', bgcolor: '#7E57C2', '&:hover': { bgcolor: '#7E57C2', filter: 'brightness(1.08)' } }}>
               {playing ? <PauseIcon /> : <PlayArrowIcon />}
             </IconButton>
             <ToggleButtonGroup
@@ -188,7 +188,7 @@ export default function StreetSlideshow({ open, onClose, points, cum, doneM, jou
               size="small"
               value={range}
               onChange={(_, v) => v && setRange(v)}
-              sx={{ '& .MuiToggleButton-root': { color: 'rgb(255 255 255 / 75%)', borderColor: 'rgb(255 255 255 / 25%)', py: 0.25 }, '& .Mui-selected': { color: '#fff !important', bgcolor: 'rgb(106 77 244 / 55%) !important' } }}
+              sx={{ '& .MuiToggleButton-root': { color: 'rgb(255 255 255 / 75%)', borderColor: 'rgb(255 255 255 / 25%)', py: 0.25 }, '& .Mui-selected': { color: '#fff !important', bgcolor: 'rgb(126 87 194 / 55%) !important' } }}
             >
               <ToggleButton value="last" disabled={doneM <= 0}>
                 {t('Last 10 km')}
