@@ -2,14 +2,14 @@ import { useColorScheme } from '@mui/material/styles';
 import { INDIGO, VIOLET } from '../theme';
 
 /**
- * Base map in the app's colours: CARTO's calm Positron (light) / Dark Matter (dark) tiles, tinted
- * towards indigo with a CSS filter (see .rtgt-tiles in styles.css). {r} becomes "@2x" on retina screens.
+ * Base map in the app's colours: the standard OpenStreetMap tiles (no key needed), recoloured with a
+ * CSS filter – a pale indigo map in light mode, an inverted deep navy one in dark mode
+ * (see .rtgt-tiles in styles.css).
  */
 export const BASEMAP = {
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  subdomains: 'abcd',
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 19,
 };
 
 export function useDarkMap(): boolean {
@@ -25,11 +25,5 @@ export function routeColors(dark: boolean) {
 }
 
 /** URL of one base map tile. */
-export function tileUrl(dark: boolean, z: number, x: number, y: number, retina: boolean): string {
-  return (dark ? BASEMAP.dark : BASEMAP.light)
-    .replace('{s}', BASEMAP.subdomains[(x + y) % 4])
-    .replace('{z}', String(z))
-    .replace('{x}', String(x))
-    .replace('{y}', String(y))
-    .replace('{r}', retina ? '@2x' : '');
-}
+export const tileUrl = (z: number, x: number, y: number): string =>
+  BASEMAP.url.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));

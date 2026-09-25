@@ -20,12 +20,12 @@ body,
   --rtgt-dest: #4fd1b5;
   --rtgt-track: rgb(231 233 255 / 32%);
 }
-/* base map tinted towards the app's indigo (CARTO Positron / Dark Matter tiles) */
+/* OpenStreetMap tiles recoloured to the app's indigo: pale in light mode, inverted navy in dark mode */
 .rtgt-tiles {
-  filter: grayscale(0.6) sepia(0.22) hue-rotate(195deg) saturate(1.6);
+  filter: grayscale(1) brightness(0.96) contrast(1.08) sepia(0.2) hue-rotate(195deg) saturate(1.7);
 }
 .dark .rtgt-tiles {
-  filter: grayscale(1) sepia(0.4) hue-rotate(195deg) saturate(2.4) brightness(1.1);
+  filter: grayscale(1) invert(1) brightness(1.18) contrast(0.92) sepia(0.4) hue-rotate(195deg) saturate(2.3);
 }
 .leaflet-container {
   font: inherit;

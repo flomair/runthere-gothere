@@ -21,6 +21,7 @@ export default function MiniMap({ points, doneM, height = 140 }: { points: LatLo
   const [width, setWidth] = useState(0);
   const dark = useDarkMap();
   const col = routeColors(dark);
+  const retina = typeof window !== 'undefined' && window.devicePixelRatio > 1;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -38,7 +39,8 @@ export default function MiniMap({ points, doneM, height = 140 }: { points: LatLo
     const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
     const pad = 22;
     const zf = Math.max(1, Math.min(13, Math.log2(Math.min((width - 2 * pad) / Math.max(maxX - minX, 1e-9), (height - 2 * pad) / Math.max(maxY - minY, 1e-9)))));
-    const zi = Math.floor(zf);
+    // one zoom level deeper on high-density screens keeps the little map sharp
+    const zi = Math.min(19, Math.floor(zf) + (retina ? 1 : 0));
     const scale = 2 ** zf;
     const tileSize = TILE * 2 ** (zf - zi);
     const ox = ((minX + maxX) / 2) * scale - width / 2;
@@ -60,9 +62,8 @@ export default function MiniMap({ points, doneM, height = 140 }: { points: LatLo
     const path = (arr: LatLon[]) => arr.map((p, i) => `${i ? 'L' : 'M'}${proj(p)[0].toFixed(1)},${proj(p)[1].toFixed(1)}`).join('');
     const last = done[done.length - 1];
     return { zi, tileSize, tiles, done: path(done), ahead: path(ahead), start: proj(pts[0]), end: proj(pts[pts.length - 1]), me: doneM > 0 && last ? proj(last) : null };
-  }, [points, doneM, width, height]);
+  }, [points, doneM, width, height, retina]);
 
-  const retina = typeof window !== 'undefined' && window.devicePixelRatio > 1;
   return (
     <Box ref={ref} sx={{ position: 'relative', width: '100%', height, overflow: 'hidden', bgcolor: dark ? '#191c2e' : '#eef0fb' }} aria-hidden>
       {g && (
@@ -75,7 +76,7 @@ export default function MiniMap({ points, doneM, height = 140 }: { points: LatLo
                 alt=""
                 loading="lazy"
                 decoding="async"
-                src={tileUrl(dark, g.zi, tl.x, tl.y, retina)}
+                src={tileUrl(g.zi, tl.x, tl.y)}
                 onLoad={(e) => ((e.target as HTMLImageElement).style.opacity = '1')}
                 sx={{ position: 'absolute', left: tl.left, top: tl.top, width: g.tileSize + 0.5, height: g.tileSize + 0.5, opacity: 0, transition: 'opacity .4s ease', userSelect: 'none', pointerEvents: 'none' }}
               />
@@ -110,7 +111,7 @@ export default function MiniMap({ points, doneM, height = 140 }: { points: LatLo
               </>
             )}
           </svg>
-          <Box sx={{ position: 'absolute', right: 6, bottom: 3, fontSize: 9, opacity: 0.55, color: C.brand, pointerEvents: 'none' }}>© OSM · CARTO</Box>
+          <Box sx={{ position: 'absolute', right: 6, bottom: 3, fontSize: 9, opacity: 0.55, color: C.brand, pointerEvents: 'none' }}>© OpenStreetMap</Box>
         </>
       )}
     </Box>
