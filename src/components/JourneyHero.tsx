@@ -156,6 +156,21 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
           <Typography sx={{ opacity: 0.9, mt: 0.5, fontSize: { xs: '0.85rem', sm: '1rem' } }} noWrap>
             {from && to ? `${from} → ${to}` : journey.route.provider} · {formatKm(journey.route.totalM, 0)}
           </Typography>
+          {journey.event && (
+            <Box
+              component={motion.div}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, mt: 1, px: 1.25, py: 0.4, borderRadius: 99, bgcolor: 'rgba(255,255,255,0.18)', fontWeight: 700, fontSize: '0.85rem' }}
+            >
+              🏅 {journey.event.name} ·{' '}
+              {(() => {
+                const d = Math.ceil((new Date(`${journey.event.date}T09:00:00`).getTime() - Date.now()) / 86_400_000);
+                return d > 0 ? `${d} days` : d === 0 ? 'today!' : 'done';
+              })()}
+            </Box>
+          )}
           {countries.length > 1 && (
             <Stack direction="row" sx={{ gap: 0.5, mt: 1 }}>
               {countries.map((c) => (

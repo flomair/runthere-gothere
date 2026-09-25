@@ -126,6 +126,80 @@ function ChallengeDialog({
   );
 }
 
+function RaceEditor({ journey }: { journey: Journey }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(journey.event?.name ?? '');
+  const [date, setDate] = useState(journey.event?.date ?? '');
+  const [url, setUrl] = useState(journey.event?.url ?? '');
+  const ev = journey.event;
+  const daysTo = ev ? Math.ceil((new Date(`${ev.date}T09:00:00`).getTime() - Date.now()) / 86_400_000) : 0;
+  if (!editing) {
+    return (
+      <Box sx={{ mb: 2 }}>
+        {ev ? (
+          <Alert
+            severity="info"
+            icon={<span style={{ fontSize: 22 }}>🏅</span>}
+            action={
+              <Button color="inherit" size="small" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+            }
+          >
+            <strong>{ev.url ? <a href={ev.url} target="_blank" rel="noopener" style={{ color: 'inherit' }}>{ev.name}</a> : ev.name}</strong> on {formatDate(ev.date)}
+            {daysTo > 0 ? ` · ${daysTo} days to go` : daysTo === 0 ? ' · today!' : ' · done'}. The journey is your build-up: arrive before the start line.
+          </Alert>
+        ) : (
+          <Button size="small" onClick={() => setEditing(true)}>
+            🏅 Finish at a real race
+          </Button>
+        )}
+      </Box>
+    );
+  }
+  return (
+    <Stack spacing={1.5} sx={{ mb: 2, p: 2, borderRadius: '16px', bgcolor: 'action.hover' }}>
+      <Typography variant="subtitle2">A real race at the destination</Typography>
+      <TextField size="small" label="Race" placeholder="Vienna City Marathon" value={name} onChange={(e) => setName(e.target.value)} />
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+        <TextField size="small" type="date" label="Race day" value={date} onChange={(e) => setDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
+        <TextField size="small" fullWidth label="Website (optional)" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} />
+      </Stack>
+      <Stack direction="row" spacing={1}>
+        <Button
+          variant="contained"
+          size="small"
+          disabled={!name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)}
+          onClick={() => {
+            journeyStore.update(journey.id, {
+              event: { name: name.trim(), date, url: /^https?:\/\//.test(url.trim()) ? url.trim() : undefined },
+              goalDate: date,
+            });
+            setEditing(false);
+          }}
+        >
+          Save (also sets the arrival goal)
+        </Button>
+        {journey.event && (
+          <Button
+            size="small"
+            color="error"
+            onClick={() => {
+              journeyStore.update(journey.id, { event: undefined });
+              setEditing(false);
+            }}
+          >
+            Remove
+          </Button>
+        )}
+        <Button size="small" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}
+
 export default function GoalsCard({ journey, progress, waypointDist }: { journey: Journey; progress: Progress; waypointDist: { name: string; m: number }[] }) {
   const [adding, setAdding] = useState(false);
   const { goal, streaks, records } = progress;
@@ -169,6 +243,9 @@ export default function GoalsCard({ journey, progress, waypointDist }: { journey
             )
           )}
         </Stack>
+
+        {/* real race at the finish */}
+        <RaceEditor journey={journey} />
 
         {/* challenges */}
         <Stack spacing={1.25} sx={{ mb: 2 }}>

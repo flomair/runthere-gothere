@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
 import { db } from './firebase.js';
 
 /**
@@ -39,6 +39,7 @@ export interface UserDoc {
     syncedFrom?: number;
   } | null;
   ai?: { masked: string; workspaceId?: string; updatedAt: string } | null;
+  stats?: { stories?: number; postcards?: number; coachPlans?: number };
 }
 
 export interface Secrets {
@@ -94,6 +95,17 @@ export interface Repo {
   putShare(token: string, share: { uid: string; journeyId: string; createdAt: string }): Promise<void>;
   deleteShare(token: string): Promise<void>;
   listShares(uid: string, journeyId: string): Promise<string[]>;
+
+  listBookmarks(uid: string, journeyId?: string): Promise<Bookmark[]>;
+  putBookmark(uid: string, b: Bookmark): Promise<void>;
+  deleteBookmark(uid: string, id: string): Promise<void>;
+
+  getCoachPlan(uid: string, journeyId: string): Promise<CoachPlan | null>;
+  putCoachPlan(uid: string, journeyId: string, plan: CoachPlan): Promise<void>;
+
+  incrementStat(uid: string, key: 'stories' | 'postcards' | 'coachPlans'): Promise<void>;
+  listUsers(): Promise<(UserDoc & { uid: string })[]>;
+  hasAiKey(uid: string): Promise<boolean>;
 }
 
 /** Firestore doc ids can't contain "/"; keep them short and safe. */
@@ -264,6 +276,34 @@ export const firestoreRepo: Repo = {
   },
   async deleteShare(token) {
     await db().collection('shares').doc(docId(token)).delete();
+  },
+  async listBookmarks(uid, journeyId) {
+    let q: FirebaseFirestore.Query = db().collection('users').doc(uid).collection('bookmarks');
+    if (journeyId) q = q.where('journeyId', '==', journeyId);
+    return (await q.get()).docs.map((d) => d.data() as Bookmark).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  },
+  async putBookmark(uid, b) {
+    await db().collection('users').doc(uid).collection('bookmarks').doc(docId(b.id)).set(b);
+  },
+  async deleteBookmark(uid, id) {
+    await db().collection('users').doc(uid).collection('bookmarks').doc(docId(id)).delete();
+  },
+  async getCoachPlan(uid, journeyId) {
+    const d = await db().collection('users').doc(uid).collection('coach').doc(docId(journeyId)).get();
+    return d.exists ? (d.data() as CoachPlan) : null;
+  },
+  async putCoachPlan(uid, journeyId, plan) {
+    await db().collection('users').doc(uid).collection('coach').doc(docId(journeyId)).set(plan);
+  },
+  async incrementStat(uid, key) {
+    await db().collection('users').doc(uid).set({ stats: { [key]: FieldValue.increment(1) } }, { merge: true });
+  },
+  async listUsers() {
+    const snap = await db().collection('users').get();
+    return snap.docs.map((d) => ({ uid: d.id, ...(d.data() as UserDoc) }));
+  },
+  async hasAiKey(uid) {
+    return Boolean(((await db().collection('secrets').doc(uid).get()).data() as Secrets | undefined)?.ai);
   },
   async listShares(uid, journeyId) {
     const snap = await db().collection('shares').where('uid', '==', uid).where('journeyId', '==', journeyId).get();

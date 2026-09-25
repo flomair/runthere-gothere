@@ -31,6 +31,7 @@ import GoalsCard from './GoalsCard';
 import JourneySettingsDialog from './JourneySettingsDialog';
 import LocationExplorer from './LocationExplorer';
 import RouteMap from './RouteMap';
+import CoachCard from './CoachCard';
 import InviteDialog from './InviteDialog';
 import JourneyHero from './JourneyHero';
 import ShareDialog from './ShareDialog';
@@ -192,6 +193,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
     <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
       <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}>📤 Share card &amp; public link</MenuItem>
       <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}>👥 Invite friends (race or relay)</MenuItem>
+      <MenuItem onClick={() => { setMenu(null); navigate(`/j/${journey.id}/trip`); }}>🧳 Plan the real trip</MenuItem>
       <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>Settings</MenuItem>
       <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>Download route as GPX</MenuItem>
       {journey.trail && (
@@ -240,9 +242,9 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>
             <AlertTitle>You've arrived in {journey.waypoints[journey.waypoints.length - 1]?.name ?? 'your destination'}!</AlertTitle>
             {formatKm(progress.totalM, 0)} done{progress.finishedOn ? ` on ${formatDate(progress.finishedOn)}` : ''}. Time to go there for real?{' '}
-            <a href={`https://www.google.com/travel/flights?q=flights+to+${encodeURIComponent(journey.waypoints[journey.waypoints.length - 1]?.name ?? '')}`} target="_blank" rel="noopener">
-              Plan the trip
-            </a>
+            <Button size="small" color="inherit" variant="outlined" onClick={() => navigate(`/j/${journey.id}/trip`)} sx={{ ml: 0.5 }}>
+              Plan the real trip
+            </Button>
           </Alert>
         </Pop>
       )}
@@ -421,7 +423,12 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           </Stack>
         )}
         {section === 'explore' && explore}
-        {section === 'goals' && <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />}
+        {section === 'goals' && (
+          <Stack spacing={2.5}>
+            <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />
+            <CoachCard journeyId={journey.id} />
+          </Stack>
+        )}
         {section === 'log' && (
           <ActivityLog
             journey={journey}

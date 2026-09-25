@@ -188,6 +188,7 @@ export async function detectMilestones(uid: string, opts: DetectOptions = {}): P
       try {
         m.postcard = { text: await writePostcard(m, j, key, lang), at: new Date().toISOString() };
         await repo.putMilestone(uid, m);
+        await repo.incrementStat(uid, 'postcards');
       } catch (e) {
         console.error('postcard failed', e);
       }

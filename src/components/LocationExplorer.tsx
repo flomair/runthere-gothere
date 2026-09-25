@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { LatLon } from '../../shared/geo';
 import { useMe, usePhotos, useSurroundings } from '../lib/api';
 import type { NarrateRequest } from '../lib/types';
+import BookmarkButton from './BookmarkButton';
 import NarratorCard from './NarratorCard';
 import { Reveal } from './motion';
 import PhotoStrip from './PhotoStrip';
@@ -52,9 +53,16 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate }:
               {env.isLoading ? (
                 <Skeleton width={220} height={40} />
               ) : (
-                <Typography variant="h4" component="h2" sx={{ lineHeight: 1.15 }}>
-                  {place?.name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`}
-                </Typography>
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5 }}>
+                  <Typography variant="h4" component="h2" sx={{ lineHeight: 1.15 }}>
+                    {place?.name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`}
+                  </Typography>
+                  <BookmarkButton
+                    journeyId={journeyId}
+                    size="medium"
+                    item={{ kind: 'spot', title: place?.name || `${lat.toFixed(3)}, ${lon.toFixed(3)}`, subtitle: place?.context, url: `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`, lat, lon }}
+                  />
+                </Stack>
               )}
               <Typography color="text.secondary">{place?.context}</Typography>
             </Box>
@@ -90,10 +98,10 @@ export default function LocationExplorer({ journeyId, point, eyebrow, narrate }:
 
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, alignItems: 'start' }}>
         <Section title="Wikipedia nearby">
-          <WikipediaList items={env.data?.wikipedia} loading={env.isLoading} />
+          <WikipediaList items={env.data?.wikipedia} loading={env.isLoading} journeyId={journeyId} />
         </Section>
         <Section title="Top places around">
-          <PlacesList items={env.data?.places} loading={env.isLoading} enabled={!!me?.features.googlePlaces} point={point} />
+          <PlacesList items={env.data?.places} loading={env.isLoading} enabled={!!me?.features.googlePlaces} point={point} journeyId={journeyId} />
         </Section>
       </Box>
     </Stack>

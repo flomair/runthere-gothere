@@ -12,6 +12,12 @@ import {
   ListItem,
   ListItemText,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
@@ -20,6 +26,7 @@ import { useState } from 'react';
 import { api, useMe } from '../lib/api';
 import { formatDate } from '../lib/format';
 import { navigate } from '../lib/nav';
+import type { AdminUserRow } from '../lib/types';
 
 interface AllowlistResponse {
   admins: string[];
@@ -173,6 +180,60 @@ function StravaWebhook() {
   );
 }
 
+function Usage() {
+  const q = useQuery({ queryKey: ['admin-users'], queryFn: () => api<{ users: AdminUserRow[] }>('/api/admin/users').then((r) => r.users) });
+  const users = q.data ?? [];
+  const total = (k: keyof AdminUserRow['stats']) => users.reduce((n, u) => n + (u.stats[k] ?? 0), 0);
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6">Users & AI usage</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Every AI call runs on that user's own key. {users.length} users · {total('stories')} stories · {total('postcards')} postcards · {total('coachPlans')} coach plans.
+        </Typography>
+        {q.error && <Alert severity="error">{q.error.message}</Alert>}
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>User</TableCell>
+                <TableCell>Last sign-in</TableCell>
+                <TableCell>Strava</TableCell>
+                <TableCell>AI key</TableCell>
+                <TableCell align="right">Stories</TableCell>
+                <TableCell align="right">Postcards</TableCell>
+                <TableCell align="right">Coach</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {users.map((u) => (
+                <TableRow key={u.uid}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {u.name ?? '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {u.email}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>{u.lastLoginAt ? formatDate(u.lastLoginAt) : '—'}</TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                    {u.strava ? <Chip size="small" color="success" variant="outlined" label={u.strava.lastSyncAt ? `synced ${formatDate(u.strava.lastSyncAt)}` : 'connected'} /> : '—'}
+                  </TableCell>
+                  <TableCell>{u.hasAiKey ? <Chip size="small" color="success" variant="outlined" label="yes" /> : '—'}</TableCell>
+                  <TableCell align="right">{u.stats.stories ?? 0}</TableCell>
+                  <TableCell align="right">{u.stats.postcards ?? 0}</TableCell>
+                  <TableCell align="right">{u.stats.coachPlans ?? 0}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminPage() {
   const { data: me } = useMe();
   if (!me?.user.isAdmin) return <Alert severity="error">Admins only.</Alert>;
@@ -190,6 +251,7 @@ export default function AdminPage() {
         <Allowlist />
         <StravaWebhook />
       </Box>
+      <Usage />
     </Stack>
   );
 }

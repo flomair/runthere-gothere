@@ -9,10 +9,11 @@ import { journeyStore, useJourneyState } from './lib/storage';
 
 const JourneyView = lazy(() => import('./components/JourneyView'));
 const DiaryPage = lazy(() => import('./components/DiaryPage'));
+const TripPage = lazy(() => import('./components/TripPage'));
 const GroupView = lazy(() => import('./components/GroupView'));
 const PublicView = lazy(() => import('./components/PublicView'));
 
-/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/g/<id> (shared journey), #/s/<token> (public), #/admin. */
+/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -20,12 +21,12 @@ function useHashRoute() {
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  const m = /^#\/j\/([^/]+)(\/diary)?/.exec(hash);
+  const m = /^#\/j\/([^/]+)(?:\/(diary|trip))?/.exec(hash);
   const g = /^#\/g\/([^/?]+)/.exec(hash);
   const s = /^#\/s\/([^/?]+)/.exec(hash);
   return {
     journeyId: m ? decodeURIComponent(m[1]) : null,
-    diary: !!m?.[2],
+    sub: (m?.[2] ?? null) as 'diary' | 'trip' | null,
     groupId: g ? decodeURIComponent(g[1]) : null,
     shareToken: s ? decodeURIComponent(s[1]) : null,
     admin: hash.startsWith('#/admin'),
@@ -47,7 +48,7 @@ function useStravaFlash() {
 }
 
 function Main() {
-  const { journeyId, diary, groupId, admin } = useHashRoute();
+  const { journeyId, sub, groupId, admin } = useHashRoute();
   const { journeys, status, error } = useJourneyState();
   const journey = journeyId ? journeys.find((j) => j.id === journeyId) : undefined;
   const [flash, clearFlash] = useStravaFlash();
@@ -61,7 +62,7 @@ function Main() {
             {error}
           </Alert>
         )}
-        <PageTransition routeKey={admin ? 'admin' : groupId ? `g/${groupId}` : journey ? `${journey.id}${diary ? '/diary' : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
+        <PageTransition routeKey={admin ? 'admin' : groupId ? `g/${groupId}` : journey ? `${journey.id}${sub ? `/${sub}` : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
         {admin ? (
             <AdminPage />
           ) : groupId ? (
@@ -72,7 +73,13 @@ function Main() {
             <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />
           ) : journey ? (
             <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
-              {diary ? <DiaryPage key={`d-${journey.id}`} journey={journey} /> : <JourneyView key={journey.id} journey={journey} />}
+              {sub === 'diary' ? (
+                <DiaryPage key={`d-${journey.id}`} journey={journey} />
+              ) : sub === 'trip' ? (
+                <TripPage key={`t-${journey.id}`} journey={journey} />
+              ) : (
+                <JourneyView key={journey.id} journey={journey} />
+              )}
             </Suspense>
           ) : (
             <JourneyList />

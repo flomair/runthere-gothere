@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LatLon } from '../../shared/geo';
 import { idToken } from './firebase';
-import type { Activity, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
+import type { Activity, Bookmark, CoachPlan, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -149,4 +149,45 @@ export function useJourneyStories(journeyId: string) {
     queryFn: () =>
       api<{ narrations: { key: string; text: string; at: string }[] }>(`/api/narrations?journeyId=${encodeURIComponent(journeyId)}`).then((r) => r.narrations),
   });
+}
+
+// ---- coach & bookmarks ----
+export function useCoachPlan(journeyId: string) {
+  return useQuery({
+    queryKey: ['coach', journeyId],
+    queryFn: () => api<{ plan: CoachPlan | null }>(`/api/coach?journeyId=${encodeURIComponent(journeyId)}`).then((r) => r.plan),
+  });
+}
+
+/** Best-effort real location (for the weather-aware coach); resolves to null if denied. */
+export const realLocation = () =>
+  new Promise<{ lat: number; lon: number } | null>((resolve) => {
+    if (!('geolocation' in navigator)) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 3_600_000 },
+    );
+  });
+
+export function useBookmarks(journeyId: string) {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ['bookmarks', journeyId],
+    queryFn: () => api<{ bookmarks: Bookmark[] }>(`/api/bookmarks?journeyId=${encodeURIComponent(journeyId)}`).then((r) => r.bookmarks),
+  });
+  const refresh = () => qc.invalidateQueries({ queryKey: ['bookmarks', journeyId] });
+  return {
+    ...q,
+    add: async (b: Omit<Bookmark, 'id' | 'createdAt' | 'journeyId'>) => {
+      await api('/api/bookmarks', { method: 'POST', json: { ...b, journeyId } });
+      await refresh();
+    },
+    remove: async (id: string) => {
+      await api(`/api/bookmarks?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await refresh();
+    },
+    /** Bookmark with the same title and position, if any. */
+    find: (title: string, lat: number, lon: number) => q.data?.find((b) => b.title === title && Math.abs(b.lat - lat) < 1e-4 && Math.abs(b.lon - lon) < 1e-4),
+  };
 }

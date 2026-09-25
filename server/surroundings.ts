@@ -94,6 +94,8 @@ export async function wikipedia(lat: number, lon: number, lang: string, limit = 
         url: p.fullurl ?? `https://${safeLang}.wikipedia.org/?curid=${p.pageid}`,
         thumbUrl: p.thumbnail?.source,
         distanceM: c ? haversine([lat, lon], [c.lat, c.lon]) : Number.POSITIVE_INFINITY,
+        lat: c?.lat,
+        lon: c?.lon,
         lang: safeLang,
       };
     })
@@ -151,6 +153,8 @@ export async function googlePlaces(lat: number, lon: number, lang: string, limit
       ratingCount: p.userRatingCount,
       mapsUrl: p.googleMapsUri,
       distanceM: p.location ? haversine([lat, lon], [p.location.latitude, p.location.longitude]) : 0,
+      lat: p.location?.latitude,
+      lon: p.location?.longitude,
       review: rv
         ? {
             author: rv.authorAttribution?.displayName,

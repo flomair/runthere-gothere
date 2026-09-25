@@ -21,5 +21,6 @@ export const POST = authed(async (req, user) => {
     throw new HttpError(400, explainError(e, key));
   }
   await repo.putMilestone(user.uid, m);
+  await repo.incrementStat(user.uid, 'postcards');
   return json({ milestone: m });
 });

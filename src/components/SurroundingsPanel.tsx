@@ -20,6 +20,7 @@ import type { LatLon } from '../../shared/geo';
 import { describeWeatherCode } from '../../shared/weather';
 import { formatKm } from '../lib/format';
 import type { SurroundingsResponse } from '../lib/types';
+import BookmarkButton from './BookmarkButton';
 
 const km = (m: number) => (m < 1000 ? `${Math.round(m)} m` : formatKm(m));
 
@@ -48,13 +49,21 @@ export function WeatherBadge({ data }: { data: SurroundingsResponse['weather'] }
   );
 }
 
-export function WikipediaList({ items, loading }: { items: SurroundingsResponse['wikipedia'] | undefined; loading: boolean }) {
+export function WikipediaList({ items, loading, journeyId }: { items: SurroundingsResponse['wikipedia'] | undefined; loading: boolean; journeyId?: string }) {
   if (loading) return <Skeleton variant="rounded" height={160} />;
   if (!items?.length) return <Typography color="text.secondary" variant="body2">No Wikipedia articles within 10 km.</Typography>;
   return (
     <List dense disablePadding>
       {items.slice(0, 6).map((a) => (
-        <ListItem key={a.title} disablePadding>
+        <ListItem
+          key={a.title}
+          disablePadding
+          secondaryAction={
+            journeyId && a.lat != null && a.lon != null ? (
+              <BookmarkButton journeyId={journeyId} item={{ kind: 'wiki', title: a.title, subtitle: a.extract.slice(0, 200), url: a.url, lat: a.lat, lon: a.lon }} />
+            ) : undefined
+          }
+        >
           <ListItemButton component="a" href={a.url} target="_blank" rel="noopener" sx={{ borderRadius: '12px', alignItems: 'flex-start' }}>
             <ListItemAvatar>
               <Avatar variant="rounded" src={a.thumbUrl} sx={{ width: 56, height: 56, mr: 1.5 }}>
@@ -88,11 +97,13 @@ export function PlacesList({
   loading,
   enabled,
   point,
+  journeyId,
 }: {
   items: SurroundingsResponse['places'] | undefined;
   loading: boolean;
   enabled: boolean;
   point: LatLon;
+  journeyId?: string;
 }) {
   const mapsSearch = (q: string) => `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${point[0]},${point[1]},14z`;
   if (!enabled) {
@@ -127,8 +138,9 @@ export function PlacesList({
                   {[p.type, km(p.distanceM)].filter(Boolean).join(' · ')}
                 </Typography>
               </Box>
+              <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
               {p.rating != null && (
-                <Stack direction="row" sx={{ alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 0.25 }}>
                   <StarIcon sx={{ color: '#f4b400', fontSize: 18 }} />
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {p.rating.toFixed(1)}
@@ -138,6 +150,10 @@ export function PlacesList({
                   </Typography>
                 </Stack>
               )}
+              {journeyId && p.lat != null && p.lon != null && (
+                <BookmarkButton journeyId={journeyId} item={{ kind: 'place', title: p.name, subtitle: p.type, url: p.mapsUrl, lat: p.lat, lon: p.lon }} />
+              )}
+              </Stack>
             </Stack>
             {p.review && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>

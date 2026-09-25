@@ -30,7 +30,7 @@ export const POST = authed(async (req, user) => {
   if (!key) throw new HttpError(400, 'Add your own Anthropic API key in the narrator settings first.');
   body.language = /^[a-z]{2,3}$/.test(body.language) ? body.language : 'en';
   const saveKey = typeof body.saveKey === 'string' && body.saveKey.length < 300 ? body.saveKey : undefined;
-  const stream = await narrate(body, key, saveKey ? (text) => repo.putNarration(user.uid, saveKey, text) : undefined);
+  const stream = await narrate(body, key, saveKey ? async (text) => { await repo.putNarration(user.uid, saveKey, text); await repo.incrementStat(user.uid, 'stories'); } : undefined);
   return new Response(stream, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' },
   });

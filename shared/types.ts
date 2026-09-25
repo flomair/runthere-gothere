@@ -74,6 +74,8 @@ export interface WikiArticle {
   thumbUrl?: string;
   distanceM: number;
   lang: string;
+  lat?: number;
+  lon?: number;
 }
 
 export interface NearbyPlace {
@@ -84,6 +86,8 @@ export interface NearbyPlace {
   ratingCount?: number;
   mapsUrl?: string;
   distanceM: number;
+  lat?: number;
+  lon?: number;
   review?: { author?: string; rating?: number; text: string; when?: string };
 }
 
@@ -214,6 +218,8 @@ export interface Journey {
   countElevation?: boolean;
   /** Elevation profile: `elevations[i]` is the altitude at i·stepM along the route (true metres). */
   profile?: { stepM: number; elevations: number[] };
+  /** A real race at the destination: the journey is the build-up. */
+  event?: RaceEvent;
 }
 
 
@@ -323,4 +329,46 @@ export interface PublicJourney {
   position: LatLon;
   place?: string;
   updatedAt: string;
+}
+
+// ---------- coach, real race, trip planner ----------
+
+export interface RaceEvent {
+  name: string;
+  /** YYYY-MM-DD */
+  date: string;
+  url?: string;
+}
+
+export type WorkoutType = 'easy' | 'long' | 'tempo' | 'intervals' | 'recovery' | 'rest' | 'cross';
+
+export interface CoachPlan {
+  weekOf: string;
+  summary: string;
+  targetKm: number;
+  days: { day: string; type: WorkoutType; distanceKm: number; title: string; details: string }[];
+  tip: string;
+  createdAt: string;
+}
+
+export interface Bookmark {
+  id: string;
+  journeyId: string;
+  kind: 'wiki' | 'place' | 'spot';
+  title: string;
+  subtitle?: string;
+  url?: string;
+  lat: number;
+  lon: number;
+  createdAt: string;
+}
+
+export interface AdminUserRow {
+  uid: string;
+  email?: string;
+  name?: string;
+  lastLoginAt?: string;
+  strava?: { athleteName?: string; lastSyncAt?: string } | null;
+  hasAiKey: boolean;
+  stats: { stories?: number; postcards?: number; coachPlans?: number };
 }

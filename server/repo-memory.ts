@@ -1,4 +1,4 @@
-import type { Activity, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 
 const merge = <T extends object>(base: T, patch: object): T => {
@@ -23,6 +23,8 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const groups = new Map<string, ReturnType<typeof toStoredGroup>>();
   const feeds = new Map<string, Map<string, FeedItem>>();
   const shares = new Map<string, { uid: string; journeyId: string; createdAt: string }>();
+  const bookmarks = new Map<string, Map<string, Bookmark>>();
+  const coach = new Map<string, Map<string, CoachPlan>>();
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
     return m.get(uid)!;
@@ -80,6 +82,18 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     getShare: async (t) => shares.get(t) ?? null,
     putShare: async (t, sh) => void shares.set(t, sh),
     deleteShare: async (t) => void shares.delete(t),
+    listBookmarks: async (uid, journeyId) =>
+      [...sub(bookmarks, uid).values()].filter((b) => !journeyId || b.journeyId === journeyId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    putBookmark: async (uid, b) => void sub(bookmarks, uid).set(b.id, { ...b }),
+    deleteBookmark: async (uid, id) => void sub(bookmarks, uid).delete(id),
+    getCoachPlan: async (uid, journeyId) => sub(coach, uid).get(journeyId) ?? null,
+    putCoachPlan: async (uid, journeyId, plan) => void sub(coach, uid).set(journeyId, plan),
+    incrementStat: async (uid, key) => {
+      const u = users.get(uid) ?? {};
+      users.set(uid, { ...u, stats: { ...(u.stats ?? {}), [key]: (u.stats?.[key] ?? 0) + 1 } });
+    },
+    listUsers: async () => [...users.entries()].map(([uid, u]) => ({ uid, ...u })),
+    hasAiKey: async (uid) => Boolean(secrets.get(uid)?.ai),
     listShares: async (uid, journeyId) => [...shares.entries()].filter(([, v]) => v.uid === uid && v.journeyId === journeyId).map(([k]) => k),
   };
 }
