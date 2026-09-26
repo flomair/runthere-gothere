@@ -145,7 +145,7 @@ describe('strava', () => {
     const calls: string[] = [];
     mockFetch((url) => {
       calls.push(url);
-      if (url.includes('/oauth/token')) return { access_token: 'a1', refresh_token: 'r1', expires_at: 9e9, athlete: { id: 77, firstname: 'Flo' } };
+      if (url.includes('/oauth/token')) return { access_token: 'plaintext-access-token-a1', refresh_token: 'r1', expires_at: 9e9, athlete: { id: 77, firstname: 'Flo' } };
       if (url.includes('/athlete/activities')) return new URL(url).searchParams.get('page') === '1' ? [act(1, '2026-09-10'), act(2, '2026-09-12')] : [];
       throw new Error(url);
     });
@@ -160,7 +160,7 @@ describe('strava', () => {
     expect(await store.uidForAthlete(77)).toBe('owner');
     const secrets = await store.getSecrets('owner');
     expect(secrets.strava).toBeTruthy();
-    expect(secrets.strava).not.toContain('a1');
+    expect(secrets.strava).not.toContain('plaintext-access-token');
     expect((await store.listActivities('owner')).map((a) => a.id)).toEqual([1, 2]);
     const user = await store.getUser('owner');
     expect(user?.strava?.athleteId).toBe(77);
