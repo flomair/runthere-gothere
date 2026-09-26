@@ -1,4 +1,4 @@
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward, Stage } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -28,6 +28,7 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const rewards = new Map<string, Map<string, Reward>>();
   const coach = new Map<string, Map<string, CoachPlan>>();
   const quests = new Map<string, Quest>();
+  const stages = new Map<string, Map<string, Stage>>();
   const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
@@ -94,6 +95,9 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     getReward: async (uid, id) => (sub(rewards, uid).get(id) ? { ...sub(rewards, uid).get(id)! } : null),
     putReward: async (uid, r) => void sub(rewards, uid).set(r.id, { ...r }),
     deleteReward: async (uid, id) => void sub(rewards, uid).delete(id),
+    listStages: async (groupId) => [...sub(stages, groupId).values()].map(clone).sort((a, b) => a.startDate.localeCompare(b.startDate) || a.createdAt.localeCompare(b.createdAt)),
+    getStage: async (groupId, id) => (sub(stages, groupId).has(id) ? clone(sub(stages, groupId).get(id)!) : null),
+    putStage: async (s) => void sub(stages, s.groupId).set(s.id, clone(s)),
     getQuest: async (id) => (quests.has(id) ? clone(quests.get(id)!) : null),
     putQuest: async (q) => void quests.set(q.id, clone(q)),
     listQuestsFor: async (uid, email) =>

@@ -11,6 +11,8 @@ export interface Activity {
   elevationGainM: number;
   startDate: string;
   startDateLocal: string;
+  /** Entered by hand on Strava, not recorded: doesn't count for quests and race stages. */
+  manual?: boolean;
 }
 
 export interface GeoResult {
@@ -416,6 +418,41 @@ export interface Group {
   sportTypes: string[];
   countElevation?: boolean;
   createdAt: string;
+  /** Promised to whoever wins the most race stages, handed over at the final destination. */
+  bonusPrize?: { text: string; setBy: string; fulfillment: Fulfillment };
+}
+
+export interface StageResult {
+  uid: string;
+  /** Tracked distance in the stage window. */
+  distanceM: number;
+  /** Locked baseline: average weekly distance of the 4 weeks before the start. */
+  baselineM: number;
+  /** Distance ÷ (baseline × weeks in the window); 1 = as much as usual. */
+  effort: number;
+}
+
+export interface Stage {
+  id: string;
+  groupId: string;
+  name: string;
+  /** Segment of the group route (true metres). */
+  fromM: number;
+  toM: number;
+  /** Window in each runner's local dates, both inclusive (YYYY-MM-DD). */
+  startDate: string;
+  endDate: string;
+  participants: string[];
+  /** Locked when the stage starts. */
+  baselines?: Record<string, number>;
+  prize: { text: string; fulfillment: Fulfillment };
+  createdBy: string;
+  createdAt: string;
+  status: 'scheduled' | 'running' | 'finished' | 'cancelled';
+  results?: StageResult[];
+  leaderUid?: string;
+  winnerUid?: string;
+  finishedAt?: string;
 }
 
 export interface Standing {
@@ -448,7 +485,7 @@ export interface FeedComment {
 
 export interface FeedItem {
   id: string;
-  type: 'milestone' | 'post' | 'join';
+  type: 'milestone' | 'post' | 'join' | 'stage';
   uid: string;
   name: string;
   picture?: string;

@@ -6,7 +6,7 @@ const WEEK = 7 * DAY;
 export const OFFER_TTL_DAYS = 14;
 
 /** Only runs count for quests (tracked Strava activities, not manual entries). */
-export const isRun = (a: Pick<Activity, 'sportType'>) => /Run$/.test(a.sportType);
+export const isRun = (a: Pick<Activity, 'sportType' | 'manual'>) => /Run$/.test(a.sportType) && !a.manual;
 
 export const QUEST_EMOJI: Record<QuestType, string> = { distance: '🏅', habit: '🔁', race: '🏁', speed: '⚡' };
 

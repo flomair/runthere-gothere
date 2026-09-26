@@ -147,13 +147,15 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
   }
 }
 
-/** Evaluate the user's side quests after new runs arrived (never throws). */
+/** Evaluate the user's side quests and race stages after new runs arrived (never throws). */
 export async function refreshQuestsFor(uid: string): Promise<void> {
   try {
     const email = (await repo.getUser(uid))?.email;
     if (!email) return;
     const { refreshQuests } = await import('./quests.js');
     await refreshQuests(uid, email);
+    const { refreshStages } = await import('./stages.js');
+    for (const g of await repo.listGroupsFor(uid, email)) if (g.memberUids.includes(uid)) await refreshStages(g);
   } catch (e) {
     console.error('quest refresh failed', e);
   }

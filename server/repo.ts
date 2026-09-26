@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward, Stage } from '../shared/types.js';
 import { db } from './firebase.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -96,6 +96,9 @@ export interface Repo {
   listFeed(groupId: string, limit?: number): Promise<FeedItem[]>;
   getFeedItem(groupId: string, id: string): Promise<FeedItem | null>;
   putFeedItem(groupId: string, item: FeedItem): Promise<void>;
+  listStages(groupId: string): Promise<Stage[]>;
+  getStage(groupId: string, id: string): Promise<Stage | null>;
+  putStage(s: Stage): Promise<void>;
 
   getShare(token: string): Promise<{ uid: string; journeyId: string; createdAt: string } | null>;
   putShare(token: string, share: { uid: string; journeyId: string; createdAt: string }): Promise<void>;
@@ -290,6 +293,17 @@ export const firestoreRepo: Repo = {
     await db().collection('groups').doc(docId(groupId)).collection('feed').doc(docId(item.id)).set(item);
   },
 
+  async listStages(groupId) {
+    const snap = await db().collection('groups').doc(docId(groupId)).collection('stages').get();
+    return snap.docs.map((d) => d.data() as Stage).sort((a, b) => a.startDate.localeCompare(b.startDate) || a.createdAt.localeCompare(b.createdAt));
+  },
+  async getStage(groupId, id) {
+    const d = await db().collection('groups').doc(docId(groupId)).collection('stages').doc(docId(id)).get();
+    return d.exists ? (d.data() as Stage) : null;
+  },
+  async putStage(s) {
+    await db().collection('groups').doc(docId(s.groupId)).collection('stages').doc(docId(s.id)).set(s);
+  },
   async getShare(token) {
     const d = await db().collection('shares').doc(docId(token)).get();
     return d.exists ? (d.data() as { uid: string; journeyId: string; createdAt: string }) : null;

@@ -38,6 +38,9 @@ import { milestoneTitle } from '../../shared/milestoneTitle';
 import HeroSurface from './HeroSurface';
 import BaseTiles from './BaseTiles';
 import { routeColors, useDarkMap } from '../lib/mapStyle';
+import StagesCard from './StagesCard';
+import { useStages } from '../lib/stages';
+import { cumulativeDistances, sliceRoute } from '../../shared/geo';
 
 // runner colours: violet first (usually you), then calm, well-separated tones
 const COLORS = ['#5B5BF0', '#3D6FA8', '#149A80', '#8C5A3C', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
@@ -58,7 +61,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const mine = item.kudos.includes(myUid);
-  const icon = item.type === 'milestone' ? (item.milestone?.kind === 'border' && item.milestone.countryCode ? flag(item.milestone.countryCode) : item.milestone?.kind === 'finish' ? '🏁' : '📍') : item.type === 'join' ? '👋' : '💬';
+  const icon = item.type === 'milestone' ? (item.milestone?.kind === 'border' && item.milestone.countryCode ? flag(item.milestone.countryCode) : item.milestone?.kind === 'finish' ? '🏁' : '📍') : item.type === 'join' ? '👋' : item.type === 'stage' ? '' : '💬';
   return (
     <Card>
       <CardContent sx={{ pb: '12px !important' }}>
@@ -157,6 +160,7 @@ export default function GroupView({ id }: { id: string }) {
   const { data: me } = useMe();
   const st = useStandings(id);
   const feed = useFeed(id);
+  const stagesQ = useStages(id);
   const actions = useGroupActions();
   const [post, setPost] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -177,6 +181,10 @@ export default function GroupView({ id }: { id: string }) {
   const teamTotal = standings.reduce((s, x) => s + x.distanceM, 0) || 1;
   const nameOf = (uid: string) => g.members[uid]?.name?.split(' ')[0] ?? 'Someone';
   const bounds = L.latLngBounds(g.route.points as LatLon[]);
+  const pts = g.route.points as LatLon[];
+  const cum = cumulativeDistances(pts);
+  const k = cum[cum.length - 1] / (g.route.totalM || 1);
+  const openStages = (stagesQ.data ?? []).filter((s) => s.status === 'running' || s.status === 'scheduled');
 
   return (
     <Stack spacing={2.5} sx={{ pb: 4 }}>
@@ -234,6 +242,17 @@ export default function GroupView({ id }: { id: string }) {
           <MapContainer bounds={bounds} boundsOptions={{ padding: [30, 30] }} style={{ height: 420, width: '100%' }} scrollWheelZoom>
             <BaseTiles />
             <Polyline positions={g.route.points as LatLon[]} pathOptions={{ color: mapCol.ahead, weight: 3, opacity: 0.75, dashArray: '2 7', lineCap: 'round' }} />
+            {openStages.map((s) => {
+              const seg = sliceRoute(pts, cum, s.fromM * k, s.toM * k);
+              return seg.length >= 2 ? (
+                <Polyline key={s.id} positions={seg} pathOptions={{ color: '#A259E8', weight: s.status === 'running' ? 7 : 5, opacity: s.status === 'running' ? 0.85 : 0.45, lineCap: 'round' }}>
+                  <Tooltip sticky>🚩 {s.name}</Tooltip>
+                </Polyline>
+              ) : null;
+            })}
+            <Marker position={pts[pts.length - 1]} icon={L.divIcon({ className: '', html: `<div class="rtgt-marker goal">${g.bonusPrize ? '🏆' : '🏁'}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] })}>
+              <Tooltip>{g.bonusPrize ? `${g.waypoints[g.waypoints.length - 1]?.name ?? ''} · 🏆 ${g.bonusPrize.text}` : (g.waypoints[g.waypoints.length - 1]?.name ?? '')}</Tooltip>
+            </Marker>
             {race
               ? standings.map((s, i) => (
                   <Marker key={s.uid} position={s.point} icon={avatarIcon(s, colorOf(s.uid), i === 0 && s.doneM > 0)} zIndexOffset={1000 - i}>
@@ -290,6 +309,8 @@ export default function GroupView({ id }: { id: string }) {
           </CardContent>
         </Card>
       </Box>
+
+      <StagesCard group={g} colorOf={colorOf} />
 
       <Box>
         <Typography variant="h5" sx={{ mb: 1.5 }}>

@@ -83,6 +83,8 @@ interface RawActivity {
   total_elevation_gain: number;
   start_date: string;
   start_date_local: string;
+  /** Entered by hand on Strava (no GPS/device recording). */
+  manual?: boolean;
 }
 
 const mapActivity = (a: RawActivity): Activity => ({
@@ -94,6 +96,7 @@ const mapActivity = (a: RawActivity): Activity => ({
   elevationGainM: a.total_elevation_gain,
   startDate: a.start_date,
   startDateLocal: a.start_date_local,
+  ...(a.manual ? { manual: true } : {}),
 });
 
 /** All activities since `afterEpoch` (seconds), oldest first. */
