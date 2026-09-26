@@ -326,6 +326,70 @@ export interface Reward {
   fulfillment: Fulfillment;
 }
 
+// ---------- side quests: friend challenges ----------
+
+export type QuestType = 'distance' | 'habit' | 'race' | 'speed';
+
+export interface QuestParams {
+  /** distance: total in the window; race: first to this; speed: length of the one run. */
+  distanceM?: number;
+  /** habit: runs needed in each week. */
+  runsPerWeek?: number;
+  /** speed: the run must take at most this (moving time). */
+  timeS?: number;
+}
+
+export interface QuestPerson {
+  uid?: string;
+  email: string;
+  name: string;
+  picture?: string;
+}
+
+export type QuestStatus = 'offered' | 'accepted' | 'declined' | 'cancelled' | 'won' | 'lost' | 'expired';
+
+export interface QuestProgress {
+  /** Recipient's value (metres, runs or completed weeks, depending on the type). */
+  value: number;
+  target: number;
+  /** race only: the challenger's value. */
+  rival?: number;
+  /** habit only: runs so far in the current week. */
+  weekRuns?: number;
+  /** speed only: best qualifying time so far (s). */
+  bestS?: number;
+  updatedAt: string;
+}
+
+export interface Quest {
+  id: string;
+  type: QuestType;
+  params: QuestParams;
+  /** Length of the window, counted from acceptance. */
+  days: number;
+  from: QuestPerson & { uid: string };
+  to: QuestPerson;
+  message?: string;
+  /** What the challenger promises if the recipient wins. */
+  gift: { text: string; fulfillment: Fulfillment };
+  /** Optional fun penalty if the recipient loses. */
+  penalty?: string;
+  status: QuestStatus;
+  createdAt: string;
+  respondedAt?: string;
+  /** Window (set on acceptance). */
+  startsAt?: string;
+  endsAt?: string;
+  /** Where the recipient shows the quest: branch off this journey at this point (true metres). */
+  journeyId?: string;
+  branchAtM?: number;
+  progress?: QuestProgress;
+  resolvedAt?: string;
+  /** uid of whoever completed it (the recipient, or the faster runner in a race). */
+  winnerUid?: string;
+  badge?: { emoji: string; label: string };
+}
+
 // ---------- friends: shared journeys ----------
 
 export type GroupMode = 'race' | 'relay';

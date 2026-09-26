@@ -1,4 +1,4 @@
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Reward } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -27,6 +27,8 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const bookmarks = new Map<string, Map<string, Bookmark>>();
   const rewards = new Map<string, Map<string, Reward>>();
   const coach = new Map<string, Map<string, CoachPlan>>();
+  const quests = new Map<string, Quest>();
+  const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
     return m.get(uid)!;
@@ -92,6 +94,11 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     getReward: async (uid, id) => (sub(rewards, uid).get(id) ? { ...sub(rewards, uid).get(id)! } : null),
     putReward: async (uid, r) => void sub(rewards, uid).set(r.id, { ...r }),
     deleteReward: async (uid, id) => void sub(rewards, uid).delete(id),
+    getQuest: async (id) => (quests.has(id) ? clone(quests.get(id)!) : null),
+    putQuest: async (q) => void quests.set(q.id, clone(q)),
+    listQuestsFor: async (uid, email) =>
+      [...quests.values()].filter((q) => q.from.uid === uid || q.to.uid === uid || q.to.email === email).map(clone).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    uidForEmail: async (email) => [...users.entries()].find(([, u]) => u.email === email)?.[0] ?? null,
     getCoachPlan: async (uid, journeyId) => sub(coach, uid).get(journeyId) ?? null,
     putCoachPlan: async (uid, journeyId, plan) => void sub(coach, uid).set(journeyId, plan),
     incrementStat: async (uid, key) => {

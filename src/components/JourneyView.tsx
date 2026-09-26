@@ -47,6 +47,9 @@ import { HIGHLIGHT } from '../theme';
 import { waypointPositions } from '../../shared/legs';
 import LegDialog from './LegDialog';
 import RewardsCard from './RewardsCard';
+import QuestsCard, { QuestInvites } from './QuestsCard';
+import { useQuests } from '../lib/quests';
+import { QUEST_EMOJI, questFraction, questTitle } from '../../shared/quests';
 import { useRewards } from '../lib/rewards';
 import { rewardState } from '../../shared/rewards';
 
@@ -172,6 +175,22 @@ export default function JourneyView({ journey }: { journey: Journey }) {
     () => (rewardsQ.data ?? []).map((r) => ({ id: r.id, title: r.title, m: r.atM * scale, status: rewardState(r, progress.doneM) })),
     [rewardsQ.data, scale, progress.doneM],
   );
+  const questsQ = useQuests();
+  const branches = useMemo(
+    () =>
+      (questsQ.data ?? [])
+        .filter((q) => q.to.uid === me?.user.uid && ((q.status === 'offered' && !q.journeyId) || (q.journeyId === journey.id && (q.status === 'accepted' || q.status === 'won'))))
+        .map((q) => ({
+          id: q.id,
+          m: (q.status === 'offered' ? progress.doneM : (q.branchAtM ?? 0)) * scale,
+          fraction: questFraction(q),
+          label: `${questTitle(q, getLang())} · ${q.from.name}${q.status === 'offered' ? ` · ${t('waiting for your answer')}` : ''}`,
+          emoji: QUEST_EMOJI[q.type],
+          offered: q.status === 'offered',
+          done: q.status === 'won',
+        })),
+    [questsQ.data, me?.user.uid, journey.id, progress.doneM, scale],
+  );
   const waypointDist = useMemo(() => waypointPos.map((w) => ({ name: w.name, m: w.m })), [waypointPos]);
   const stops = useMemo(() => waypointPos.map((w) => ({ reached: w.m <= progress.doneM + 1, legFinish: w.legFinish && w.m < progress.totalM - 1 })), [waypointPos, progress.doneM, progress.totalM]);
 
@@ -263,6 +282,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           </Alert>
         </Pop>
       )}
+      {section === 'overview' && questsQ.data?.some((q) => q.status === 'offered' && q.from.uid !== me?.user.uid) && (
+        <Pop key="quests">
+          <QuestInvites journeyId={journey.id} />
+        </Pop>
+      )}
       {sinceLast && !progress.finished && (
         <Pop key="since">
           <Alert severity="success" icon={<span style={{ fontSize: 22 }}>🏃</span>} onClose={() => setSinceLast(null)}>
@@ -315,6 +339,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         height={isMobile ? 360 : 480}
         stops={stops}
         rewards={rewardPins}
+        branches={branches}
       />
       <Button
         variant="contained"
@@ -455,6 +480,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         {section === 'goals' && (
           <Stack spacing={2.5}>
             <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />
+            <QuestsCard journeyId={journey.id} />
             <RewardsCard journey={journey} progress={progress} cities={waypointDist} />
             <CoachCard journeyId={journey.id} />
           </Stack>

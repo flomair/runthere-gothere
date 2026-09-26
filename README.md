@@ -21,6 +21,7 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **an app on your phone**: install it to the home screen (Android: *Install*; iPhone: Share → *Add to Home Screen*). It opens full screen and keeps working on a patchy connection
 
 - **rewards on the route**: every city you reach unlocks a passport stamp, a fun fact (Wikipedia) and a song for the road, and the postcard can be read aloud. Pin your own treats (title, shop link, photo) at any kilometre ahead: they unlock only when you run there, and can be moved until then. Claim them with a photo for the gallery in *My collection*, and optionally fill a savings jar with an amount per km
+- **side quests**: challenge a friend (someone you share a journey with, or anyone allowed in the app) to run X km in Y days, keep N runs a week, race to a distance, or run a distance under a time. They accept or decline; accepted quests branch off their route on the map, count only tracked runs from acceptance on, and never take kilometres away from the journey. The challenger promises a gift (and maybe a fun penalty); completing a quest earns a badge in *My collection*
 - **English or German**: the app follows your browser language; switch any time in the account menu. Stories, coach plans and notifications follow the choice
 
 Once you arrive, go there for real. 🏁

@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Reward } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward } from '../shared/types.js';
 import { db } from './firebase.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -16,6 +16,7 @@ import { migrateJourney } from '../shared/legs.js';
  *   users/{uid}/narrations/{key}       saved narrator stories
  *   secrets/{uid}                      encrypted Strava tokens and Anthropic key
  *   stravaAthletes/{athleteId}         → uid, for webhook routing
+ *   quests/{id}                        friend challenges (fromUid / toUid / toEmail for queries)
  */
 
 export interface AllowEntry {
@@ -110,6 +111,12 @@ export interface Repo {
   putReward(uid: string, r: Reward): Promise<void>;
   deleteReward(uid: string, id: string): Promise<void>;
 
+  getQuest(id: string): Promise<Quest | null>;
+  putQuest(q: Quest): Promise<void>;
+  /** Quests the user sent or received (received ones also by email, before the first sign-in). */
+  listQuestsFor(uid: string, email: string): Promise<Quest[]>;
+  uidForEmail(email: string): Promise<string | null>;
+
   getCoachPlan(uid: string, journeyId: string): Promise<CoachPlan | null>;
   putCoachPlan(uid: string, journeyId: string, plan: CoachPlan): Promise<void>;
 
@@ -119,6 +126,9 @@ export interface Repo {
   listUsers(): Promise<(UserDoc & { uid: string })[]>;
   hasAiKey(uid: string): Promise<boolean>;
 }
+
+type StoredQuest = Quest & { fromUid: string; toUid: string | null; toEmail: string };
+const stripQuest = ({ fromUid: _f, toUid: _t, toEmail: _e, ...q }: StoredQuest): Quest => q;
 
 /** Firestore doc ids can't contain "/"; keep them short and safe. */
 export const docId = (s: string) => s.replace(/\//g, '_').slice(0, 700);
@@ -331,6 +341,24 @@ export const firestoreRepo: Repo = {
   },
   async removePushTokens(uid, tokens) {
     if (tokens.length) await db().collection('users').doc(uid).set({ pushTokens: FieldValue.arrayRemove(...tokens) }, { merge: true });
+  },
+  async getQuest(id) {
+    const d = await db().collection('quests').doc(docId(id)).get();
+    return d.exists ? stripQuest(d.data() as StoredQuest) : null;
+  },
+  async putQuest(q) {
+    await db().collection('quests').doc(docId(q.id)).set({ ...q, fromUid: q.from.uid, toUid: q.to.uid ?? null, toEmail: q.to.email });
+  },
+  async listQuestsFor(uid, email) {
+    const col = db().collection('quests');
+    const snaps = await Promise.all([col.where('fromUid', '==', uid).get(), col.where('toUid', '==', uid).get(), col.where('toEmail', '==', email).get()]);
+    const byId = new Map<string, Quest>();
+    for (const d of snaps.flatMap((x) => x.docs)) byId.set(d.id, stripQuest(d.data() as StoredQuest));
+    return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  async uidForEmail(email) {
+    const snap = await db().collection('users').where('email', '==', email).limit(1).get();
+    return snap.docs[0]?.id ?? null;
   },
   async listUsers() {
     const snap = await db().collection('users').get();

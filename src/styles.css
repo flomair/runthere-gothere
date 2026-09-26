@@ -92,6 +92,19 @@ body,
   font-size: 12px;
   font-weight: 700;
 }
+.rtgt-marker.quest {
+  background: linear-gradient(135deg, #6A67F0, #A259E8);
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+.rtgt-marker.quest.offered {
+  opacity: 0.7;
+  border-style: dashed;
+}
+.rtgt-marker.quest.done {
+  background: #149A80;
+}
 .rtgt-marker.peek {
   background: #3d6fa8;
   width: 26px;

@@ -12,10 +12,11 @@ const JourneyView = lazy(() => import('./components/JourneyView'));
 const DiaryPage = lazy(() => import('./components/DiaryPage'));
 const TripPage = lazy(() => import('./components/TripPage'));
 const GroupView = lazy(() => import('./components/GroupView'));
+const QuestsPage = lazy(() => import('./components/QuestsPage'));
 const CollectionPage = lazy(() => import('./components/CollectionPage'));
 const PublicView = lazy(() => import('./components/PublicView'));
 
-/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/collection, #/admin. */
+/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/collection, #/quests, #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -33,6 +34,7 @@ function useHashRoute() {
     shareToken: s ? decodeURIComponent(s[1]) : null,
     admin: hash.startsWith('#/admin'),
     collection: hash.startsWith('#/collection'),
+    quests: hash.startsWith('#/quests'),
   };
 }
 
@@ -51,7 +53,7 @@ function useStravaFlash() {
 }
 
 function Main() {
-  const { journeyId, sub, groupId, admin, collection } = useHashRoute();
+  const { journeyId, sub, groupId, admin, collection, quests } = useHashRoute();
   const { journeys, status, error } = useJourneyState();
   const journey = journeyId ? journeys.find((j) => j.id === journeyId) : undefined;
   const [flash, clearFlash] = useStravaFlash();
@@ -65,9 +67,13 @@ function Main() {
             {error}
           </Alert>
         )}
-        <PageTransition routeKey={admin ? 'admin' : collection ? 'collection' : groupId ? `g/${groupId}` : journey ? `${journey.id}${sub ? `/${sub}` : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
+        <PageTransition routeKey={admin ? 'admin' : collection ? 'collection' : quests ? 'quests' : groupId ? `g/${groupId}` : journey ? `${journey.id}${sub ? `/${sub}` : ''}` : status === 'ready' || status === 'error' ? 'list' : 'loading'}>
         {admin ? (
             <AdminPage />
+          ) : quests ? (
+            <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
+              <QuestsPage />
+            </Suspense>
           ) : collection ? (
             <Suspense fallback={<CircularProgress sx={{ display: 'block', mx: 'auto', mt: 8 }} />}>
               <CollectionPage />

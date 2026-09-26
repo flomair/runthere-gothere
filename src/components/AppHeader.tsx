@@ -37,6 +37,7 @@ import { getLang, setLang, t } from '../lib/i18n';
 import StravaButton from './StravaButton';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 import CollectionsIcon from '@mui/icons-material/CollectionsBookmarkOutlined';
+import QuestIcon from '@mui/icons-material/SportsKabaddiOutlined';
 
 export default function AppHeader() {
   const { data: me } = useMe();
@@ -205,6 +206,17 @@ export default function AppHeader() {
                   <Switch edge="end" size="small" checked={push.status === 'on'} tabIndex={-1} sx={{ ml: 1 }} />
                 </MenuItem>
               )}
+              <MenuItem
+                onClick={() => {
+                  close();
+                  navigate('/quests');
+                }}
+              >
+                <ListItemIcon>
+                  <QuestIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={t('Side quests')} secondary={t('Challenge friends, answer challenges')} />
+              </MenuItem>
               <MenuItem
                 onClick={() => {
                   close();

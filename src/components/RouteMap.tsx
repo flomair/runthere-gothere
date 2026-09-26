@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { useEffect, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef } from 'react';
 import { LayersControl, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { type LatLon, haversine, positionAt, sliceRoute, splitRoute } from '../../shared/geo';
 import type { Waypoint } from '../lib/types';
@@ -27,6 +27,35 @@ const ICONS = {
   },
   peek: L.divIcon({ className: '', html: '<div class="rtgt-marker peek">👀</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
 };
+
+/** A side branch leaving the route at `m`: a gentle curve off to one side (stored-line metres). */
+export function branchLine(points: LatLon[], cum: number[], m: number, side: 1 | -1, n = 24): LatLon[] {
+  const total = cum[cum.length - 1] || 1;
+  const P = positionAt(points, cum, m).point;
+  const a = positionAt(points, cum, Math.max(0, m - total * 0.01)).point;
+  const b = positionAt(points, cum, Math.min(total, m + total * 0.01)).point;
+  const kx = 111_320 * Math.cos((P[0] * Math.PI) / 180);
+  const ky = 110_540;
+  let ux = (b[1] - a[1]) * kx;
+  let uy = (b[0] - a[0]) * ky;
+  const len = Math.hypot(ux, uy) || 1;
+  ux /= len;
+  uy /= len;
+  const L = Math.min(120_000, Math.max(2000, total * 0.1));
+  // perpendicular (to the chosen side), bending forward along the route
+  const px = -uy * side;
+  const py = ux * side;
+  const ctrl = [px * L * 0.7, py * L * 0.7];
+  const end = [px * L + ux * L * 0.45, py * L + uy * L * 0.45];
+  const out: LatLon[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const x = 2 * (1 - t) * t * ctrl[0] + t * t * end[0];
+    const y = 2 * (1 - t) * t * ctrl[1] + t * t * end[1];
+    out.push([P[0] + y / ky, P[1] + x / kx]);
+  }
+  return out;
+}
 
 function FitOnce({ points }: { points: LatLon[] }) {
   const map = useMap();
@@ -94,9 +123,11 @@ interface Props {
   stops?: { reached: boolean; legFinish: boolean }[];
   /** Personal rewards pinned on the route (stored-line metres). */
   rewards?: { id: string; title: string; m: number; status: 'locked' | 'unlocked' | 'claimed' }[];
+  /** Side quests branching off the route (stored-line metres). */
+  branches?: { id: string; m: number; fraction: number; label: string; emoji: string; offered?: boolean; done?: boolean }[];
 }
 
-export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight, stops, rewards }: Props) {
+export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight, stops, rewards, branches }: Props) {
   const { done, ahead } = useMemo(() => splitRoute(points, cum, doneM), [points, cum, doneM]);
   const hl = useMemo(() => (highlight ? sliceRoute(points, cum, highlight.fromM, highlight.toM) : []), [points, cum, highlight]);
   const me = done[done.length - 1];
@@ -157,6 +188,24 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
       <Marker position={goal} icon={ICONS.goal}>
         <Tooltip>{waypoints[waypoints.length - 1]?.name ?? t('Finish')}</Tooltip>
       </Marker>
+      {branches?.map((b, i) => {
+        const line = branchLine(points, cum, b.m, i % 2 ? -1 : 1);
+        const k = Math.round(b.fraction * (line.length - 1));
+        const color = b.done ? '#149A80' : '#A259E8';
+        return (
+          <Fragment key={b.id}>
+            <Polyline positions={line} pathOptions={{ color, weight: 3, opacity: b.offered ? 0.5 : 0.8, dashArray: '2 7', lineCap: 'round' }} />
+            {k > 0 && <Polyline positions={line.slice(0, k + 1)} pathOptions={{ color, weight: 5, opacity: 0.95, lineCap: 'round' }} />}
+            <Marker
+              position={line[line.length - 1]}
+              icon={L.divIcon({ className: '', html: `<div class="rtgt-marker quest${b.offered ? ' offered' : ''}${b.done ? ' done' : ''}">${b.emoji}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] })}
+              zIndexOffset={150}
+            >
+              <Tooltip>{b.label}</Tooltip>
+            </Marker>
+          </Fragment>
+        );
+      })}
       {rewards?.map((r) => (
         <Marker key={r.id} position={positionAt(points, cum, r.m).point} icon={ICONS.reward[r.status]} zIndexOffset={200}>
           <Tooltip>

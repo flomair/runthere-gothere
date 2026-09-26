@@ -135,6 +135,7 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
       const { notifyMilestones } = await import('./push.js');
       await notifyMilestones(uid, created);
     }
+    await refreshQuestsFor(uid);
     return created.length ? `saved, ${created.length} milestone(s)` : 'saved';
   } catch (err) {
     // made private without read_all, or deleted meanwhile
@@ -143,5 +144,17 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
       return 'removed';
     }
     throw err;
+  }
+}
+
+/** Evaluate the user's side quests after new runs arrived (never throws). */
+export async function refreshQuestsFor(uid: string): Promise<void> {
+  try {
+    const email = (await repo.getUser(uid))?.email;
+    if (!email) return;
+    const { refreshQuests } = await import('./quests.js');
+    await refreshQuests(uid, email);
+  } catch (e) {
+    console.error('quest refresh failed', e);
   }
 }

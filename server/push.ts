@@ -64,6 +64,17 @@ const TEXT = {
     manyBody: (ms: Milestone[]) => ms.map((m) => milestoneTitle(m, 'en')).join(' · '),
     kudos: (who: string) => `${who} gave you kudos 👏`,
     comment: (who: string) => `${who} commented`,
+    questOffer: (who: string) => `⚔️ ${who} challenges you`,
+    questAccepted: (who: string) => `⚔️ ${who} accepted your challenge`,
+    questDeclined: (who: string) => `${who} declined your challenge`,
+    questWon: '🏅 Quest complete!',
+    questWonBody: (title: string, gift: string) => `${title} – you earned: ${gift}`,
+    questLost: 'Quest over',
+    questLostBody: (title: string, penalty?: string) => (penalty ? `${title} – time for the penalty: ${penalty}` : `${title} – next time!`),
+    friendWon: (who: string) => `🏅 ${who} completed your challenge`,
+    friendWonBody: (title: string, gift: string) => `${title} – time to deliver: ${gift}`,
+    friendLost: (who: string) => `${who} missed your challenge`,
+    raceWon: (who: string) => `🏁 You beat ${who}!`,
   },
   de: {
     reward: (title: string) => `🎁 Belohnung freigeschaltet: ${title}`,
@@ -74,9 +85,20 @@ const TEXT = {
     manyBody: (ms: Milestone[]) => ms.map((m) => milestoneTitle(m, 'de')).join(' · '),
     kudos: (who: string) => `${who} hat dir Kudos gegeben 👏`,
     comment: (who: string) => `${who} hat kommentiert`,
+    questOffer: (who: string) => `⚔️ ${who} fordert dich heraus`,
+    questAccepted: (who: string) => `⚔️ ${who} hat deine Herausforderung angenommen`,
+    questDeclined: (who: string) => `${who} hat deine Herausforderung abgelehnt`,
+    questWon: '🏅 Quest geschafft!',
+    questWonBody: (title: string, gift: string) => `${title} – verdient: ${gift}`,
+    questLost: 'Quest vorbei',
+    questLostBody: (title: string, penalty?: string) => (penalty ? `${title} – Zeit für die Strafe: ${penalty}` : `${title} – beim nächsten Mal!`),
+    friendWon: (who: string) => `🏅 ${who} hat deine Herausforderung geschafft`,
+    friendWonBody: (title: string, gift: string) => `${title} – Zeit einzulösen: ${gift}`,
+    friendLost: (who: string) => `${who} hat deine Herausforderung verpasst`,
+    raceWon: (who: string) => `🏁 Du hast ${who} geschlagen!`,
   },
 };
-const textFor = async (uid: string) => TEXT[((await repo.getUser(uid))?.pushLang === 'de' ? 'de' : 'en') as 'en' | 'de'];
+export const textFor = async (uid: string) => TEXT[((await repo.getUser(uid))?.pushLang === 'de' ? 'de' : 'en') as 'en' | 'de'];
 
 /** One notification for the milestones a sync just reached (grouped when there are several). */
 export async function notifyMilestones(uid: string, created: Milestone[]): Promise<void> {
@@ -114,3 +136,6 @@ export async function notifyRewards(uid: string, rewards: { title: string; journ
     tag: `reward-${first.journeyId}`,
   });
 }
+
+export type PushText = (typeof TEXT)['en'];
+export const langOf = (tx: PushText) => (tx === TEXT.de ? 'de' : 'en');

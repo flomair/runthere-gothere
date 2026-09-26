@@ -1,6 +1,6 @@
 import { HttpError, handle, json } from '../../server/http.js';
 import { repo } from '../../server/repo.js';
-import { syncUser } from '../../server/sync.js';
+import { refreshQuestsFor, syncUser } from '../../server/sync.js';
 
 /**
  * GET /api/cron/sync – daily safety net for missed webhooks (see vercel.json "crons").
@@ -24,6 +24,7 @@ export const GET = handle(async (req) => {
       const r = await syncUser(uid);
       const m = await detectMilestones(uid, { maxNew: 3, maxPostcards: 0, notifyRewards: true });
       await notifyMilestones(uid, m);
+      await refreshQuestsFor(uid);
       results[uid] = `${r.fetched} activities, ${m.length} milestone(s)`;
     } catch (e) {
       results[uid] = `error: ${e instanceof Error ? e.message : e}`;
