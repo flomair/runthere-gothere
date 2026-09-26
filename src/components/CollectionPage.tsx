@@ -112,7 +112,7 @@ export default function CollectionPage() {
                       boxShadow: '0 0 0 4px rgb(162 89 232 / 22%), 0 6px 16px rgb(35 40 98 / 25%)',
                     }}
                   >
-                    <EmojiText text={q.badge!.emoji} size={48} />
+                    <Box component="span" sx={{ color: '#fff', lineHeight: 0 }}><EmojiText text={q.badge!.emoji} size={40} /></Box>
                   </Box>
                   <Typography variant="body2" sx={{ fontWeight: 700, mt: 1, lineHeight: 1.25 }}>
                     {questTitle(q, getLang())}
@@ -147,7 +147,7 @@ export default function CollectionPage() {
                     {r.claimPhoto || r.photo ? (
                       <PhotoImg path={(r.claimPhoto || r.photo)!} alt={r.title} height={150} />
                     ) : (
-                      <Box sx={{ height: 150, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #3F7CF6, #6A67F0 50%, #A259E8)' }}><Emoji name="gift" size={72} /></Box>
+                      <Box sx={{ height: 150, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #3F7CF6, #6A67F0 50%, #A259E8)' }}><Emoji name="gift" size={64} color="#fff" strokeWidth={1.3} idle /></Box>
                     )}
                     <Box sx={{ p: 1.5 }}>
                       <Typography sx={{ fontWeight: 700 }} noWrap>

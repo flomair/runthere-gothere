@@ -100,14 +100,14 @@ function RaceTile({ event }: { event: NonNullable<Journey['event']> }) {
         {event.name}
       </Typography>
       <Typography sx={{ fontFamily: ROUNDED, fontWeight: 900, fontSize: d > 999 ? '2.4rem' : '3.2rem', lineHeight: 1, mt: 0.5, letterSpacing: '-0.03em' }}>
-        {d > 0 ? d : d === 0 ? <Emoji name="finish" size="0.9em" /> : '✓'}
+        {d > 0 ? d : d === 0 ? <Emoji name="finish" size="0.9em" color="inherit" /> : '✓'}
       </Typography>
       <Box sx={{ mt: 'auto' }}>
         <Typography sx={{ fontFamily: ROUNDED, fontWeight: 700, fontSize: '0.9rem', lineHeight: 1.1 }}>{d > 0 ? t('days') : d === 0 ? t('today!') : t('done')}</Typography>
         <Typography sx={{ fontSize: '0.75rem', opacity: 0.85 }}>{formatDate(event.date)}</Typography>
       </Box>
-      <Box component="span" aria-hidden sx={{ position: 'absolute', right: 10, bottom: 8, filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.25))' }}>
-        <Emoji name="trophy" size={34} />
+      <Box component="span" aria-hidden sx={{ position: 'absolute', right: 10, bottom: 8, }}>
+        <Emoji name="trophy" size={28} color="#fff" idle />
       </Box>
     </Box>
   );
@@ -119,7 +119,7 @@ function RaceLine({ event }: { event: NonNullable<Journey['event']> }) {
   return (
     <Box sx={{ display: { xs: 'inline-flex', sm: 'none' }, alignItems: 'baseline', gap: 0.75, mt: 1, px: 1.25, py: 0.5, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.22)' }}>
       <Typography component="span" sx={{ fontFamily: ROUNDED, fontWeight: 900, fontSize: '1.3rem', lineHeight: 1 }}>
-        {d > 0 ? d : <Emoji name="finish" size="0.9em" />}
+        {d > 0 ? d : <Emoji name="finish" size="0.9em" color="inherit" />}
       </Typography>
       <Typography component="span" sx={{ fontFamily: ROUNDED, fontWeight: 700, fontSize: '0.8rem' }} noWrap>
         {d > 0 ? t('days') : t('today!')} · {event.name}
@@ -227,7 +227,7 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
           <CountUp value={toUnit(progress.weeklyAvgM)} format={(n) => `${n.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${unitLabel}`} />
         </Stat>
         <Stat label={progress.finished ? t('Arrived') : t('Arrival at pace')}>
-          {progress.finished ? (progress.finishedOn ? formatDate(progress.finishedOn) : <Emoji name="party" />) : progress.eta ? formatDate(progress.eta) : '—'}
+          {progress.finished ? (progress.finishedOn ? formatDate(progress.finishedOn) : <Emoji name="party" color="inherit" />) : progress.eta ? formatDate(progress.eta) : '—'}
         </Stat>
       </Box>
     </HeroSurface>

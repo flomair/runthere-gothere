@@ -230,7 +230,7 @@ export default function RewardsCard({ journey, progress, cities }: { journey: Jo
         {journey.savings && (
           <Box sx={{ mb: 2, p: 1.5, borderRadius: '16px', bgcolor: 'action.hover', display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ fontSize: 30 }} aria-hidden>
-              <Emoji name="moneybag" size={36} />
+              <Emoji name="moneybag" size={22} badge />
             </Box>
             <Box>
               <Typography sx={{ fontWeight: 800, fontSize: '1.3rem', fontFamily: 'ui-rounded, "SF Pro Rounded", Nunito, sans-serif' }}>{money(saved, journey.savings.currency)}</Typography>
@@ -265,7 +265,7 @@ export default function RewardsCard({ journey, progress, cities }: { journey: Jo
                       }}
                     >
                       <Box sx={{ width: 44, height: 44, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, display: 'grid', placeItems: 'center', bgcolor: 'action.hover', fontSize: 22 }}>
-                        {r.photo ? <PhotoImg path={r.photo} height={44} /> : <Emoji name={state === 'locked' ? 'gift' : state === 'unlocked' ? 'sparkles' : 'check'} size={30} sx={{ opacity: state === 'locked' ? 0.75 : 1 }} />}
+                        {r.photo ? <PhotoImg path={r.photo} height={44} /> : <Emoji name={state === 'locked' ? 'gift' : state === 'unlocked' ? 'sparkles' : 'check'} size={20} badge sx={{ opacity: state === 'locked' ? 0.7 : 1 }} />}
                       </Box>
                       <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                         <Typography sx={{ fontWeight: 650 }} noWrap>

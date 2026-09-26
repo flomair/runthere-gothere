@@ -54,7 +54,7 @@ function avatarIcon(s: Standing, color: string, leader: boolean) {
   const inner = s.picture ? `<img src="${s.picture}" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>` : initials(s.name);
   return L.divIcon({
     className: '',
-    html: `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${color};background:${color};color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.35)">${inner}</div>${leader ? `<div style="position:absolute;top:-16px;left:9px">${emojiHtml('crown', 20)}</div>` : ''}`,
+    html: `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${color};background:${color};color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.35)">${inner}</div>${leader ? `<div style="position:absolute;top:-17px;left:9px;color:#E8B03A">${emojiHtml('crown', 20, '#E8B03A', 2.4)}</div>` : ''}`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
   });
@@ -95,7 +95,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
                 sx={{ minWidth: 0, px: 1.25, bgcolor: mine ? 'rgba(91, 91, 240,0.12)' : 'transparent', color: mine ? 'secondary.main' : 'text.secondary' }}
               >
                 <motion.span key={String(mine)} initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 15 }} style={{ marginRight: 6 }}>
-                  <Emoji name="clap" />
+                  <Emoji name="clap" color="inherit" draw={false} />
                 </motion.span>
                 {item.kudos.length || ''}
               </Button>
@@ -226,7 +226,7 @@ export default function GroupView({ id }: { id: string }) {
           </AvatarGroup>
           {race && leader ? (
             <Typography sx={{ fontWeight: 700 }}>
-              <Emoji name="crown" /> {t('{name} leads with', { name: nameOf(leader.uid) })} <CountUp value={leader.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />
+              <Emoji name="crown" color="inherit" /> {t('{name} leads with', { name: nameOf(leader.uid) })} <CountUp value={leader.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />
             </Typography>
           ) : team ? (
             <Typography sx={{ fontWeight: 700 }}>
@@ -264,7 +264,7 @@ export default function GroupView({ id }: { id: string }) {
               <Marker
                 key={p.key}
                 position={positionAt(pts, cum, p.m * k).point}
-                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : emojiHtml('question', 16)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
+                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : emojiHtml('question', 15, '#D98A12', 2.2)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
                 zIndexOffset={100}
               >
                 <Tooltip>{p.collected ? t('Mystery pin – draw collected') : t('Mystery pin: pass it to earn a draw')}</Tooltip>

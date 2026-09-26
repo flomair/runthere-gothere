@@ -141,7 +141,7 @@ export function QuestDialog({ open, onClose }: { open: boolean; onClose: () => v
           <ToggleButtonGroup exclusive value={type} onChange={(_, v) => v && setType(v)} fullWidth sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' } }}>
             {TYPES.map((x) => (
               <ToggleButton key={x.value} value={x.value} sx={{ flexDirection: 'column', py: 1, textTransform: 'none', lineHeight: 1.2 }}>
-                <Emoji name={QUEST_ICON[x.value]} size={30} />
+                <Emoji name={QUEST_ICON[x.value]} size={26} color="inherit" />
                 <Box sx={{ fontWeight: 700 }}>{t(x.label)}</Box>
                 <Box sx={{ fontSize: 11, opacity: 0.75 }}>{t(x.hint)}</Box>
               </ToggleButton>
@@ -266,7 +266,7 @@ function QuestItem({ q, me, journeyId }: { q: Quest; me: string; journeyId?: str
           <Avatar src={other.picture} sx={{ width: 40, height: 40 }}>
             {other.name[0]}
           </Avatar>
-          <Box sx={{ position: 'absolute', right: -8, bottom: -8 }}><Emoji name={QUEST_ICON[q.type]} size={24} /></Box>
+          <Box sx={{ position: 'absolute', right: -6, bottom: -6, bgcolor: 'background.paper', borderRadius: '50%', p: '3px', lineHeight: 0, boxShadow: 1 }}><Emoji name={QUEST_ICON[q.type]} size={14} draw={false} /></Box>
         </Box>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 700 }}>{questTitle(q, getLang())}</Typography>

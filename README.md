@@ -163,7 +163,7 @@ It is written in your browser's language and streamed as it is generated. **Read
 
 ## Icons
 
-UI icons are [Phosphor](https://phosphoricons.com) (duotone weight, via `@phosphor-icons/react`), wrapped in `src/icons.tsx` so they take MUI's `fontSize`/`color`/`sx` props. Playful objects (gifts, trophies, swords, the bucket, map markers…) are [Microsoft Fluent Emoji 3D](https://github.com/microsoft/fluentui-emoji), resized to 128 px WebP in `public/emoji` and drawn with `src/components/Emoji.tsx` (`<Emoji name="gift" />`, or `<EmojiText>` to swap emoji inside text), so they look the same on every device. Both are MIT-licensed.
+All icons are [Lucide](https://lucide.dev) line icons (MIT), animated with small CSS motion presets (`src/components/AnimIcon.tsx`, keyframes in `src/styles.css`): each icon plays its preset (wiggle, bounce, spin, wave, ring, twinkle…) when it or the button, tab or tile around it is hovered, and once when its tab is selected. The playful symbols (gifts, trophies, swords, the surprise bucket…) also draw their strokes in when they appear, and big ones float gently. UI icons live in `src/icons.tsx` (named after the MUI icons they replaced, same `fontSize`/`color`/`sx` props); playful ones in `src/components/Emoji.tsx` (`<Emoji name="gift" />`, `<EmojiText>` swaps emoji inside text, `emojiHtml()` for map markers). Motion is switched off when the device asks for reduced motion.
 
 ## Scripts
 
