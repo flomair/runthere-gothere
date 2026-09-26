@@ -20,6 +20,7 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **the real trip**: save places while exploring, then plan the trip to the finish (race countdown, transport and stay links, KML export)
 - **an app on your phone**: install it to the home screen (Android: *Install*; iPhone: Share → *Add to Home Screen*). It opens full screen and keeps working on a patchy connection
 
+- **rewards on the route**: every city you reach unlocks a passport stamp, a fun fact (Wikipedia) and a song for the road, and the postcard can be read aloud. Pin your own treats (title, shop link, photo) at any kilometre ahead: they unlock only when you run there, and can be moved until then. Claim them with a photo for the gallery in *My collection*, and optionally fill a savings jar with an amount per km
 - **English or German**: the app follows your browser language; switch any time in the account menu. Stories, coach plans and notifications follow the choice
 
 Once you arrive, go there for real. 🏁
@@ -127,6 +128,8 @@ Webhooks can't reach `localhost`; use **Sync now** in the account menu while dev
 - `GOOGLE_PLACES_API_KEY`: top-rated cafés, sights and parks with a review snippet. Without it the app links to Google Maps searches.
 
 - `VITE_FIREBASE_VAPID_KEY`: turns on **push notifications** (milestones reached, kudos and comments from friends). In the Firebase console open *Project settings → Cloud Messaging → Web Push certificates* and click *Generate key pair*; copy the key. Each person then turns notifications on per device in the account menu. On iPhone this works only in the installed app (iOS 16.4+). Sending uses the service account you already set up.
+
+- **Photos for rewards**: in the Firebase console open *Storage → Get started* (the project may need the Blaze plan). The bucket defaults to `<project-id>.firebasestorage.app`; set `FIREBASE_STORAGE_BUCKET` if yours differs. Photos are private to each user and shown through short-lived links. Without Storage, rewards work without photos.
 
 - **Natural read-aloud voices**: in the Google Cloud console of your Firebase project, enable the *Cloud Text-to-Speech API* (APIs & Services → Library; the project needs billing turned on, Google includes a monthly free allowance). The app uses the service account you already set up. Until it's enabled, stories are read with the best voice of the device.
 

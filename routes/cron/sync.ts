@@ -22,7 +22,7 @@ export const GET = handle(async (req) => {
     }
     try {
       const r = await syncUser(uid);
-      const m = await detectMilestones(uid, { maxNew: 3, maxPostcards: 0 });
+      const m = await detectMilestones(uid, { maxNew: 3, maxPostcards: 0, notifyRewards: true });
       await notifyMilestones(uid, m);
       results[uid] = `${r.fetched} activities, ${m.length} milestone(s)`;
     } catch (e) {

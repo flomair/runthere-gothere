@@ -36,6 +36,7 @@ import TranslateIcon from '@mui/icons-material/Translate';
 import { getLang, setLang, t } from '../lib/i18n';
 import StravaButton from './StravaButton';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
+import CollectionsIcon from '@mui/icons-material/CollectionsBookmarkOutlined';
 
 export default function AppHeader() {
   const { data: me } = useMe();
@@ -204,6 +205,17 @@ export default function AppHeader() {
                   <Switch edge="end" size="small" checked={push.status === 'on'} tabIndex={-1} sx={{ ml: 1 }} />
                 </MenuItem>
               )}
+              <MenuItem
+                onClick={() => {
+                  close();
+                  navigate('/collection');
+                }}
+              >
+                <ListItemIcon>
+                  <CollectionsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={t('My collection')} secondary={t('Passport stamps and claimed rewards')} />
+              </MenuItem>
               {installAction.available && (
                 <MenuItem
                   onClick={() => {

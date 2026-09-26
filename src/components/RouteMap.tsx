@@ -20,6 +20,11 @@ const ICONS = {
   viaReached: L.divIcon({ className: '', html: '<div class="rtgt-marker reached">✓</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
   /** An earlier destination of the journey (end of a previous leg). */
   legGoal: L.divIcon({ className: '', html: '<div class="rtgt-marker reached leg">🏁</div>', iconSize: [28, 28], iconAnchor: [14, 14] }),
+  reward: {
+    locked: L.divIcon({ className: '', html: '<div class="rtgt-marker reward">🎁</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
+    unlocked: L.divIcon({ className: '', html: '<div class="rtgt-marker reward unlocked">🎁</div>', iconSize: [30, 30], iconAnchor: [15, 15] }),
+    claimed: L.divIcon({ className: '', html: '<div class="rtgt-marker reward claimed">✓</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+  },
   peek: L.divIcon({ className: '', html: '<div class="rtgt-marker peek">👀</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
 };
 
@@ -87,9 +92,11 @@ interface Props {
   highlight?: { fromM: number; toM: number } | null;
   /** Per waypoint (same order): reached yet, and whether it was the destination of an earlier leg. */
   stops?: { reached: boolean; legFinish: boolean }[];
+  /** Personal rewards pinned on the route (stored-line metres). */
+  rewards?: { id: string; title: string; m: number; status: 'locked' | 'unlocked' | 'claimed' }[];
 }
 
-export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight, stops }: Props) {
+export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight, stops, rewards }: Props) {
   const { done, ahead } = useMemo(() => splitRoute(points, cum, doneM), [points, cum, doneM]);
   const hl = useMemo(() => (highlight ? sliceRoute(points, cum, highlight.fromM, highlight.toM) : []), [points, cum, highlight]);
   const me = done[done.length - 1];
@@ -150,6 +157,14 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
       <Marker position={goal} icon={ICONS.goal}>
         <Tooltip>{waypoints[waypoints.length - 1]?.name ?? t('Finish')}</Tooltip>
       </Marker>
+      {rewards?.map((r) => (
+        <Marker key={r.id} position={positionAt(points, cum, r.m).point} icon={ICONS.reward[r.status]} zIndexOffset={200}>
+          <Tooltip>
+            {r.title}
+            {r.status === 'locked' ? ` · ${t('locked')}` : r.status === 'unlocked' ? ` · ${t('unlocked!')}` : ` · ${t('Claimed')}`}
+          </Tooltip>
+        </Marker>
+      ))}
       {peek && (
         <Marker position={peek} icon={ICONS.peek} zIndexOffset={500}>
           <Tooltip>{t('Look-ahead point')}</Tooltip>

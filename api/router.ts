@@ -5,7 +5,7 @@ import { json } from '../server/http.js';
  * handlers live in /routes and keep their original URLs.
  */
 type Handler = (req: Request) => Promise<Response>;
-type RouteModule = Partial<Record<'GET' | 'POST' | 'PUT' | 'DELETE', Handler>>;
+type RouteModule = Partial<Record<'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', Handler>>;
 
 /** Handlers are imported on first use, so a failing dependency breaks one route, not all. */
 export const ROUTES: Record<string, () => Promise<RouteModule>> = {
@@ -40,6 +40,9 @@ export const ROUTES: Record<string, () => Promise<RouteModule>> = {
   'photos/along': () => import('../routes/photos/along.js'),
   push: () => import('../routes/push.js'),
   tts: () => import('../routes/tts.js'),
+  uploads: () => import('../routes/uploads.js'),
+  rewards: () => import('../routes/rewards.js'),
+  'milestones/unlocks': () => import('../routes/milestones/unlocks.js'),
   'push/test': () => import('../routes/push/test.js'),
   public: () => import('../routes/public.js'),
   route: () => import('../routes/route.js'),

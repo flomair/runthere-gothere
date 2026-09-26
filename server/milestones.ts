@@ -10,6 +10,10 @@ import { reverseGeocode } from './places.js';
 import { repo } from './repo.js';
 import { weather } from './surroundings.js';
 import { legsOf, waypointPositions } from '../shared/legs.js';
+import { unlockReachedRewards } from './rewards.js';
+import { cityUnlocks } from './unlocks.js';
+import { notifyRewards } from './push.js';
+import { isCityMilestone } from '../shared/rewards.js';
 
 export interface Candidate {
   key: string;
@@ -136,6 +140,8 @@ export interface DetectOptions {
   lang?: string;
   /** Pause between place look-ups (Nominatim allows one request per second). */
   delayMs?: number;
+  /** Send a push notification for rewards unlocked by this check (background syncs). */
+  notifyRewards?: boolean;
 }
 
 /** Find newly reached milestones for a user's journeys, store them, and write postcards. */
@@ -148,8 +154,11 @@ export async function detectMilestones(uid: string, opts: DetectOptions = {}): P
   const created: Milestone[] = [];
   let enriched = 0;
 
+  const unlockedRewards: { title: string; journeyId: string }[] = [];
+
   for (const j of journeys) {
     const progress = computeProgress(j, activities);
+    for (const r of await unlockReachedRewards(uid, j, progress)) unlockedRewards.push({ title: r.title, journeyId: j.id });
     const existing = new Set((await repo.listMilestones(uid, j.id)).map((m) => m.id));
     const reached = milestoneCandidates(j).filter((c) => c.atM <= progress.doneM + 1 && !existing.has(`${j.id}_${c.kind}_${c.key}`));
     const pts = j.route.points;
@@ -184,6 +193,8 @@ export async function detectMilestones(uid: string, opts: DetectOptions = {}): P
     }
   }
 
+  if (unlockedRewards.length && opts.notifyRewards) await notifyRewards(uid, unlockedRewards);
+
   // postcards for the most recent new milestones, if the user has an AI key
   const key = created.length ? await aiKeyFor(uid).catch(() => null) : null;
   if (key) {
@@ -197,6 +208,12 @@ export async function detectMilestones(uid: string, opts: DetectOptions = {}): P
         console.error('postcard failed', e);
       }
     }
+  }
+
+  // what reaching a city unlocks: passport stamp, fun fact, song
+  for (const m of created.filter(isCityMilestone)) {
+    m.unlocks = await cityUnlocks(m, { lang, key });
+    await repo.putMilestone(uid, m);
   }
   return created;
 }

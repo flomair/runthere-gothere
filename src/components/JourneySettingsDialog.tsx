@@ -7,6 +7,8 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  InputAdornment,
+  MenuItem,
   Stack,
   Switch,
   TextField,
@@ -23,6 +25,9 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
   const [sportTypes, setSportTypes] = useState(journey.sportTypes);
   const [useStrava, setUseStrava] = useState(journey.useStrava);
   const [countElevation, setCountElevation] = useState(!!journey.countElevation);
+  const [saving, setSaving] = useState(!!journey.savings);
+  const [perKm, setPerKm] = useState(String(journey.savings?.perKm ?? 1));
+  const [currency, setCurrency] = useState(journey.savings?.currency ?? 'EUR');
   useEffect(() => {
     if (open) {
       setName(journey.name);
@@ -30,6 +35,9 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
       setSportTypes(journey.sportTypes);
       setUseStrava(journey.useStrava);
       setCountElevation(!!journey.countElevation);
+      setSaving(!!journey.savings);
+      setPerKm(String(journey.savings?.perKm ?? 1));
+      setCurrency(journey.savings?.currency ?? 'EUR');
     }
   }, [open, journey]);
 
@@ -71,15 +79,46 @@ export default function JourneySettingsDialog({ open, onClose, journey }: { open
               </Box>
             }
           />
+          <FormControlLabel
+            control={<Switch checked={saving} onChange={(e) => setSaving(e.target.checked)} />}
+            label={
+              <Box>
+                {t('Savings jar')}
+                <Typography variant="caption" color="text.secondary" component="div">
+                  {t('Put money aside for every kilometre, e.g. for the real trip. Shows the saved total.')}
+                </Typography>
+              </Box>
+            }
+          />
+          {saving && (
+            <Stack direction="row" spacing={1.5}>
+              <TextField
+                label={t('Amount per km')}
+                type="number"
+                value={perKm}
+                onChange={(e) => setPerKm(e.target.value)}
+                slotProps={{ htmlInput: { min: 0, step: 0.1 }, input: { endAdornment: <InputAdornment position="end">/ km</InputAdornment> } }}
+                sx={{ flexGrow: 1 }}
+              />
+              <TextField select label={t('Currency')} value={currency} onChange={(e) => setCurrency(e.target.value)} sx={{ width: 120 }}>
+                {['EUR', 'USD', 'GBP', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK'].map((c) => (
+                  <MenuItem key={c} value={c}>
+                    {c}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>
         <Button
           variant="contained"
-          disabled={!sportTypes.length || !startDate}
+          disabled={!sportTypes.length || !startDate || (saving && !(Number(perKm) >= 0))}
           onClick={() => {
-            journeyStore.update(journey.id, { name: name.trim() || journey.name, startDate, sportTypes, useStrava, countElevation });
+            const savings = saving ? { perKm: Math.max(0, Number(perKm) || 0), currency } : undefined;
+            journeyStore.update(journey.id, { name: name.trim() || journey.name, startDate, sportTypes, useStrava, countElevation, savings });
             onClose();
           }}
         >

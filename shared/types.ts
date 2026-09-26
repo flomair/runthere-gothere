@@ -244,6 +244,8 @@ export interface Journey {
   profile?: { stepM: number; elevations: number[] };
   /** A real race at the destination: the journey is the build-up. */
   event?: RaceEvent;
+  /** Savings jar: put money aside for every kilometre. */
+  savings?: { perKm: number; currency: string };
 }
 
 
@@ -270,6 +272,58 @@ export interface Milestone {
   photo?: { url: string; credit?: string; pageUrl?: string };
   postcard?: { text: string; at: string };
   seen?: boolean;
+  /** Virtual rewards for reaching a city (stops and destinations). */
+  unlocks?: CityUnlocks;
+}
+
+/** What reaching a city unlocks. The audio story is the postcard read aloud; the postcard image is `photo`. */
+export interface CityUnlocks {
+  /** Passport stamp, drawn in the app from these values. */
+  stamp: { label: string; date: string; countryCode?: string; hue: number };
+  funFact?: { text: string; source: 'wikipedia' | 'ai'; url?: string };
+  /** A song that fits the place (suggested by the AI); the app links to music services. */
+  song?: { title: string; artist: string };
+  generatedAt: string;
+}
+
+// ---------- gifts, rewards & prizes ----------
+
+/**
+ * How a gift, reward or prize is delivered. Today everything is a promise tracked in the app;
+ * gift cards and payments can be added later by filling in the other kinds without changing
+ * the documents that hold a fulfillment.
+ */
+export interface Fulfillment {
+  kind: 'promise' | 'giftCard' | 'payment';
+  status: 'pending' | 'fulfilled' | 'cancelled';
+  /** e.g. the provider of a gift card or payment. */
+  provider?: string;
+  /** Provider reference (voucher code id, payment id …). */
+  ref?: string;
+  amount?: { value: number; currency: string };
+  note?: string;
+  fulfilledAt?: string;
+}
+
+/** A real-life treat the user pins at a point on their route; it unlocks only there. */
+export interface Reward {
+  id: string;
+  journeyId: string;
+  title: string;
+  /** Storage path of an optional photo (see /api/uploads). */
+  photo?: string;
+  /** Optional shop link. */
+  link?: string;
+  /** Distance along the journey where it unlocks (true metres). */
+  atM: number;
+  status: 'locked' | 'unlocked' | 'claimed';
+  createdAt: string;
+  unlockedAt?: string;
+  claimedAt?: string;
+  /** Storage path of an optional photo taken when claiming. */
+  claimPhoto?: string;
+  claimNote?: string;
+  fulfillment: Fulfillment;
 }
 
 // ---------- friends: shared journeys ----------

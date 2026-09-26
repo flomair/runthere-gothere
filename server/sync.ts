@@ -127,7 +127,7 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
     const a = await getActivity(tokens, e.object_id);
     await repo.putActivities(uid, [a]);
     const { detectMilestones } = await import('./milestones.js');
-    const created = await detectMilestones(uid, { maxNew: 4, maxPostcards: 1 }).catch((err) => {
+    const created = await detectMilestones(uid, { maxNew: 4, maxPostcards: 1, notifyRewards: true }).catch((err) => {
       console.error('milestone detection failed', err);
       return [];
     });

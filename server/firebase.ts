@@ -1,6 +1,7 @@
 import { type App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getStorage } from 'firebase-admin/storage';
 import { HttpError } from './http.js';
 import { verifyFirebaseIdToken } from './idtoken.js';
 
@@ -61,6 +62,12 @@ export const db = () => {
   }
   return firestore;
 };
+
+/**
+ * Cloud Storage bucket for photos. New Firebase projects use "<project>.firebasestorage.app",
+ * older ones "<project>.appspot.com" – FIREBASE_STORAGE_BUCKET overrides.
+ */
+export const storageBucket = () => getStorage(app()).bucket(process.env.FIREBASE_STORAGE_BUCKET?.trim() || `${projectId()}.firebasestorage.app`);
 
 /** OAuth access token of the service account (cloud-platform scope), for other Google Cloud APIs. */
 export async function googleAccessToken(): Promise<string> {

@@ -87,12 +87,17 @@ describe('milestone detection', () => {
     let postcards = 0;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (input: string | URL | Request) => {
+      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
         const url = String(input instanceof Request ? input.url : input);
         if (url.includes('nominatim')) return json({ display_name: 'Somewhere', address: { town: 'Pirna', state: 'Saxony', country: 'Germany' } });
         if (url.includes('commons.wikimedia')) return json({ query: { pages: { '1': { pageid: 1, title: 'File:View.jpg', coordinates: [{ lat: 51, lon: 13.8 }], imageinfo: [{ url: 'u', thumburl: 't', descriptionurl: 'd', mime: 'image/jpeg' }] } } } });
         if (url.includes('open-meteo')) return json({ timezone: 'Europe/Berlin', current: { time: '2026-09-23T15:00', temperature_2m: 15, apparent_temperature: 14, wind_speed_10m: 10, precipitation: 0, weather_code: 1, is_day: 1 } });
         if (url.includes('api.anthropic.com')) {
+          const body = JSON.parse(String(init?.body ?? '{}'));
+          if (body.output_config?.format) {
+            // city extras: fun fact + song (structured output)
+            return json({ id: 'x', type: 'message', role: 'assistant', model: 'claude-sonnet-5', content: [{ type: 'text', text: JSON.stringify({ funFact: 'Pirna has a famous old town.', song: { title: 'Pirna Song', artist: 'Test Band' } }) }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } });
+          }
           postcards++;
           return json({ id: 'm', type: 'message', role: 'assistant', model: 'claude-sonnet-5', content: [{ type: 'text', text: 'Dear home, greetings from Pirna! — your virtual self' }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } });
         }
@@ -108,6 +113,10 @@ describe('milestone detection', () => {
     expect(dresden.reachedAt.slice(0, 10)).toBe('2026-09-19');
     expect(dresden.place?.name).toBe('Pirna');
     expect(dresden.photo?.url).toBe('t');
+    // a city unlocks a stamp, a fun fact and a song; distance and border milestones don't
+    expect(dresden.unlocks).toMatchObject({ stamp: { label: 'Pirna', countryCode: 'DE' }, funFact: { text: 'Pirna has a famous old town.', source: 'ai' }, song: { title: 'Pirna Song', artist: 'Test Band' } });
+    expect(created.filter((m) => m.kind !== 'waypoint').every((m) => !m.unlocks)).toBe(true);
+    expect((await store.getMilestone('owner', dresden.id))?.unlocks?.song?.title).toBe('Pirna Song');
     expect(postcards).toBe(2); // the two most recent
     expect((await store.listMilestones('owner', 'j1')).filter((m) => m.postcard).length).toBe(2);
 

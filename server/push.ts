@@ -56,6 +56,9 @@ const ICON: Record<Milestone['kind'], string> = { waypoint: '📍', distance: '�
 
 const TEXT = {
   en: {
+    reward: (title: string) => `🎁 Reward unlocked: ${title}`,
+    rewardBody: 'You reached the pin. Treat yourself – and tap "Claimed" when you did.',
+    rewards: (n: number) => `🎁 ${n} rewards unlocked`,
     one: (m: Milestone) => (m.kind === 'finish' ? 'You made it! Time to go there for real.' : m.place ? `${m.place.name}, ${m.place.context}` : 'A new chapter in your diary.'),
     many: (n: number) => `${n} new milestones in your diary`,
     manyBody: (ms: Milestone[]) => ms.map((m) => milestoneTitle(m, 'en')).join(' · '),
@@ -63,6 +66,9 @@ const TEXT = {
     comment: (who: string) => `${who} commented`,
   },
   de: {
+    reward: (title: string) => `🎁 Belohnung freigeschaltet: ${title}`,
+    rewardBody: 'Du hast den Pin erreicht. Gönn es dir – und tippe auf „Eingelöst“, wenn es so weit ist.',
+    rewards: (n: number) => `🎁 ${n} Belohnungen freigeschaltet`,
     one: (m: Milestone) => (m.kind === 'finish' ? 'Geschafft! Zeit, wirklich hinzufahren.' : m.place ? `${m.place.name}, ${m.place.context}` : 'Ein neues Kapitel in deinem Tagebuch.'),
     many: (n: number) => `${n} neue Meilensteine in deinem Tagebuch`,
     manyBody: (ms: Milestone[]) => ms.map((m) => milestoneTitle(m, 'de')).join(' · '),
@@ -93,5 +99,18 @@ export async function notifyFeed(ownerUid: string, kind: 'kudos' | 'comment', wh
     body: text ?? '',
     url: `/#/g/${encodeURIComponent(groupId)}`,
     tag: `feed-${groupId}`,
+  });
+}
+
+/** Personal rewards whose pin a sync has just reached. */
+export async function notifyRewards(uid: string, rewards: { title: string; journeyId: string }[]): Promise<void> {
+  if (!rewards.length) return;
+  const tx = await textFor(uid);
+  const first = rewards[0];
+  await notify(uid, {
+    title: rewards.length === 1 ? tx.reward(first.title) : tx.rewards(rewards.length),
+    body: rewards.length === 1 ? tx.rewardBody : rewards.map((r) => r.title).join(' · '),
+    url: `/#/j/${encodeURIComponent(first.journeyId)}`,
+    tag: `reward-${first.journeyId}`,
   });
 }

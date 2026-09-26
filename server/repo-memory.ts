@@ -1,4 +1,4 @@
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Reward } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -25,6 +25,7 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const feeds = new Map<string, Map<string, FeedItem>>();
   const shares = new Map<string, { uid: string; journeyId: string; createdAt: string }>();
   const bookmarks = new Map<string, Map<string, Bookmark>>();
+  const rewards = new Map<string, Map<string, Reward>>();
   const coach = new Map<string, Map<string, CoachPlan>>();
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
@@ -87,6 +88,10 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
       [...sub(bookmarks, uid).values()].filter((b) => !journeyId || b.journeyId === journeyId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     putBookmark: async (uid, b) => void sub(bookmarks, uid).set(b.id, { ...b }),
     deleteBookmark: async (uid, id) => void sub(bookmarks, uid).delete(id),
+    listRewards: async (uid, journeyId) => [...sub(rewards, uid).values()].filter((r) => !journeyId || r.journeyId === journeyId).map((r) => ({ ...r })).sort((a, b) => a.atM - b.atM),
+    getReward: async (uid, id) => (sub(rewards, uid).get(id) ? { ...sub(rewards, uid).get(id)! } : null),
+    putReward: async (uid, r) => void sub(rewards, uid).set(r.id, { ...r }),
+    deleteReward: async (uid, id) => void sub(rewards, uid).delete(id),
     getCoachPlan: async (uid, journeyId) => sub(coach, uid).get(journeyId) ?? null,
     putCoachPlan: async (uid, journeyId, plan) => void sub(coach, uid).set(journeyId, plan),
     incrementStat: async (uid, key) => {

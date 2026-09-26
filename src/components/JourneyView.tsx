@@ -46,6 +46,9 @@ import { milestoneTitle } from '../../shared/milestoneTitle';
 import { HIGHLIGHT } from '../theme';
 import { waypointPositions } from '../../shared/legs';
 import LegDialog from './LegDialog';
+import RewardsCard from './RewardsCard';
+import { useRewards } from '../lib/rewards';
+import { rewardState } from '../../shared/rewards';
 
 function downloadGpx(j: Journey) {
   const pts = j.route.points.map(([la, lo]) => `<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"/>`).join('');
@@ -164,6 +167,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   // distance of each waypoint along the route, for the narrator's "coming up" list
   // positions come per leg, so a route passing a city twice still places each stop right
   const waypointPos = useMemo(() => waypointPositions(journey), [journey]);
+  const rewardsQ = useRewards(journey.id);
+  const rewardPins = useMemo(
+    () => (rewardsQ.data ?? []).map((r) => ({ id: r.id, title: r.title, m: r.atM * scale, status: rewardState(r, progress.doneM) })),
+    [rewardsQ.data, scale, progress.doneM],
+  );
   const waypointDist = useMemo(() => waypointPos.map((w) => ({ name: w.name, m: w.m })), [waypointPos]);
   const stops = useMemo(() => waypointPos.map((w) => ({ reached: w.m <= progress.doneM + 1, legFinish: w.legFinish && w.m < progress.totalM - 1 })), [waypointPos, progress.doneM, progress.totalM]);
 
@@ -306,6 +314,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         highlight={selected ? { fromM: selected.startM * scale, toM: selected.cumulativeM * scale } : null}
         height={isMobile ? 360 : 480}
         stops={stops}
+        rewards={rewardPins}
       />
       <Button
         variant="contained"
@@ -446,6 +455,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         {section === 'goals' && (
           <Stack spacing={2.5}>
             <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />
+            <RewardsCard journey={journey} progress={progress} cities={waypointDist} />
             <CoachCard journeyId={journey.id} />
           </Stack>
         )}

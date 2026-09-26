@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import type { LatLon } from '../../shared/geo';
 import { idToken } from './firebase';
 import type { Activity, Bookmark, CoachPlan, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
@@ -132,12 +133,19 @@ export function useMilestoneActions() {
     check: async (journeyId: string) => {
       const r = await api<{ created: Milestone[] }>('/api/milestones/check', { method: 'POST', json: { journeyId, lang: lang() } });
       if (r.created.length) await refresh();
+      // the same check unlocks reached reward pins
+      void qc.invalidateQueries({ queryKey: ['rewards'] });
       return r.created;
     },
     writePostcard: async (id: string) => {
       await api('/api/milestones/postcard', { method: 'POST', json: { id, lang: lang() } });
       await refresh();
     },
+    /** Fill in stamp, fun fact and song for a city reached before unlocks existed. */
+    fillUnlocks: async (id: string) => {
+      await api('/api/milestones/unlocks', { method: 'POST', json: { id, lang: lang() } });
+    },
+    refresh,
     markSeen: async (journeyId: string) => {
       await api('/api/milestones/seen', { method: 'POST', json: { journeyId } });
       await refresh();
@@ -192,4 +200,23 @@ export function useBookmarks(journeyId: string) {
     /** Bookmark with the same title and position, if any. */
     find: (title: string, lat: number, lon: number) => q.data?.find((b) => b.title === title && Math.abs(b.lat - lat) < 1e-4 && Math.abs(b.lon - lon) < 1e-4),
   };
+}
+
+/**
+ * Cities reached before unlocks existed get their stamp, fun fact and song filled in, a few per
+ * visit (each look-up hits Wikipedia and maybe the AI), then the milestones are reloaded.
+ */
+export function useUnlockBackfill(milestones: Milestone[] | undefined, max = 3) {
+  const { fillUnlocks, refresh } = useMilestoneActions();
+  const started = useRef(new Set<string>());
+  useEffect(() => {
+    const todo = (milestones ?? []).filter((m) => (m.kind === 'waypoint' || m.kind === 'finish') && !m.unlocks && !started.current.has(m.id)).slice(0, max);
+    if (!todo.length) return;
+    todo.forEach((m) => started.current.add(m.id));
+    void (async () => {
+      for (const m of todo) await fillUnlocks(m.id).catch(() => undefined);
+      await refresh();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [milestones]);
 }

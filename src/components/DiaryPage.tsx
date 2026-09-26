@@ -3,7 +3,8 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
 import PrintIcon from '@mui/icons-material/PrintOutlined';
 import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Divider, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import { flag, useActivities, useJourneyStories, useMe, useMilestoneActions, useMilestones } from '../lib/api';
+import { flag, useActivities, useJourneyStories, useMe, useMilestoneActions, useMilestones, useUnlockBackfill } from '../lib/api';
+import UnlocksPanel from './UnlocksPanel';
 import { formatDate, formatKm } from '../lib/format';
 import { navigate } from '../lib/nav';
 import { computeProgress } from '../lib/progress';
@@ -86,6 +87,7 @@ function MilestoneChapter({ m, canWrite }: { m: Milestone; canWrite: boolean }) 
             </Button>
           </Box>
         )}
+        <UnlocksPanel m={m} />
       </CardContent>
     </Card>
   );
@@ -98,6 +100,7 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
   const { markSeen } = useMilestoneActions();
   const { data: activities } = useActivities(journey.startDate, !!me?.strava && journey.useStrava);
   const progress = useMemo(() => computeProgress(journey, activities), [journey, activities]);
+  useUnlockBackfill(milestones.data?.milestones);
 
   useEffect(() => {
     if (milestones.data?.milestones.some((m) => !m.seen)) void markSeen(journey.id);

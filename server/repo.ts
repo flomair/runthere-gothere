@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Reward } from '../shared/types.js';
 import { db } from './firebase.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -104,6 +104,11 @@ export interface Repo {
   listBookmarks(uid: string, journeyId?: string): Promise<Bookmark[]>;
   putBookmark(uid: string, b: Bookmark): Promise<void>;
   deleteBookmark(uid: string, id: string): Promise<void>;
+
+  listRewards(uid: string, journeyId?: string): Promise<Reward[]>;
+  getReward(uid: string, id: string): Promise<Reward | null>;
+  putReward(uid: string, r: Reward): Promise<void>;
+  deleteReward(uid: string, id: string): Promise<void>;
 
   getCoachPlan(uid: string, journeyId: string): Promise<CoachPlan | null>;
   putCoachPlan(uid: string, journeyId: string, plan: CoachPlan): Promise<void>;
@@ -295,6 +300,21 @@ export const firestoreRepo: Repo = {
   },
   async deleteBookmark(uid, id) {
     await db().collection('users').doc(uid).collection('bookmarks').doc(docId(id)).delete();
+  },
+  async listRewards(uid, journeyId) {
+    let q: FirebaseFirestore.Query = db().collection('users').doc(uid).collection('rewards');
+    if (journeyId) q = q.where('journeyId', '==', journeyId);
+    return (await q.get()).docs.map((d) => d.data() as Reward).sort((a, b) => a.atM - b.atM);
+  },
+  async getReward(uid, id) {
+    const d = await db().collection('users').doc(uid).collection('rewards').doc(docId(id)).get();
+    return d.exists ? (d.data() as Reward) : null;
+  },
+  async putReward(uid, r) {
+    await db().collection('users').doc(uid).collection('rewards').doc(docId(r.id)).set(r);
+  },
+  async deleteReward(uid, id) {
+    await db().collection('users').doc(uid).collection('rewards').doc(docId(id)).delete();
   },
   async getCoachPlan(uid, journeyId) {
     const d = await db().collection('users').doc(uid).collection('coach').doc(docId(journeyId)).get();
