@@ -47,7 +47,8 @@ import { HIGHLIGHT } from '../theme';
 import { waypointPositions } from '../../shared/legs';
 import LegDialog from './LegDialog';
 import RewardsCard from './RewardsCard';
-import QuestsCard, { QuestInvites } from './QuestsCard';
+import QuestsCard from './QuestsCard';
+import PlayStrip from './PlayStrip';
 import { useQuests } from '../lib/quests';
 import { QUEST_EMOJI, questFraction, questTitle } from '../../shared/quests';
 import { useRewards } from '../lib/rewards';
@@ -104,8 +105,14 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const here = positionAt(points, cum, progress.doneM * scale).point;
 
   const [tab, setTab] = useState<'here' | 'ahead'>('here');
-  const [section, setSection] = useState<Section>('overview');
+  const [section, setSection] = useState<Section>(() => (/[?&]s=gifts\b/.test(window.location.hash) ? 'gifts' : 'overview'));
   const isMobile = useMediaQuery((t: Theme) => t.breakpoints.down('sm'));
+  // links like #/j/<id>?s=gifts open that section, also while the journey is already open
+  useEffect(() => {
+    const on = () => /[?&]s=gifts\b/.test(window.location.hash) && setSection('gifts');
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
   const [peekM, setPeekM] = useState<number>(() => Math.min(progress.totalM, progress.doneM + 10_000));
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
@@ -176,6 +183,9 @@ export default function JourneyView({ journey }: { journey: Journey }) {
     [rewardsQ.data, scale, progress.doneM],
   );
   const questsQ = useQuests();
+  const giftBadge =
+    (rewardsQ.data ?? []).filter((r) => rewardState(r, progress.doneM) === 'unlocked').length +
+    (questsQ.data ?? []).filter((q) => q.status === 'offered' && q.from.uid !== me?.user.uid).length;
   const branches = useMemo(
     () =>
       (questsQ.data ?? [])
@@ -280,11 +290,6 @@ export default function JourneyView({ journey }: { journey: Journey }) {
               </Button>
             </Stack>
           </Alert>
-        </Pop>
-      )}
-      {section === 'overview' && questsQ.data?.some((q) => q.status === 'offered' && q.from.uid !== me?.user.uid) && (
-        <Pop key="quests">
-          <QuestInvites journeyId={journey.id} />
         </Pop>
       )}
       {sinceLast && !progress.finished && (
@@ -459,10 +464,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       />
       {menuEl}
       <Stack spacing={1.5}>{banners}</Stack>
-      <SectionNav value={section} onChange={setSection} onDiary={() => navigate(`/j/${journey.id}/diary`)} unseen={unseen.length} />
+      <SectionNav value={section} onChange={setSection} onDiary={() => navigate(`/j/${journey.id}/diary`)} unseen={unseen.length} gifts={giftBadge} />
       <PageTransition routeKey={section}>
         {section === 'overview' && (
           <Stack spacing={2.5}>
+            <PlayStrip journey={journey} doneM={progress.doneM} max={4} />
             {mapCard}
             <Reveal>
               <ElevationProfile
@@ -477,11 +483,16 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           </Stack>
         )}
         {section === 'explore' && explore}
+        {section === 'gifts' && (
+          <Stack spacing={2.5}>
+            <PlayStrip journey={journey} doneM={progress.doneM} title={false} />
+            <RewardsCard journey={journey} progress={progress} cities={waypointDist} />
+            <QuestsCard journeyId={journey.id} />
+          </Stack>
+        )}
         {section === 'goals' && (
           <Stack spacing={2.5}>
             <GoalsCard journey={journey} progress={progress} waypointDist={waypointDist} />
-            <QuestsCard journeyId={journey.id} />
-            <RewardsCard journey={journey} progress={progress} cities={waypointDist} />
             <CoachCard journeyId={journey.id} />
           </Stack>
         )}

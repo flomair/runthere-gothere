@@ -512,6 +512,25 @@ export interface BucketView {
   pins: { key: string; m: number; collected: boolean }[];
 }
 
+/** Home-screen summary of group games (see routes/play.ts). */
+export interface PlaySummary {
+  draws: { groupId: string; groupName: string; count: number }[];
+  stages: {
+    groupId: string;
+    groupName: string;
+    id: string;
+    name: string;
+    status: Stage['status'];
+    startDate: string;
+    endDate: string;
+    prize: string;
+    rank?: number;
+    of: number;
+    effort?: number;
+    leaderName?: string;
+  }[];
+}
+
 export interface Standing {
   uid: string;
   name: string;

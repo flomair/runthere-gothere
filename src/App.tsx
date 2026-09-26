@@ -16,7 +16,7 @@ const QuestsPage = lazy(() => import('./components/QuestsPage'));
 const CollectionPage = lazy(() => import('./components/CollectionPage'));
 const PublicView = lazy(() => import('./components/PublicView'));
 
-/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/collection, #/quests, #/admin. */
+/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/collection, #/play (challenges & gifts; #/quests too), #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -24,7 +24,7 @@ function useHashRoute() {
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  const m = /^#\/j\/([^/]+)(?:\/(diary|trip))?/.exec(hash);
+  const m = /^#\/j\/([^/?]+)(?:\/(diary|trip))?/.exec(hash);
   const g = /^#\/g\/([^/?]+)/.exec(hash);
   const s = /^#\/s\/([^/?]+)/.exec(hash);
   return {
@@ -34,7 +34,7 @@ function useHashRoute() {
     shareToken: s ? decodeURIComponent(s[1]) : null,
     admin: hash.startsWith('#/admin'),
     collection: hash.startsWith('#/collection'),
-    quests: hash.startsWith('#/quests'),
+    quests: hash.startsWith('#/quests') || hash.startsWith('#/play'),
   };
 }
 

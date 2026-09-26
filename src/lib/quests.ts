@@ -31,7 +31,7 @@ export interface QuestDraft {
 
 export function useQuestActions() {
   const qc = useQueryClient();
-  const refresh = () => qc.invalidateQueries({ queryKey: ['quests'] });
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['quests'] }), qc.invalidateQueries({ queryKey: ['play'] })]);
   return {
     create: async (d: QuestDraft) => {
       await api('/api/quests', { method: 'POST', json: d });

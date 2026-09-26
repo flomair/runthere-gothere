@@ -24,6 +24,7 @@ import NewJourneyDialog, { type JourneyPreset } from './NewJourneyDialog';
 import MiniMap from './MiniMap';
 import { AnimatedBar, Stagger, StaggerItem } from './motion';
 import SharedJourneys from './SharedJourneys';
+import PlayStrip from './PlayStrip';
 import StravaButton from './StravaButton';
 import { InstallBanner } from './InstallPrompt';
 import { t } from '../lib/i18n';
@@ -238,6 +239,8 @@ export default function JourneyList() {
           {importError}
         </Alert>
       )}
+
+      {me && journeys.length > 0 && <PlayStrip />}
 
       <SharedJourneys />
 

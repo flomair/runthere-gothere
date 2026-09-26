@@ -21,7 +21,7 @@ export function usePrizePhoto(groupId: string, prizeId: string, enabled: boolean
 
 export function useBucketActions(groupId: string) {
   const qc = useQueryClient();
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['bucket', groupId] }), qc.invalidateQueries({ queryKey: ['feed', groupId] })]);
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['bucket', groupId] }), qc.invalidateQueries({ queryKey: ['feed', groupId] }), qc.invalidateQueries({ queryKey: ['play'] })]);
   return {
     refresh,
     add: async (title: string, tier: PrizeTier, anonymous: boolean) => {

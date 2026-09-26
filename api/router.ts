@@ -44,6 +44,7 @@ export const ROUTES: Record<string, () => Promise<RouteModule>> = {
   rewards: () => import('../routes/rewards.js'),
   'milestones/unlocks': () => import('../routes/milestones/unlocks.js'),
   quests: () => import('../routes/quests.js'),
+  play: () => import('../routes/play.js'),
   'groups/stages': () => import('../routes/groups/stages.js'),
   'groups/bonus': () => import('../routes/groups/bonus.js'),
   'groups/bucket': () => import('../routes/groups/bucket.js'),

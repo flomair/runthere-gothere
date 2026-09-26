@@ -203,6 +203,18 @@ describe('surprise bucket API', () => {
     expect((await photo.GET(req(`/api/groups/draw?id=g1&prizeId=${got.prize.id}`, { headers: EVE }))).status).toBe(404);
   });
 
+  it('summarises waiting draws and running stages for the home screen', async () => {
+    await store.putDraw({ id: 'd1', groupId: 'g1', uid: 'anna', source: 'pin', label: 'x', boost: 1, earnedAt: 'x' });
+    await store.putDraw({ id: 'd2', groupId: 'g1', uid: 'anna', source: 'pin', label: 'x', boost: 1, earnedAt: 'x', usedAt: 'y' });
+    await store.putDraw({ id: 'd3', groupId: 'g1', uid: 'ben', source: 'pin', label: 'x', boost: 1, earnedAt: 'x' });
+    await store.putStage({ id: 's1', groupId: 'g1', name: 'Stage 1', fromM: 0, toM: 1, startDate: '2026-09-01', endDate: '2026-09-30', participants: ['anna', 'ben'], prize: { text: 'Coffee', fulfillment: { kind: 'promise', status: 'pending' } }, createdBy: 'ben', createdAt: 'x', status: 'running', leaderUid: 'ben', results: [{ uid: 'ben', distanceM: 1, baselineM: 1, effort: 0.8 }, { uid: 'anna', distanceM: 1, baselineM: 1, effort: 0.5 }] });
+    const play = await import('../routes/play');
+    const body = (await (await play.GET(req('/api/play', { headers: ANNA }))).json()) as import('../shared/types').PlaySummary;
+    expect(body.draws).toEqual([{ groupId: 'g1', groupName: 'Autumn race', count: 1 }]);
+    expect(body.stages[0]).toMatchObject({ id: 's1', rank: 2, of: 2, effort: 0.5, leaderName: 'Ben', prize: 'Coffee' });
+    expect(((await (await play.GET(req('/api/play', { headers: EVE }))).json()) as { draws: unknown[] }).draws).toEqual([]);
+  });
+
   it('givers can take back undrawn prizes only', async () => {
     const p = (await bucket<{ prize: Prize }>(ANNA, 'POST', { id: 'g1', title: 'Tea', tier: 'medium' })).body.prize;
     expect((await bucket(BEN, 'PATCH', { id: 'g1', prizeId: p.id, action: 'remove' })).status).toBe(404);

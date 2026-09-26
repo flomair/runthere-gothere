@@ -8,6 +8,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Divider,
   IconButton,
@@ -38,6 +39,8 @@ import StravaButton from './StravaButton';
 import InstallMobileIcon from '@mui/icons-material/InstallMobile';
 import CollectionsIcon from '@mui/icons-material/CollectionsBookmarkOutlined';
 import QuestIcon from '@mui/icons-material/SportsKabaddiOutlined';
+import GiftIcon from '@mui/icons-material/CardGiftcardOutlined';
+import { usePlayCount } from './PlayStrip';
 
 export default function AppHeader() {
   const { data: me } = useMe();
@@ -49,6 +52,7 @@ export default function AppHeader() {
   const close = () => setAnchor(null);
   const installAction = useInstallAction();
   const push = usePush();
+  const playCount = usePlayCount();
 
   return (
     <AppBar
@@ -95,10 +99,24 @@ export default function AppHeader() {
         </Link>
 
         <Tooltip title={effective === 'dark' ? t('Light mode') : t('Dark mode')}>
-          <IconButton onClick={() => setMode(effective === 'dark' ? 'light' : 'dark')} aria-label="toggle color mode" sx={{ width: 40, height: 40, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }}>
+          <IconButton onClick={() => setMode(effective === 'dark' ? 'light' : 'dark')} aria-label="toggle color mode" sx={{ display: { xs: 'none', sm: 'inline-flex' }, width: 40, height: 40, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }}>
             {effective === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
         </Tooltip>
+
+        {me && (
+          <Tooltip title={t('Challenges & gifts')}>
+            <IconButton
+              onClick={() => navigate('/play')}
+              aria-label="challenges and gifts"
+              sx={{ width: 40, height: 40, color: '#fff', backgroundImage: 'linear-gradient(135deg, #7B5CF0, #A259E8 55%, #D65DB1)', boxShadow: '0 6px 16px -8px rgba(162, 89, 232, 0.9)', '&:hover': { filter: 'brightness(1.08)' } }}
+            >
+              <Badge color="error" badgeContent={playCount} invisible={!playCount} overlap="circular" sx={{ '& .MuiBadge-badge': { border: '2px solid var(--mui-palette-background-default)' } }}>
+                <GiftIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+        )}
 
         {me && !me.strava && me.features.strava && (
           <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
@@ -160,6 +178,10 @@ export default function AppHeader() {
                   <StravaButton size="small" fullWidth />
                 </Box>
               ) : null}
+              <MenuItem onClick={() => setMode(effective === 'dark' ? 'light' : 'dark')} sx={{ display: { sm: 'none' } }}>
+                <ListItemIcon>{effective === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}</ListItemIcon>
+                <ListItemText primary={effective === 'dark' ? t('Light mode') : t('Dark mode')} />
+              </MenuItem>
               <MenuItem onClick={() => setUnit(getUnit() === 'km' ? 'mi' : 'km')}>
                 <ListItemIcon>
                   <StraightenIcon fontSize="small" />
@@ -209,13 +231,13 @@ export default function AppHeader() {
               <MenuItem
                 onClick={() => {
                   close();
-                  navigate('/quests');
+                  navigate('/play');
                 }}
               >
                 <ListItemIcon>
                   <QuestIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText primary={t('Side quests')} secondary={t('Challenge friends, answer challenges')} />
+                <ListItemText primary={t('Challenges & gifts')} secondary={t('Challenge friends, answer challenges')} />
               </MenuItem>
               <MenuItem
                 onClick={() => {

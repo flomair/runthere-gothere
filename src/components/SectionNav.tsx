@@ -1,4 +1,5 @@
 import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
+import GiftIcon from '@mui/icons-material/CardGiftcardOutlined';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEventsOutlined';
 import ListIcon from '@mui/icons-material/FormatListBulleted';
 import MapIcon from '@mui/icons-material/MapOutlined';
@@ -6,17 +7,26 @@ import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import { Badge, BottomNavigation, BottomNavigationAction, Box, Paper, Tab, Tabs } from '@mui/material';
 import { t } from '../lib/i18n';
 
-export type Section = 'overview' | 'explore' | 'goals' | 'log';
+export type Section = 'overview' | 'explore' | 'gifts' | 'goals' | 'log';
 
 const ITEMS: { value: Section; label: string; icon: React.ReactElement }[] = [
   { value: 'overview', label: 'Overview', icon: <MapIcon /> },
   { value: 'explore', label: 'Explore', icon: <TravelExploreIcon /> },
+  { value: 'gifts', label: 'Gifts', icon: <GiftIcon /> },
   { value: 'goals', label: 'Goals', icon: <EmojiEventsIcon /> },
   { value: 'log', label: 'Log', icon: <ListIcon /> },
 ];
 
 /** Sticky tabs on desktop, a bottom tab bar on phones. */
-export default function SectionNav({ value, onChange, onDiary, unseen }: { value: Section; onChange: (s: Section) => void; onDiary: () => void; unseen: number }) {
+export default function SectionNav({ value, onChange, onDiary, unseen, gifts = 0 }: { value: Section; onChange: (s: Section) => void; onDiary: () => void; unseen: number; gifts?: number }) {
+  const icon = (it: (typeof ITEMS)[number]) =>
+    it.value === 'gifts' ? (
+      <Badge color="secondary" badgeContent={gifts} invisible={!gifts}>
+        {it.icon}
+      </Badge>
+    ) : (
+      it.icon
+    );
   return (
     <>
       <Box
@@ -34,7 +44,7 @@ export default function SectionNav({ value, onChange, onDiary, unseen }: { value
       >
         <Tabs value={value} onChange={(_, v) => onChange(v)} variant="scrollable" allowScrollButtonsMobile>
           {ITEMS.map((it) => (
-            <Tab key={it.value} value={it.value} label={t(it.label)} icon={it.icon} iconPosition="start" />
+            <Tab key={it.value} value={it.value} label={t(it.label)} icon={icon(it)} iconPosition="start" />
           ))}
           <Tab
             value="diary"
@@ -74,7 +84,7 @@ export default function SectionNav({ value, onChange, onDiary, unseen }: { value
           sx={{ bgcolor: 'transparent', height: 62, '& .MuiBottomNavigationAction-root': { minWidth: 0, px: 0.25 }, '& .MuiBottomNavigationAction-label, & .MuiBottomNavigationAction-label.Mui-selected': { fontSize: '0.72rem', whiteSpace: 'nowrap' }, '& .Mui-selected': { fontWeight: 700 } }}
         >
           {ITEMS.map((it) => (
-            <BottomNavigationAction key={it.value} value={it.value} label={t(it.label)} icon={it.icon} />
+            <BottomNavigationAction key={it.value} value={it.value} label={t(it.label)} icon={icon(it)} />
           ))}
           <BottomNavigationAction
             value="diary"

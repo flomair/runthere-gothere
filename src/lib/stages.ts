@@ -22,7 +22,7 @@ export interface StageDraft {
 
 export function useStageActions(groupId: string) {
   const qc = useQueryClient();
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['stages', groupId] }), qc.invalidateQueries({ queryKey: ['feed', groupId] })]);
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['stages', groupId] }), qc.invalidateQueries({ queryKey: ['feed', groupId] }), qc.invalidateQueries({ queryKey: ['play'] })]);
   return {
     create: async (d: StageDraft) => {
       await api('/api/groups/stages', { method: 'POST', json: { id: groupId, ...d } });
