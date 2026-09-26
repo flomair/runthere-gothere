@@ -55,6 +55,18 @@ body,
   height: 22px;
   font-size: 11px;
 }
+.rtgt-marker.reached {
+  background: #5b5bf0;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rtgt-marker.reached.leg {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
 .rtgt-marker.goal {
   background: #149A80;
 }

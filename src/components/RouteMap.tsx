@@ -16,6 +16,10 @@ const ICONS = {
   start: L.divIcon({ className: '', html: '<div class="rtgt-marker start">A</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
   goal: icon('goal', '🏁'),
   via: L.divIcon({ className: '', html: '<div class="rtgt-marker start">•</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+  /** A stop you have reached ("unlocked"). */
+  viaReached: L.divIcon({ className: '', html: '<div class="rtgt-marker reached">✓</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+  /** An earlier destination of the journey (end of a previous leg). */
+  legGoal: L.divIcon({ className: '', html: '<div class="rtgt-marker reached leg">🏁</div>', iconSize: [28, 28], iconAnchor: [14, 14] }),
   peek: L.divIcon({ className: '', html: '<div class="rtgt-marker peek">👀</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
 };
 
@@ -81,9 +85,11 @@ interface Props {
   height?: number | string;
   /** Stretch to highlight (stored-line metres), e.g. a selected run. */
   highlight?: { fromM: number; toM: number } | null;
+  /** Per waypoint (same order): reached yet, and whether it was the destination of an earlier leg. */
+  stops?: { reached: boolean; legFinish: boolean }[];
 }
 
-export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight }: Props) {
+export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight, stops }: Props) {
   const { done, ahead } = useMemo(() => splitRoute(points, cum, doneM), [points, cum, doneM]);
   const hl = useMemo(() => (highlight ? sliceRoute(points, cum, highlight.fromM, highlight.toM) : []), [points, cum, highlight]);
   const me = done[done.length - 1];
@@ -130,11 +136,17 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
       <Marker position={start} icon={ICONS.start}>
         <Tooltip>{waypoints[0]?.name ?? t('Start')}</Tooltip>
       </Marker>
-      {waypoints.slice(1, -1).map((w) => (
-        <Marker key={`${w.lat},${w.lon}`} position={[w.lat, w.lon]} icon={ICONS.via}>
-          <Tooltip>{w.name}</Tooltip>
-        </Marker>
-      ))}
+      {waypoints.slice(1, -1).map((w, k) => {
+        const s = stops?.[k + 1];
+        return (
+          <Marker key={`${k}-${w.lat},${w.lon}`} position={[w.lat, w.lon]} icon={s?.legFinish ? ICONS.legGoal : s?.reached ? ICONS.viaReached : ICONS.via}>
+            <Tooltip>
+              {w.name}
+              {s?.reached ? ' ✓' : ''}
+            </Tooltip>
+          </Marker>
+        );
+      })}
       <Marker position={goal} icon={ICONS.goal}>
         <Tooltip>{waypoints[waypoints.length - 1]?.name ?? t('Finish')}</Tooltip>
       </Marker>

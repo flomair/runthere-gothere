@@ -2,6 +2,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
 import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
 import { db } from './firebase.js';
+import { migrateJourney } from '../shared/legs.js';
 
 /**
  * All persistence goes through this interface. Only the server touches Firestore (security
@@ -181,7 +182,8 @@ export const firestoreRepo: Repo = {
 
   async listJourneys(uid) {
     const snap = await db().collection('users').doc(uid).collection('journeys').orderBy('createdAt', 'desc').get();
-    return snap.docs.map((d) => fromStored(d.data() as StoredJourney));
+    // older journeys are brought up to date on read (see shared/legs.ts)
+    return snap.docs.map((d) => migrateJourney(fromStored(d.data() as StoredJourney)));
   },
   async putJourney(uid, j) {
     await db().collection('users').doc(uid).collection('journeys').doc(docId(j.id)).set(toStored(j));

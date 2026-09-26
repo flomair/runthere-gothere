@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { api } from './api';
 import type { Journey } from './types';
+import { migrateJourney } from '../../shared/legs';
 
 /**
  * Journeys live in Firestore (via /api/journeys). This module keeps an in-memory copy for the UI:
@@ -69,7 +70,7 @@ export const journeyStore = {
     try {
       const { journeys } = await api<{ journeys: Journey[] }>('/api/journeys');
       const migrated = await migrateLocal(new Set(journeys.map((j) => j.id))).catch(() => []);
-      set({ status: 'ready', journeys: [...migrated, ...journeys] });
+      set({ status: 'ready', journeys: [...migrated, ...journeys].map(migrateJourney) });
     } catch (e) {
       set({ status: 'error', error: e instanceof Error ? e.message : String(e) });
     }
@@ -80,7 +81,8 @@ export const journeyStore = {
     set({ status: 'idle', journeys: [], error: undefined });
   },
   get: (id: string) => state.journeys.find((j) => j.id === id),
-  async add(j: Journey) {
+  async add(j0: Journey) {
+    const j = migrateJourney(j0);
     set({ journeys: [j, ...state.journeys] });
     try {
       await put(j);
@@ -107,6 +109,7 @@ export const journeyStore = {
   },
   /** Merge imported journeys (same id → replaced). */
   async import(list: Journey[]) {
+    list = list.map(migrateJourney);
     const ids = new Set(list.map((j) => j.id));
     set({ journeys: [...list, ...state.journeys.filter((j) => !ids.has(j.id))] });
     for (const j of list) await put(j);

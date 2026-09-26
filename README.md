@@ -11,6 +11,7 @@ Plan a route, for example **Berlin → Vienna** (≈ 680 km on footpaths). Every
 - **the surroundings**: live weather at your virtual position, nearby Wikipedia articles and top-rated places with Google reviews
 - **an AI travel narrator** (Claude). It combines all of that with your progress into a travelogue entry, including an *excursus*, a book-style digression into the local history or culture. You can have it read aloud.
 - **what's coming**: preview any point further along the route
+- **one continuous journey**: pick a destination with stops on the way; once you arrive, pick the next destination and keep going on the same line (kilometres run past the old destination carry over). Change the destination or stops of the current leg at any time
 - **classic trails**: pick a famous hiking trail (Rennsteig, West Highland Way, Camino Francés, E5, Pacific Crest Trail…) from the recommendations or search any waymarked route in OpenStreetMap
 - **your stats**: km covered and remaining, weekly pace, estimated arrival date, and a logbook of the activities that got you there
 

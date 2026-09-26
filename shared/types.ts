@@ -193,7 +193,31 @@ export interface Challenge {
   createdAt: string;
 }
 
+/**
+ * One leg of a journey: from the previous destination (or the start) to the next one.
+ * The journey's `route` and `waypoints` hold all legs joined into one continuous line;
+ * a leg records where it begins in them.
+ */
+export interface JourneyLeg {
+  id: string;
+  /** Distance along the whole journey where this leg starts (true metres). */
+  startM: number;
+  /** Length of this leg (true metres). */
+  totalM: number;
+  /** Index in `journey.waypoints` of the leg's start (the previous destination). */
+  waypointIndex: number;
+  /** Index in `journey.route.points` of the leg's start. */
+  pointIndex: number;
+  mode: RouteMode | 'gpx' | 'trail';
+  provider: string;
+  createdAt: string;
+}
+
 export interface Journey {
+  /** Data version; see shared/legs.ts `migrateJourney`. Missing = 1 (before legs existed). */
+  schemaVersion?: number;
+  /** Legs of the journey in order (added by migration for older journeys). */
+  legs?: JourneyLeg[];
   id: string;
   name: string;
   createdAt: string;

@@ -1,6 +1,6 @@
 import { iso1A2Code } from '@rapideditor/country-coder';
 import Anthropic from '@anthropic-ai/sdk';
-import { type LatLon, cumulativeDistances, haversine, positionAt } from '../shared/geo.js';
+import { type LatLon, cumulativeDistances, positionAt } from '../shared/geo.js';
 import { computeProgress } from '../shared/progress.js';
 import type { Journey, Milestone, MilestoneKind } from '../shared/types.js';
 import { aiKeyFor } from './aikey.js';
@@ -9,6 +9,7 @@ import { commonsPhotos, mapillaryPhotos } from './photos.js';
 import { reverseGeocode } from './places.js';
 import { repo } from './repo.js';
 import { weather } from './surroundings.js';
+import { legsOf, waypointPositions } from '../shared/legs.js';
 
 export interface Candidate {
   key: string;
@@ -29,6 +30,9 @@ export const countryName = (code: string, lang = 'en') => {
 /** Country (ISO alpha-2) at a point, offline. */
 export const countryAt = ([lat, lon]: LatLon): string | null => iso1A2Code([lon, lat]) ?? null;
 
+/** Milestone key of a leg's destination: "finish" for the first leg (as before legs existed). */
+const finishKey = (legIndex: number) => (legIndex === 0 ? 'finish' : `finish-${legIndex + 1}`);
+
 /** Every milestone a journey can have, in route order (true metres). */
 export function milestoneCandidates(j: Journey): Candidate[] {
   const pts = j.route.points;
@@ -37,18 +41,18 @@ export function milestoneCandidates(j: Journey): Candidate[] {
   const scale = cum[cum.length - 1] > 0 ? cum[cum.length - 1] / total : 1;
   const out: Candidate[] = [];
 
-  // waypoints in between (start is where you begin, the last one is the finish)
-  j.waypoints.slice(1, -1).forEach((w, i) => {
-    let best = 0;
-    let bestD = Infinity;
-    pts.forEach((p, k) => {
-      const d = haversine(p, [w.lat, w.lon]);
-      if (d < bestD) {
-        bestD = d;
-        best = k;
-      }
-    });
-    out.push({ key: `wp${i + 1}`, kind: 'waypoint', atM: cum[best] / scale, title: `Arrived in ${w.name}` });
+  // Stops and destinations. Positions come per leg, so a route that passes a city twice places
+  // each stop correctly. Earlier destinations keep the milestone key they had when they were the
+  // finish ("finish" for the first leg), so continuing a journey never duplicates a milestone.
+  const legs = legsOf(j);
+  const positions = waypointPositions(j);
+  positions.forEach((w, wi) => {
+    if (wi === 0 || wi === positions.length - 1) return;
+    if (w.legFinish) {
+      out.push({ key: finishKey(w.leg), kind: 'finish', atM: w.m, title: `You made it to ${w.name}!` });
+    } else {
+      out.push({ key: `wp${wi}`, kind: 'waypoint', atM: w.m, title: `Arrived in ${w.name}` });
+    }
   });
 
   for (let km = 100; km * 1000 < total - 5000; km += 100) {
@@ -66,7 +70,7 @@ export function milestoneCandidates(j: Journey): Candidate[] {
   }
 
   const last = j.waypoints[j.waypoints.length - 1];
-  out.push({ key: 'finish', kind: 'finish', atM: total, title: last ? `You made it to ${last.name}!` : 'Finish!' });
+  out.push({ key: finishKey(legs.length - 1), kind: 'finish', atM: total, title: last ? `You made it to ${last.name}!` : 'Finish!' });
   return out.sort((a, b) => a.atM - b.atM);
 }
 

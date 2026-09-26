@@ -15,6 +15,7 @@ import { CountUp } from './motion';
 import HeroSurface from './HeroSurface';
 import { ROUNDED } from '../theme';
 import { locale, t } from '../lib/i18n';
+import { currentLeg, legWaypoints, legsOf } from '../../shared/legs';
 
 function Ring({ fraction, size = 132 }: { fraction: number; size?: number }) {
   const reduce = useReducedMotion();
@@ -138,7 +139,10 @@ interface Props {
 }
 
 export default function JourneyHero({ journey, progress, countries, reachedCountries, unseen, syncing, onSync, onMenu }: Props) {
-  const from = journey.waypoints[0]?.name;
+  const legs = legsOf(journey);
+  const legWps = legWaypoints(journey, legs.length - 1);
+  // with several legs the header shows the current one: "Leg 2 · Prague → Vienna"
+  const from = (legs.length > 1 ? legWps[0] : journey.waypoints[0])?.name;
   const to = journey.waypoints[journey.waypoints.length - 1]?.name;
   const unitLabel = formatKm(0, 0).replace(/^[\d.,\s]+/, '');
   return (
@@ -181,7 +185,8 @@ export default function JourneyHero({ journey, progress, countries, reachedCount
             {journey.name}
           </Typography>
           <Typography sx={{ opacity: 0.9, mt: 0.5, fontSize: { xs: '0.85rem', sm: '1rem' } }} noWrap>
-            {from && to ? `${from} → ${to}` : journey.route.provider} · {formatKm(journey.route.totalM, 0)}
+            {legs.length > 1 ? `${t('Leg {n}', { n: legs.length })} · ` : ''}
+            {from && to ? `${from} → ${to}` : journey.route.provider} · {formatKm(legs.length > 1 ? currentLeg(journey).totalM : journey.route.totalM, 0)}
           </Typography>
           {journey.event && <RaceLine event={journey.event} />}
           {countries.length > 1 && (

@@ -1,5 +1,6 @@
 import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
+import { migrateJourney } from '../shared/legs.js';
 
 const merge = <T extends object>(base: T, patch: object): T => {
   const out = { ...base } as Record<string, unknown>;
@@ -44,7 +45,7 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     unlinkAthlete: async (id) => void athletes.delete(id),
     listStravaUsers: async () => [...athletes.values()],
     listJourneys: async (uid) =>
-      [...sub(journeys, uid).values()].map((s) => fromStored(s)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      [...sub(journeys, uid).values()].map((s) => migrateJourney(fromStored(s))).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     putJourney: async (uid, j: Journey) => void sub(journeys, uid).set(j.id, toStored(j)),
     deleteJourney: async (uid, id) => void sub(journeys, uid).delete(id),
     listActivities: async (uid, since) =>

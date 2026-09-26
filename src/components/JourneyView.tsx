@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { AnimatePresence, motion } from 'motion/react';
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
-import { cumulativeDistances, haversine, positionAt, samplePoints } from '../../shared/geo';
+import { cumulativeDistances, positionAt, samplePoints } from '../../shared/geo';
 import { navigate } from '../lib/nav';
 import { api, useActivities, useMe, useMilestoneActions, useMilestones, useStravaActions } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
@@ -44,6 +44,8 @@ import StravaButton from './StravaButton';
 import { getLang, locale, t } from '../lib/i18n';
 import { milestoneTitle } from '../../shared/milestoneTitle';
 import { HIGHLIGHT } from '../theme';
+import { waypointPositions } from '../../shared/legs';
+import LegDialog from './LegDialog';
 
 function downloadGpx(j: Journey) {
   const pts = j.route.points.map(([la, lo]) => `<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"/>`).join('');
@@ -102,6 +104,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const [fly, setFly] = useState<{ token: number; target: [number, number] | null }>({ token: 0, target: null });
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [flyover, setFlyover] = useState(false);
+  const [legDialog, setLegDialog] = useState<'next' | 'edit' | null>(null);
   const [slideshow, setSlideshow] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -159,22 +162,10 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const reachedCountries = new Set([countries[0], ...(milestones.data?.milestones ?? []).filter((m) => m.kind === 'border').map((m) => m.countryCode)]);
 
   // distance of each waypoint along the route, for the narrator's "coming up" list
-  const waypointDist = useMemo(
-    () =>
-      journey.waypoints.map((w) => {
-        let best = 0;
-        let bestD = Infinity;
-        points.forEach((p, i) => {
-          const d = haversine(p, [w.lat, w.lon]);
-          if (d < bestD) {
-            bestD = d;
-            best = i;
-          }
-        });
-        return { name: w.name, m: cum[best] / scale };
-      }),
-    [journey.waypoints, points, cum, scale],
-  );
+  // positions come per leg, so a route passing a city twice still places each stop right
+  const waypointPos = useMemo(() => waypointPositions(journey), [journey]);
+  const waypointDist = useMemo(() => waypointPos.map((w) => ({ name: w.name, m: w.m })), [waypointPos]);
+  const stops = useMemo(() => waypointPos.map((w) => ({ reached: w.m <= progress.doneM + 1, legFinish: w.legFinish && w.m < progress.totalM - 1 })), [waypointPos, progress.doneM, progress.totalM]);
 
   const narrateBase = (fromM: number) => {
     const last = [...progress.entries].reverse().find((e) => !e.excluded);
@@ -202,6 +193,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}>{t('📤 Share card & public link')}</MenuItem>
       <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}>{t('👥 Invite friends (race or relay)')}</MenuItem>
       <MenuItem onClick={() => { setMenu(null); navigate(`/j/${journey.id}/trip`); }}>{t('🧳 Plan the real trip')}</MenuItem>
+      {!progress.finished && <MenuItem onClick={() => { setMenu(null); setLegDialog('edit'); }}>{t('🗺️ Change destination & stops')}</MenuItem>}
+      {progress.finished && <MenuItem onClick={() => { setMenu(null); setLegDialog('next'); }}>{t('➡️ Pick your next destination')}</MenuItem>}
       <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>{t('Settings')}</MenuItem>
       <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>{t('Download route as GPX')}</MenuItem>
       {journey.trail && (
@@ -250,10 +243,15 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>
             <AlertTitle>{t("You've arrived in {place}!", { place: journey.waypoints[journey.waypoints.length - 1]?.name ?? t('your destination') })}</AlertTitle>
             {progress.finishedOn ? t('{km} done on {date}.', { km: formatKm(progress.totalM, 0), date: formatDate(progress.finishedOn) }) : t('{km} done.', { km: formatKm(progress.totalM, 0) })}{' '}
-            {t('Time to go there for real?')}{' '}
-            <Button size="small" color="inherit" variant="outlined" onClick={() => navigate(`/j/${journey.id}/trip`)} sx={{ ml: 0.5 }}>
-              {t('Plan the real trip')}
-            </Button>
+            {t('Pick your next destination and keep going, or go there for real.')}
+            <Stack direction="row" sx={{ gap: 1, mt: 1.25, flexWrap: 'wrap' }}>
+              <Button size="small" variant="contained" color="primary" onClick={() => setLegDialog('next')}>
+                {t('Pick your next destination')}
+              </Button>
+              <Button size="small" color="inherit" variant="outlined" onClick={() => navigate(`/j/${journey.id}/trip`)}>
+                {t('Plan the real trip')}
+              </Button>
+            </Stack>
           </Alert>
         </Pop>
       )}
@@ -307,6 +305,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         flyTarget={fly.target}
         highlight={selected ? { fromM: selected.startM * scale, toM: selected.cumulativeM * scale } : null}
         height={isMobile ? 360 : 480}
+        stops={stops}
       />
       <Button
         variant="contained"
@@ -478,6 +477,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           <Flyover3D open onClose={() => setFlyover(false)} points={points} cum={cum} doneM={progress.doneM * scale} title={journey.name} journeyM={progress.totalM} />
         </Suspense>
       )}
+      {legDialog && <LegDialog open onClose={() => setLegDialog(null)} journey={journey} kind={legDialog} loggedM={progress.loggedM} />}
       <JourneySettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} journey={journey} />
       <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} journey={journey} />
       <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} journey={journey} doneM={progress.doneM} />
