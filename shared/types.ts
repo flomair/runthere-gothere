@@ -420,6 +420,8 @@ export interface Group {
   createdAt: string;
   /** Promised to whoever wins the most race stages, handed over at the final destination. */
   bonusPrize?: { text: string; setBy: string; fulfillment: Fulfillment };
+  /** Set while the surprise bucket is low (so the group is told once). */
+  bucketLowSince?: string;
 }
 
 export interface StageResult {
@@ -453,6 +455,61 @@ export interface Stage {
   leaderUid?: string;
   winnerUid?: string;
   finishedAt?: string;
+}
+
+// ---------- group surprise bucket ----------
+
+export type PrizeTier = 'small' | 'medium' | 'rare';
+
+export interface Prize {
+  id: string;
+  groupId: string;
+  title: string;
+  tier: PrizeTier;
+  addedBy: string;
+  /** Hide who added it, also after it is drawn. */
+  anonymous: boolean;
+  createdAt: string;
+  status: 'available' | 'drawn' | 'delivered';
+  drawnBy?: string;
+  drawnAt?: string;
+  drawId?: string;
+  deliveredAt?: string;
+  deliveredPhoto?: string;
+  deliveredNote?: string;
+  fulfillment: Fulfillment;
+}
+
+export type DrawSource = 'pin' | 'stage' | 'drop' | 'milestone';
+
+/** A chance to draw from the bucket, earned by a member. Also the log of what was drawn. */
+export interface Draw {
+  id: string;
+  groupId: string;
+  uid: string;
+  source: DrawSource;
+  label: string;
+  /** ≥ 1: better achievements raise the odds of a rare prize. */
+  boost: number;
+  earnedAt: string;
+  usedAt?: string;
+  prizeId?: string;
+  tier?: PrizeTier;
+  /** Tier odds at the moment of drawing (for the log). */
+  odds?: Record<PrizeTier, number>;
+}
+
+/** What a member sees of the bucket: available prizes stay hidden except your own. */
+export interface BucketView {
+  counts: Record<PrizeTier, number>;
+  /** Available prizes you could draw (not your own). */
+  drawable: number;
+  low: boolean;
+  lowThreshold: number;
+  mine: Prize[];
+  revealed: (Prize & { giverName?: string; drawnByName?: string })[];
+  draws: Draw[];
+  pins: { key: string; m: number; collected: boolean }[];
 }
 
 export interface Standing {

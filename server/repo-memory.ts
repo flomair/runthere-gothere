@@ -1,4 +1,4 @@
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward, Stage } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, Draw, FeedItem, Group, Journey, Milestone, Prize, Quest, Reward, Stage } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -29,6 +29,8 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const coach = new Map<string, Map<string, CoachPlan>>();
   const quests = new Map<string, Quest>();
   const stages = new Map<string, Map<string, Stage>>();
+  const prizes = new Map<string, Map<string, Prize>>();
+  const draws = new Map<string, Map<string, Draw>>();
   const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
   const sub = <K, V>(m: Map<string, Map<K, V>>, uid: string) => {
     if (!m.has(uid)) m.set(uid, new Map());
@@ -95,6 +97,13 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     getReward: async (uid, id) => (sub(rewards, uid).get(id) ? { ...sub(rewards, uid).get(id)! } : null),
     putReward: async (uid, r) => void sub(rewards, uid).set(r.id, { ...r }),
     deleteReward: async (uid, id) => void sub(rewards, uid).delete(id),
+    listPrizes: async (groupId) => [...sub(prizes, groupId).values()].map(clone).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    getPrize: async (groupId, id) => (sub(prizes, groupId).has(id) ? clone(sub(prizes, groupId).get(id)!) : null),
+    putPrize: async (p) => void sub(prizes, p.groupId).set(p.id, clone(p)),
+    deletePrize: async (groupId, id) => void sub(prizes, groupId).delete(id),
+    listDraws: async (groupId) => [...sub(draws, groupId).values()].map(clone).sort((a, b) => a.earnedAt.localeCompare(b.earnedAt)),
+    getDraw: async (groupId, id) => (sub(draws, groupId).has(id) ? clone(sub(draws, groupId).get(id)!) : null),
+    putDraw: async (d) => void sub(draws, d.groupId).set(d.id, clone(d)),
     listStages: async (groupId) => [...sub(stages, groupId).values()].map(clone).sort((a, b) => a.startDate.localeCompare(b.startDate) || a.createdAt.localeCompare(b.createdAt)),
     getStage: async (groupId, id) => (sub(stages, groupId).has(id) ? clone(sub(stages, groupId).get(id)!) : null),
     putStage: async (s) => void sub(stages, s.groupId).set(s.id, clone(s)),

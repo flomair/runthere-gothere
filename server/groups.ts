@@ -14,7 +14,7 @@ const newId = () => randomBytes(9).toString('base64url');
 const firstName = (name?: string, email?: string) => (name?.split(' ')[0] || email?.split('@')[0] || 'Runner').slice(0, 40);
 
 /** Journey-shaped view of a group, so progress and milestone logic can be reused. */
-function asJourney(g: Group, manual: Journey['manualEntries'] = []): Journey {
+export function asJourney(g: Group, manual: Journey['manualEntries'] = []): Journey {
   return {
     id: g.id,
     name: g.name,
@@ -102,7 +102,11 @@ async function addFeed(groupId: string, item: Omit<FeedItem, 'id' | 'createdAt' 
 
 /** Everyone's progress on the group route; also posts newly reached milestones to the feed. */
 export async function standings(user: User, groupId: string): Promise<GroupStandings> {
-  const g = await requireMember(groupId, user);
+  return computeStandings(await requireMember(groupId, user));
+}
+
+/** Standings of a group (no access check): also posts milestones and awards mystery draws. */
+export async function computeStandings(g: Group): Promise<GroupStandings> {
   const pts = g.route.points;
   const cum = cumulativeDistances(pts);
   const scale = cum[cum.length - 1] > 0 ? cum[cum.length - 1] / g.route.totalM : 1;
@@ -146,6 +150,9 @@ export async function standings(user: User, groupId: string): Promise<GroupStand
   } else {
     for (const r of rows) await postMilestones(g, r.uid, r.name, r.picture, 0, r.doneM, r.entries.filter((e) => !e.excluded).map((e) => ({ date: e.date, m: e.countedM, uid: r.uid })));
   }
+
+  const { awardDraws } = await import('./bucket.js');
+  await awardDraws(g, rows.map((r) => ({ uid: r.uid, doneM: r.doneM, days: r.entries.filter((e) => !e.excluded).map((e) => e.date.slice(0, 10)) })), team?.doneM).catch((e: unknown) => console.error('awarding draws failed', e));
 
   const standings = rows.map(({ entries: _e, ...s }) => s).sort((a, b) => (g.mode === 'race' ? b.doneM - a.doneM : b.distanceM - a.distanceM));
   return { group: g, standings, team };

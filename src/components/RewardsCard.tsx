@@ -38,7 +38,7 @@ import PhotoImg from './PhotoImg';
 const money = (v: number, currency: string) => new Intl.NumberFormat(locale(), { style: 'currency', currency }).format(v);
 
 /** Pick a photo, upload it, report the storage path. */
-function PhotoPicker({ value, onChange, label }: { value: string | null; onChange: (p: string | null) => void; label: string }) {
+export function PhotoPicker({ value, onChange, label }: { value: string | null; onChange: (p: string | null) => void; label: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (

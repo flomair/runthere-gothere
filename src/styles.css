@@ -105,6 +105,17 @@ body,
 .rtgt-marker.quest.done {
   background: #149A80;
 }
+.rtgt-marker.mystery {
+  background: linear-gradient(135deg, #F5C451, #E8B03A 50%, #D9772B);
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.rtgt-marker.mystery.collected {
+  background: #9aa0b8;
+  opacity: 0.75;
+}
 .rtgt-marker.peek {
   background: #3d6fa8;
   width: 26px;

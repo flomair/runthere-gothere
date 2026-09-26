@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import L from 'leaflet';
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import type { LatLon } from '../../shared/geo';
 import { flag, useMe } from '../lib/api';
@@ -39,8 +39,11 @@ import HeroSurface from './HeroSurface';
 import BaseTiles from './BaseTiles';
 import { routeColors, useDarkMap } from '../lib/mapStyle';
 import StagesCard from './StagesCard';
+import BucketCard from './BucketCard';
+import { useBucket } from '../lib/bucket';
+import { useQueryClient } from '@tanstack/react-query';
 import { useStages } from '../lib/stages';
-import { cumulativeDistances, sliceRoute } from '../../shared/geo';
+import { cumulativeDistances, positionAt, sliceRoute } from '../../shared/geo';
 
 // runner colours: violet first (usually you), then calm, well-separated tones
 const COLORS = ['#5B5BF0', '#3D6FA8', '#149A80', '#8C5A3C', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
@@ -161,6 +164,12 @@ export default function GroupView({ id }: { id: string }) {
   const st = useStandings(id);
   const feed = useFeed(id);
   const stagesQ = useStages(id);
+  const bucketQ = useBucket(id);
+  const qc = useQueryClient();
+  // standings hand out newly earned draws: refresh the bucket after each load
+  useEffect(() => {
+    if (st.dataUpdatedAt) void qc.invalidateQueries({ queryKey: ['bucket', id] });
+  }, [st.dataUpdatedAt, id, qc]);
   const actions = useGroupActions();
   const [post, setPost] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -250,6 +259,16 @@ export default function GroupView({ id }: { id: string }) {
                 </Polyline>
               ) : null;
             })}
+            {(bucketQ.data?.pins ?? []).map((p) => (
+              <Marker
+                key={p.key}
+                position={positionAt(pts, cum, p.m * k).point}
+                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : '?'}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
+                zIndexOffset={100}
+              >
+                <Tooltip>{p.collected ? t('Mystery pin – draw collected') : t('Mystery pin: pass it to earn a draw')}</Tooltip>
+              </Marker>
+            ))}
             <Marker position={pts[pts.length - 1]} icon={L.divIcon({ className: '', html: `<div class="rtgt-marker goal">${g.bonusPrize ? '🏆' : '🏁'}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] })}>
               <Tooltip>{g.bonusPrize ? `${g.waypoints[g.waypoints.length - 1]?.name ?? ''} · 🏆 ${g.bonusPrize.text}` : (g.waypoints[g.waypoints.length - 1]?.name ?? '')}</Tooltip>
             </Marker>
@@ -311,6 +330,7 @@ export default function GroupView({ id }: { id: string }) {
       </Box>
 
       <StagesCard group={g} colorOf={colorOf} />
+      <BucketCard group={g} />
 
       <Box>
         <Typography variant="h5" sx={{ mb: 1.5 }}>

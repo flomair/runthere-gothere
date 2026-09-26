@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Bookmark, CoachPlan, FeedItem, Group, Journey, Milestone, Quest, Reward, Stage } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, Draw, FeedItem, Group, Journey, Milestone, Prize, Quest, Reward, Stage } from '../shared/types.js';
 import { db } from './firebase.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -99,6 +99,13 @@ export interface Repo {
   listStages(groupId: string): Promise<Stage[]>;
   getStage(groupId: string, id: string): Promise<Stage | null>;
   putStage(s: Stage): Promise<void>;
+  listPrizes(groupId: string): Promise<Prize[]>;
+  getPrize(groupId: string, id: string): Promise<Prize | null>;
+  putPrize(p: Prize): Promise<void>;
+  deletePrize(groupId: string, id: string): Promise<void>;
+  listDraws(groupId: string): Promise<Draw[]>;
+  getDraw(groupId: string, id: string): Promise<Draw | null>;
+  putDraw(d: Draw): Promise<void>;
 
   getShare(token: string): Promise<{ uid: string; journeyId: string; createdAt: string } | null>;
   putShare(token: string, share: { uid: string; journeyId: string; createdAt: string }): Promise<void>;
@@ -303,6 +310,31 @@ export const firestoreRepo: Repo = {
   },
   async putStage(s) {
     await db().collection('groups').doc(docId(s.groupId)).collection('stages').doc(docId(s.id)).set(s);
+  },
+  async listPrizes(groupId) {
+    const snap = await db().collection('groups').doc(docId(groupId)).collection('prizes').get();
+    return snap.docs.map((d) => d.data() as Prize).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  },
+  async getPrize(groupId, id) {
+    const d = await db().collection('groups').doc(docId(groupId)).collection('prizes').doc(docId(id)).get();
+    return d.exists ? (d.data() as Prize) : null;
+  },
+  async putPrize(p) {
+    await db().collection('groups').doc(docId(p.groupId)).collection('prizes').doc(docId(p.id)).set(p);
+  },
+  async deletePrize(groupId, id) {
+    await db().collection('groups').doc(docId(groupId)).collection('prizes').doc(docId(id)).delete();
+  },
+  async listDraws(groupId) {
+    const snap = await db().collection('groups').doc(docId(groupId)).collection('draws').get();
+    return snap.docs.map((d) => d.data() as Draw).sort((a, b) => a.earnedAt.localeCompare(b.earnedAt));
+  },
+  async getDraw(groupId, id) {
+    const d = await db().collection('groups').doc(docId(groupId)).collection('draws').doc(docId(id)).get();
+    return d.exists ? (d.data() as Draw) : null;
+  },
+  async putDraw(d) {
+    await db().collection('groups').doc(docId(d.groupId)).collection('draws').doc(docId(d.id)).set(d);
   },
   async getShare(token) {
     const d = await db().collection('shares').doc(docId(token)).get();

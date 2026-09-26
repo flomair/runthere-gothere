@@ -83,6 +83,12 @@ const TEXT = {
     stageWon: (who: string, name: string) => `🏆 ${who} wins ${name}`,
     stageWonYou: (name: string) => `🏆 You win ${name}!`,
     stageWonBody: (prize: string) => `Prize: ${prize}`,
+    drawEarned: '🎁 You earned a mystery draw',
+    drawsEarned: (n: number) => `🎁 You earned ${n} mystery draws`,
+    drawBody: (group: string) => `Open ${group} and draw from the surprise bucket.`,
+    yourPrizeDrawn: (who: string, title: string) => `🎉 ${who} drew your surprise: ${title}`,
+    bucketLow: (n: number) => `🪣 Only ${n} surprises left in the bucket`,
+    bucketLowBody: (group: string) => `Add a few to ${group} so everyone keeps drawing.`,
   },
   de: {
     reward: (title: string) => `🎁 Belohnung freigeschaltet: ${title}`,
@@ -112,6 +118,12 @@ const TEXT = {
     stageWon: (who: string, name: string) => `🏆 ${who} gewinnt ${name}`,
     stageWonYou: (name: string) => `🏆 Du gewinnst ${name}!`,
     stageWonBody: (prize: string) => `Preis: ${prize}`,
+    drawEarned: '🎁 Du hast eine Überraschungsziehung verdient',
+    drawsEarned: (n: number) => `🎁 Du hast ${n} Überraschungsziehungen verdient`,
+    drawBody: (group: string) => `Öffne ${group} und zieh aus dem Überraschungstopf.`,
+    yourPrizeDrawn: (who: string, title: string) => `🎉 ${who} hat deine Überraschung gezogen: ${title}`,
+    bucketLow: (n: number) => `🪣 Nur noch ${n} Überraschungen im Topf`,
+    bucketLowBody: (group: string) => `Leg ein paar in ${group} nach, damit alle weiter ziehen können.`,
   },
 };
 export const textFor = async (uid: string) => TEXT[((await repo.getUser(uid))?.pushLang === 'de' ? 'de' : 'en') as 'en' | 'de'];
