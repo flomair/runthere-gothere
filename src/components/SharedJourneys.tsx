@@ -1,4 +1,5 @@
-import { Groups as GroupsIcon } from '../icons';
+import { Add as AddIcon, Groups as GroupsIcon } from '../icons';
+import { AddPrizeDialog } from './BucketCard';
 import { Alert, AvatarGroup, Avatar, Box, Button, Card, CardActionArea, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { formatKm } from '../lib/format';
@@ -8,19 +9,43 @@ import { Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
 import { Emoji, EmojiText } from './Emoji';
 
-/** Invitations and shared journeys on the start page. */
-export default function SharedJourneys() {
+/** Invitations and shared journeys on the start page, each with its surprise bucket. */
+export default function SharedJourneys({ onPlanTogether }: { onPlanTogether?: () => void }) {
   const { data } = useGroups();
   const actions = useGroupActions();
   const [busy, setBusy] = useState<string | null>(null);
-  if (!data || (!data.groups.length && !data.invitations.length)) return null;
+  const [adding, setAdding] = useState<string | null>(null);
+  if (!data) return null;
+  const empty = !data.groups.length && !data.invitations.length;
 
   return (
     <Box>
       <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 2 }}>
         <GroupsIcon color="primary" />
-        <Typography variant="h5">{t('With friends')}</Typography>
+        <Typography variant="h5" sx={{ flexGrow: 1 }}>
+          {t('With friends')}
+        </Typography>
+        {onPlanTogether && !empty && (
+          <Button size="small" startIcon={<AddIcon />} onClick={onPlanTogether}>
+            {t('Plan together')}
+          </Button>
+        )}
       </Stack>
+      {empty && onPlanTogether && (
+        <Card sx={{ borderStyle: 'dashed', borderWidth: 1.5 }}>
+          <CardActionArea onClick={onPlanTogether}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Emoji name="handshake" size={24} badge />
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography sx={{ fontWeight: 700 }}>{t('Plan a destination together')}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t('Pick a target with friends, race there or run it as a relay – with a shared surprise bucket.')}
+                </Typography>
+              </Box>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+      )}
       <Stack spacing={1.5} sx={{ mb: data.groups.length ? 2 : 0 }}>
         {data.invitations.map((inv) => (
           <Alert
@@ -79,11 +104,27 @@ export default function SharedJourneys() {
                     </Typography>
                   </CardContent>
                 </CardActionArea>
+                <Stack direction="row" sx={{ alignItems: 'center', gap: 1, px: 2, pb: 1.5, pt: 0.25 }}>
+                  <Emoji name="bucket" size={15} badge draw={false} />
+                  <Typography variant="body2" sx={{ flexGrow: 1, minWidth: 0 }} noWrap>
+                    {g.bucket?.toReveal ? (
+                      <Box component="span" sx={{ color: 'secondary.main', fontWeight: 700 }}>
+                        {t('{n} new for you', { n: g.bucket.toReveal })}
+                      </Box>
+                    ) : (
+                      t('{n} surprises in the bucket', { n: g.bucket?.available ?? 0 })
+                    )}
+                  </Typography>
+                  <Button size="small" startIcon={<AddIcon />} onClick={() => setAdding(g.id)}>
+                    {t('Add')}
+                  </Button>
+                </Stack>
               </Card>
             </StaggerItem>
           ))}
         </Stagger>
       )}
+      <AddPrizeDialog open={!!adding} onClose={() => setAdding(null)} groupId={adding ?? ''} />
     </Box>
   );
 }

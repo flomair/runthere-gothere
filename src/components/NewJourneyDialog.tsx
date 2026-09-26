@@ -33,11 +33,14 @@ import { finalizeClientRoute } from '../lib/gpx';
 import { planRoute } from '../lib/api';
 import { formatKm, todayIso } from '../lib/format';
 import { journeyStore, newId } from '../lib/storage';
-import { type GeoResult, type Journey, type PlannedRoute, type RouteMode, SPORT_TYPES, type TrailRoute } from '../lib/types';
+import { type GeoResult, type GroupMode, type Journey, type PlannedRoute, type RouteMode, SPORT_TYPES, type TrailRoute } from '../lib/types';
 import PlaceField from './PlaceField';
 import MiniMap from './MiniMap';
 import TrailPicker from './TrailPicker';
 import { t } from '../lib/i18n';
+import { useGroupActions } from '../lib/groups';
+import { Emoji } from './Emoji';
+import { FriendEmails, withTyped } from './InviteDialog';
 
 export interface JourneyPreset {
   name: string;
@@ -50,9 +53,11 @@ interface Props {
   onClose: () => void;
   preset?: JourneyPreset;
   stravaConnected: boolean;
+  /** Open with "together with friends" preselected. */
+  together?: boolean;
 }
 
-export default function NewJourneyDialog({ open, onClose, preset, stravaConnected }: Props) {
+export default function NewJourneyDialog({ open, onClose, preset, stravaConnected, together = false }: Props) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [tab, setTab] = useState<'plan' | 'trail' | 'gpx'>('plan');
@@ -68,6 +73,11 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
   const [gpxName, setGpxName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [who, setWho] = useState<'solo' | GroupMode>('solo');
+  const [emails, setEmails] = useState<string[]>([]);
+  const [emailInput, setEmailInput] = useState('');
+  const [shared, setShared] = useState<{ id: string; notAllowed: string[] } | null>(null);
+  const groups = useGroupActions();
 
   // reset when (re)opened
   useEffect(() => {
@@ -83,7 +93,11 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
     setGpxName(null);
     setError(null);
     setUseStrava(true);
-  }, [open, preset]);
+    setWho(together ? 'race' : 'solo');
+    setEmails([]);
+    setEmailInput('');
+    setShared(null);
+  }, [open, preset, together]);
 
   // any change to the inputs invalidates the calculated route
   useEffect(() => {
@@ -162,6 +176,24 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
     } catch {
       return; // the error is shown by the app shell
     }
+    if (who !== 'solo') {
+      // the same target for the whole group: a shared journey on this route, friends invited
+      setBusy(true);
+      try {
+        const r = await groups.create(j.id, j.name, who, withTyped(emails, emailInput));
+        if (r.notAllowed.length) {
+          setShared(r);
+          return;
+        }
+        onClose();
+        navigate(`/g/${r.id}`);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     onClose();
     navigate(`/j/${j.id}`);
   };
@@ -169,7 +201,7 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
       <DialogTitle sx={{ pr: 6 }}>
-        {t('Plan a new journey')}
+        {who === 'solo' ? t('Plan a new journey') : t('Plan a destination together')}
         <IconButton onClick={onClose} sx={{ position: 'absolute', right: 12, top: 12 }} aria-label="close">
           <CloseIcon />
         </IconButton>
@@ -283,6 +315,52 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
             </Box>
           )}
 
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              {t("Who's coming?")}
+            </Typography>
+            <ToggleButtonGroup exclusive fullWidth size="small" value={who} onChange={(_, v) => v && setWho(v)}>
+              <ToggleButton value="solo" sx={{ flexDirection: 'column', textTransform: 'none', py: 1 }}>
+                <Emoji name="runner" size={18} color="inherit" />
+                <Box sx={{ fontWeight: 700 }}>{t('Just me')}</Box>
+              </ToggleButton>
+              <ToggleButton value="race" sx={{ flexDirection: 'column', textTransform: 'none', py: 1 }}>
+                <Emoji name="finish" size={18} color="inherit" />
+                <Box sx={{ fontWeight: 700 }}>{t('Race with friends')}</Box>
+              </ToggleButton>
+              <ToggleButton value="relay" sx={{ flexDirection: 'column', textTransform: 'none', py: 1 }}>
+                <Emoji name="handshake" size={18} color="inherit" />
+                <Box sx={{ fontWeight: 700 }}>{t('Relay as a team')}</Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            {who !== 'solo' && (
+              <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {who === 'race' ? t('Everyone runs the whole route. Who arrives first?') : t('All kilometres add up. Get there as a team.')}{' '}
+                  {t('You share the target, the map, a feed, race stages and a surprise bucket.')}
+                </Typography>
+                <FriendEmails emails={emails} setEmails={setEmails} input={emailInput} setInput={setEmailInput} />
+              </Stack>
+            )}
+          </Box>
+          {shared && (
+            <Alert
+              severity="warning"
+              action={
+                <Button
+                  color="inherit"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/g/${shared.id}`);
+                  }}
+                >
+                  {t('Open')}
+                </Button>
+              }
+            >
+              {t("{emails}: not on the app's guest list yet. Ask the owner to add them on the Admin page.", { emails: shared.notAllowed.join(', ') })}
+            </Alert>
+          )}
           <TextField label={t('Journey name')} value={name} onChange={(e) => setName(e.target.value)} placeholder="Berlin → Vienna" />
           <TextField
             label={t('Count activities from')}
@@ -324,8 +402,8 @@ export default function NewJourneyDialog({ open, onClose, preset, stravaConnecte
             {t('Calculate route')}
           </Button>
         ) : (
-          <Button variant="contained" onClick={create} disabled={!route || !sportTypes.length}>
-            {t('Start journey')}
+          <Button variant="contained" onClick={create} loading={busy} disabled={!route || !sportTypes.length || !!shared || (who !== 'solo' && !withTyped(emails, emailInput).length)}>
+            {who === 'solo' ? t('Start journey') : t('Start together')}
           </Button>
         )}
       </DialogActions>

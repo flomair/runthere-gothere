@@ -3,7 +3,7 @@ import { api } from './api';
 import type { FeedItem, Group, GroupMode, GroupStandings, PublicJourney } from './types';
 import { t } from './i18n';
 
-export type GroupSummary = Omit<Group, 'route'> & { totalM: number };
+export type GroupSummary = Omit<Group, 'route'> & { totalM: number; bucket?: { available: number; mine: number; toReveal: number } };
 export interface Invitation {
   id: string;
   name: string;

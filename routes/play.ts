@@ -4,16 +4,18 @@ import { repo } from '../server/repo.js';
 import type { PlaySummary } from '../shared/types.js';
 
 /**
- * GET /api/play – what's waiting for you across shared journeys: unused mystery draws and the
+ * GET /api/play – what's waiting for you across shared journeys: surprises won but not opened
+ * yet (and draws still waiting for one), and the
  * race stages you're in (from stored results; opening the group refreshes them).
  */
 export const GET = authed(async (_req, user) => {
   const groups = (await repo.listGroupsFor(user.uid, user.email)).filter((g) => g.memberUids.includes(user.uid));
   const out: PlaySummary = { draws: [], stages: [] };
   for (const g of groups) {
-    const [draws, stages] = await Promise.all([repo.listDraws(g.id), repo.listStages(g.id)]);
-    const unused = draws.filter((d) => d.uid === user.uid && !d.usedAt).length;
-    if (unused) out.draws.push({ groupId: g.id, groupName: g.name, count: unused });
+    const [draws, stages, prizes] = await Promise.all([repo.listDraws(g.id), repo.listStages(g.id), repo.listPrizes(g.id)]);
+    const toReveal = prizes.filter((p) => p.drawnBy === user.uid && p.revealed === false).length;
+    const pending = draws.filter((d) => d.uid === user.uid && !d.usedAt).length;
+    if (toReveal || pending) out.draws.push({ groupId: g.id, groupName: g.name, count: toReveal, pending });
     for (const s of stages) {
       if (!s.participants.includes(user.uid) || (s.status !== 'running' && s.status !== 'scheduled')) continue;
       const rank = (s.results ?? []).findIndex((r) => r.uid === user.uid);

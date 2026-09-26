@@ -55,8 +55,9 @@ export async function addPrize(user: User, groupId: string, input: { title?: str
     fulfillment: promise(),
   };
   await repo.putPrize(p);
-  await checkLow(g);
-  return p;
+  // someone may have been waiting for exactly this: hand out pending draws right away
+  await distribute(g);
+  return (await repo.getPrize(groupId, p.id)) ?? p;
 }
 
 /** The giver can take a prize back while it's still in the bucket. */
@@ -100,39 +101,70 @@ export async function awardDraws(g: Group, members: { uid: string; doneM: number
   }
 
   for (const d of fresh) await repo.putDraw(d);
-  const byUser = new Map<string, number>();
-  for (const d of fresh) byUser.set(d.uid, (byUser.get(d.uid) ?? 0) + 1);
-  for (const [uid, n] of byUser) {
+  const won = await distribute(g);
+  // told about a draw only if the bucket had nothing for them yet (winners hear about the surprise)
+  const waiting = new Map<string, number>();
+  for (const d of fresh) if (!won.some((w) => w.drawId === d.id)) waiting.set(d.uid, (waiting.get(d.uid) ?? 0) + 1);
+  for (const [uid, n] of waiting) {
+    if (won.some((w) => w.drawnBy === uid)) continue;
     const tx = await textFor(uid);
-    await notify(uid, { title: n === 1 ? tx.drawEarned : tx.drawsEarned(n), body: tx.drawBody(g.name), url: groupUrl(g), tag: `draws-${g.id}` });
+    await notify(uid, { title: n === 1 ? tx.drawEarned : tx.drawsEarned(n), body: tx.drawWaiting(g.name), url: groupUrl(g), tag: `draws-${g.id}` });
   }
   return fresh;
 }
 
-/** Use one of your draws: a prize is picked on the server (never your own), logged and revealed. */
-export async function drawPrize(user: User, groupId: string, drawId: string, rng: () => number = secureRandom): Promise<{ draw: Draw; prize: Prize }> {
-  const g = await requireMember(groupId, user);
-  const d = await repo.getDraw(groupId, drawId);
-  if (!d || d.uid !== user.uid) throw new HttpError(404, 'Draw not found');
-  if (d.usedAt) throw new HttpError(409, 'This draw was already used');
-  const picked = pickPrize(await repo.listPrizes(groupId), d, rng);
-  if (!picked) throw new HttpError(409, 'Nothing in the bucket you could draw yet. Ask the others to add surprises – your draw stays saved.');
-  // re-check right before claiming it, in case someone else drew it a moment ago
-  const fresh = await repo.getPrize(groupId, picked.prize.id);
-  if (!fresh || fresh.status !== 'available') throw new HttpError(409, 'Someone drew at the same moment. Try again!');
-  const at = new Date().toISOString();
-  const prize: Prize = { ...fresh, status: 'drawn', drawnBy: user.uid, drawnAt: at, drawId: d.id };
-  const draw: Draw = { ...d, usedAt: at, prizeId: prize.id, tier: picked.tier, odds: picked.odds };
-  await repo.putPrize(prize);
-  await repo.putDraw(draw);
-  const giver = prize.anonymous ? 'someone' : firstName(g, prize.addedBy);
-  await feed(g, { id: `drawn_${prize.id}`, uid: user.uid, text: `🎉 drew a ${prize.tier} surprise: ${prize.title} (from ${giver})` });
-  if (prize.addedBy !== user.uid) {
+let drawRandom: () => number = secureRandom;
+/** For tests. */
+export const setDrawRandom = (fn: (() => number) | null) => {
+  drawRandom = fn ?? secureRandom;
+};
+
+/**
+ * Fill waiting draws with surprises from the bucket, automatically: oldest draws first and, among
+ * draws earned together, the biggest achievement first (it has the best odds of a rare prize).
+ * Nobody ever gets their own surprise; every pick is logged on the draw with the odds it had.
+ * Winners are notified and see a reveal the next time they open the group.
+ */
+export async function distribute(g: Group): Promise<Prize[]> {
+  const prizes = await repo.listPrizes(g.id);
+  const waiting = (await repo.listDraws(g.id))
+    .filter((d) => !d.usedAt && g.memberUids.includes(d.uid))
+    .sort((a, b) => a.earnedAt.localeCompare(b.earnedAt) || b.boost - a.boost || a.id.localeCompare(b.id));
+  const won: Prize[] = [];
+  for (const d of waiting) {
+    const picked = pickPrize(prizes, d, drawRandom);
+    if (!picked) continue;
+    const at = new Date().toISOString();
+    const prize: Prize = { ...picked.prize, status: 'drawn', drawnBy: d.uid, drawnAt: at, drawId: d.id, revealed: false };
+    await repo.putPrize(prize);
+    await repo.putDraw({ ...d, usedAt: at, prizeId: prize.id, tier: picked.tier, odds: picked.odds });
+    prizes[prizes.findIndex((p) => p.id === prize.id)] = prize;
+    won.push(prize);
+    const giver = prize.anonymous ? 'someone' : firstName(g, prize.addedBy);
+    await feed(g, { id: `drawn_${prize.id}`, uid: d.uid, text: `🎉 won a ${prize.tier} surprise: ${prize.title} (from ${giver})` });
     const tx = await textFor(prize.addedBy);
-    await notify(prize.addedBy, { title: tx.yourPrizeDrawn(firstName(g, user.uid), prize.title), body: g.name, url: groupUrl(g), tag: `prize-${prize.id}` });
+    await notify(prize.addedBy, { title: tx.yourPrizeDrawn(firstName(g, d.uid), prize.title), body: g.name, url: groupUrl(g), tag: `prize-${prize.id}` });
+  }
+  const byWinner = new Map<string, number>();
+  for (const p of won) byWinner.set(p.drawnBy!, (byWinner.get(p.drawnBy!) ?? 0) + 1);
+  for (const [uid, n] of byWinner) {
+    const tx = await textFor(uid);
+    await notify(uid, { title: n === 1 ? tx.surpriseWon : tx.surprisesWon(n), body: tx.surpriseBody(g.name), url: groupUrl(g), tag: `won-${g.id}` });
   }
   await checkLow(g);
-  return { draw, prize };
+  return won;
+}
+
+/** The winner opened the reveal. */
+export async function markRevealed(user: User, groupId: string, prizeId: string): Promise<Prize> {
+  await requireMember(groupId, user);
+  const p = await repo.getPrize(groupId, prizeId);
+  if (!p || p.drawnBy !== user.uid) throw new HttpError(404, 'Prize not found');
+  if (p.revealed === false) {
+    p.revealed = true;
+    await repo.putPrize(p);
+  }
+  return p;
 }
 
 /** Mark a drawn prize as delivered (winner or giver), optionally with a photo. */
@@ -178,8 +210,10 @@ export async function bucketView(user: User, groupId: string): Promise<BucketVie
     low: available.length < lowThreshold(g.memberUids.length),
     lowThreshold: lowThreshold(g.memberUids.length),
     mine: prizes.filter((p) => p.addedBy === user.uid),
+    toReveal: prizes.filter((p) => p.drawnBy === user.uid && p.revealed === false),
+    pending: draws.filter((d) => d.uid === user.uid && !d.usedAt).length,
     revealed: prizes
-      .filter((p) => p.status !== 'available')
+      .filter((p) => p.status !== 'available' && !(p.drawnBy === user.uid && p.revealed === false))
       .map((p) => ({ ...p, addedBy: p.anonymous && p.addedBy !== user.uid ? '' : p.addedBy, giverName: p.anonymous && p.addedBy !== user.uid ? undefined : firstName(g, p.addedBy), drawnByName: p.drawnBy ? firstName(g, p.drawnBy) : undefined }))
       .sort((a, b) => (b.drawnAt ?? '').localeCompare(a.drawnAt ?? '')),
     draws: mineDraws.sort((a, b) => Number(!!a.usedAt) - Number(!!b.usedAt) || b.earnedAt.localeCompare(a.earnedAt)),

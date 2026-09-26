@@ -185,14 +185,20 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
         </Button>
       </Tile>,
     );
-  for (const s of draws)
-    tiles.push(
-      <Tile key={`draw-${s.groupId}`} bg={G.bucket} emoji="bucket" eyebrow={s.groupName} title={s.count === 1 ? t('A mystery draw is waiting') : t('{n} mystery draws are waiting', { n: s.count })} sub={t('Reach into the surprise bucket')} onClick={() => navigate(`/g/${s.groupId}`)} delay={d()}>
-        <Button size="small" variant="contained" sx={white} onClick={() => navigate(`/g/${s.groupId}`)}>
-          {t('Draw!')}
-        </Button>
-      </Tile>,
-    );
+  for (const s of draws) {
+    if (s.count > 0)
+      tiles.push(
+        <Tile key={`won-${s.groupId}`} bg={G.bucket} emoji="gift" eyebrow={s.groupName} title={s.count === 1 ? t('You won a surprise!') : t('You won {n} surprises!', { n: s.count })} sub={t('From the shared bucket – open it to see what it is.')} onClick={() => navigate(`/g/${s.groupId}`)} delay={d()}>
+          <Button size="small" variant="contained" sx={white} onClick={() => navigate(`/g/${s.groupId}`)}>
+            {t('Reveal')}
+          </Button>
+        </Tile>,
+      );
+    else if (s.pending > 0)
+      tiles.push(
+        <Tile key={`wait-${s.groupId}`} bg={G.bucket} emoji="bucket" eyebrow={s.groupName} title={t('The bucket owes you {n}', { n: s.pending })} sub={t('Add a surprise for the others – yours arrive as soon as they add some.')} onClick={() => navigate(`/g/${s.groupId}`)} delay={d()} />,
+      );
+  }
   for (const q of running) {
     const iAmFrom = q.from.uid === uid;
     const left = daysLeft(q.endsAt);

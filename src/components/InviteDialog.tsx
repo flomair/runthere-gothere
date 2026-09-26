@@ -2,11 +2,41 @@ import { Groups as GroupsIcon } from '../icons';
 import { Alert, Autocomplete, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useGroupActions } from '../lib/groups';
+import { useFriends } from '../lib/quests';
 import { navigate } from '../lib/nav';
 import type { GroupMode, Journey } from '../lib/types';
 import { t } from '../lib/i18n';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Friends' Google addresses as chips, with suggestions from people you already run with. */
+export function FriendEmails({ emails, setEmails, input, setInput }: { emails: string[]; setEmails: (f: (e: string[]) => string[]) => void; input: string; setInput: (v: string) => void }) {
+  const friends = useFriends();
+  return (
+    <Autocomplete
+      multiple
+      freeSolo
+      options={(friends.data ?? []).map((f) => f.email).filter((e) => !emails.includes(e))}
+      getOptionLabel={(o) => {
+        const f = friends.data?.find((x) => x.email === o);
+        return f ? `${f.name} · ${o}` : o;
+      }}
+      value={emails}
+      inputValue={input}
+      onInputChange={(_, v) => {
+        if (/[,;\s]$/.test(v) && EMAIL.test(v.trim().replace(/[,;]$/, ''))) {
+          setEmails((e) => [...new Set([...e, v.trim().replace(/[,;]$/, '').toLowerCase()])]);
+          setInput('');
+        } else setInput(v);
+      }}
+      onChange={(_, v) => setEmails(() => (v as string[]).filter((e) => EMAIL.test(e)).map((e) => e.toLowerCase()))}
+      renderValue={(value, getItemProps) => value.map((e, i) => <Chip label={e} size="small" {...getItemProps({ index: i })} key={e} />)}
+      renderInput={(params) => <TextField {...params} label={t("Friends' Google addresses")} placeholder={t('friend@gmail.com, then Enter')} helperText={t('They sign in with this Google account.')} />}
+    />
+  );
+}
+
+export const withTyped = (emails: string[], input: string) => [...emails, ...(EMAIL.test(input.trim()) ? [input.trim().toLowerCase()] : [])];
 
 export default function InviteDialog({ open, onClose, journey }: { open: boolean; onClose: () => void; journey: Journey }) {
   const { create } = useGroupActions();
@@ -62,22 +92,7 @@ export default function InviteDialog({ open, onClose, journey }: { open: boolean
               </ToggleButton>
             </ToggleButtonGroup>
             <TextField label={t('Name')} value={name} onChange={(e) => setName(e.target.value)} />
-            <Autocomplete
-              multiple
-              freeSolo
-              options={[]}
-              value={emails}
-              inputValue={input}
-              onInputChange={(_, v) => {
-                if (/[,;\s]$/.test(v) && EMAIL.test(v.trim().replace(/[,;]$/, ''))) {
-                  setEmails((e) => [...new Set([...e, v.trim().replace(/[,;]$/, '').toLowerCase()])]);
-                  setInput('');
-                } else setInput(v);
-              }}
-              onChange={(_, v) => setEmails((v as string[]).filter((e) => EMAIL.test(e)).map((e) => e.toLowerCase()))}
-              renderValue={(value, getItemProps) => value.map((e, i) => <Chip label={e} size="small" {...getItemProps({ index: i })} key={e} />)}
-              renderInput={(params) => <TextField {...params} label={t("Friends' Google addresses")} placeholder={t('friend@gmail.com, then Enter')} helperText={t('They sign in with this Google account.')} />}
-            />
+            <FriendEmails emails={emails} setEmails={setEmails} input={input} setInput={setInput} />
             {error && <Alert severity="error">{error}</Alert>}
             <Box>
               <Typography variant="caption" color="text.secondary">

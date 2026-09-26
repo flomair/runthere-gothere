@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
-import type { BucketView, Draw, Prize, PrizeTier } from './types';
+import type { BucketView, Prize, PrizeTier } from './types';
 
 export function useBucket(groupId: string) {
   return useQuery({
@@ -21,7 +21,7 @@ export function usePrizePhoto(groupId: string, prizeId: string, enabled: boolean
 
 export function useBucketActions(groupId: string) {
   const qc = useQueryClient();
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['bucket', groupId] }), qc.invalidateQueries({ queryKey: ['feed', groupId] }), qc.invalidateQueries({ queryKey: ['play'] })]);
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['bucket', groupId] }), qc.invalidateQueries({ queryKey: ['feed', groupId] }), qc.invalidateQueries({ queryKey: ['play'] }), qc.invalidateQueries({ queryKey: ['groups'] })]);
   return {
     refresh,
     add: async (title: string, tier: PrizeTier, anonymous: boolean) => {
@@ -32,8 +32,8 @@ export function useBucketActions(groupId: string) {
       await api('/api/groups/bucket', { method: 'PATCH', json: { id: groupId, prizeId, action: 'remove' } });
       await refresh();
     },
-    /** Draw; the caller refreshes after the reveal so the list doesn't spoil it. */
-    draw: (drawId: string) => api<{ draw: Draw; prize: Prize }>('/api/groups/draw', { method: 'POST', json: { id: groupId, drawId } }),
+    /** The winner opened a surprise; the caller refreshes after the reveal so the list doesn't spoil it. */
+    reveal: (prizeId: string) => api<{ prize: Prize }>('/api/groups/draw', { method: 'POST', json: { id: groupId, prizeId } }),
     deliver: async (prizeId: string, photo?: string | null, note?: string) => {
       await api('/api/groups/bucket', { method: 'PATCH', json: { id: groupId, prizeId, action: 'delivered', photo: photo || undefined, note } });
       await refresh();

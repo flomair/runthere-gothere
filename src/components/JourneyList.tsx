@@ -94,7 +94,7 @@ function JourneyCard({ journey, connected, newPostcards }: { journey: Journey; c
 export default function JourneyList() {
   const journeys = useJourneys();
   const { data: me } = useMe();
-  const [dialog, setDialog] = useState<{ open: boolean; preset?: JourneyPreset }>({ open: false });
+  const [dialog, setDialog] = useState<{ open: boolean; preset?: JourneyPreset; together?: boolean }>({ open: false });
   const fileRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const connected = !!me?.strava;
@@ -146,6 +146,9 @@ export default function JourneyList() {
           </Box>
           <Stack direction="row" spacing={1}>
             {me?.features.strava && !connected && <StravaButton />}
+            <Button variant="outlined" startIcon={<Emoji name="handshake" color="inherit" draw={false} />} onClick={() => setDialog({ open: true, together: true })}>
+              {t('Plan together')}
+            </Button>
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => setDialog({ open: true })}>
               {t('New journey')}
             </Button>
@@ -243,7 +246,7 @@ export default function JourneyList() {
 
       {me && journeys.length > 0 && <PlayStrip />}
 
-      <SharedJourneys />
+      <SharedJourneys onPlanTogether={() => setDialog({ open: true, together: true })} />
 
       <Box>
         <Stack direction="row" sx={{ alignItems: 'center', mb: 2, gap: 1 }}>
@@ -308,6 +311,7 @@ export default function JourneyList() {
         preset={dialog.preset}
         onClose={() => setDialog({ open: false })}
         stravaConnected={connected}
+        together={dialog.together}
       />
     </Stack>
   );

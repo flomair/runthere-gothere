@@ -6,6 +6,7 @@ import { setPushSender } from '../server/push';
 import { setRepo } from '../server/repo';
 import { memoryRepo } from '../server/repo-memory';
 import { memoryBlobStore, setBlobStore } from '../server/storage';
+import { setDrawRandom } from '../server/bucket';
 import { bearer, fakeVerify, req } from './helpers';
 
 vi.mock('../server/firebase', () => ({
@@ -93,6 +94,7 @@ describe('surprise bucket API', () => {
     store = memoryRepo();
     setRepo(store);
     setBlobStore(memoryBlobStore());
+    setDrawRandom(() => 0.99);
     pushes = [];
     for (const uid of ['anna', 'ben', 'eve']) {
       await store.allow({ email: `${uid}@example.com`, addedBy: 'x', addedAt: 'x' });
@@ -114,6 +116,7 @@ describe('surprise bucket API', () => {
   afterEach(() => {
     setPushSender(null);
     setBlobStore(null);
+    setDrawRandom(null);
   });
 
   const bucket = async <T,>(who: Record<string, string>, method: 'GET' | 'POST' | 'PATCH', json?: unknown) => {
@@ -122,7 +125,7 @@ describe('surprise bucket API', () => {
     return { status: res.status, body: (await res.json()) as T };
   };
 
-  it('hides prizes, earns draws from pins, milestones and stage wins, draws (never your own), reveals and delivers', async () => {
+  it('hides prizes, earns draws, hands out surprises automatically (never your own), reveals and delivers', async () => {
     expect((await bucket(EVE, 'POST', { id: 'g1', title: 'x', tier: 'small' })).status).toBe(404);
     expect((await bucket(ANNA, 'POST', { id: 'g1', title: 'x', tier: 'huge' })).status).toBe(400);
     await bucket(ANNA, 'POST', { id: 'g1', title: 'Anna’s cake', tier: 'small' });
@@ -152,43 +155,48 @@ describe('surprise bucket API', () => {
     expect(draws.filter((d) => d.source === 'pin')).toHaveLength(pinsPassed);
     expect(draws.find((d) => d.source === 'milestone')).toMatchObject({ label: 'Halfway there', boost: 1 });
     expect(draws.find((d) => d.source === 'stage')).toMatchObject({ id: 'stage_s1', boost: 3 });
-    expect(pushes.filter((p) => p.to === 'anna')).toHaveLength(1);
-    expect(pushes[0].title).toMatch(/^🎁 You earned \d+ mystery draws$/);
+    // surprises are handed out automatically: the stage win (best boost) goes first and gets the rare one,
+    // the next draw the socks; Anna's own cake is never hers to win
+    const prizes = await store.listPrizes('g1');
+    const got = { prize: prizes.find((p) => p.title === 'Ben’s massage voucher')! };
+    expect(got.prize).toMatchObject({ status: 'drawn', drawnBy: 'anna', drawId: 'stage_s1', revealed: false });
+    expect(prizes.find((p) => p.title === 'Ben’s socks')).toMatchObject({ status: 'drawn', drawnBy: 'anna' });
+    expect(prizes.find((p) => p.title === 'Anna’s cake')).toMatchObject({ status: 'available' });
+    const stageDraw = (await store.getDraw('g1', 'stage_s1'))!;
+    expect(stageDraw).toMatchObject({ usedAt: expect.any(String), prizeId: got.prize.id, tier: 'rare' });
+    expect(stageDraw.odds!.rare).toBeCloseTo(30 / 90);
+    expect(pushes.filter((p) => p.to === 'anna').map((p) => p.title)).toEqual(['🎁 You won 2 surprises!', '🪣 Only 1 surprises left in the bucket']);
+    expect(pushes.filter((p) => p.to === 'ben').map((p) => p.title).slice(0, 2)).toEqual(['🎉 Anna drew your surprise: Ben’s massage voucher', '🎉 Anna drew your surprise: Ben’s socks']);
+    const feed = await store.listFeed('g1');
+    expect(feed.find((f) => f.id === `drawn_${got.prize.id}`)!.text).toBe('🎉 won a rare surprise: Ben’s massage voucher (from someone)');
     // idempotent
     await standings.GET(req('/api/groups/standings?id=g1', { headers: ANNA }));
     expect((await store.listDraws('g1')).filter((d) => d.uid === 'anna')).toHaveLength(draws.length);
+    expect((await store.listPrizes('g1')).filter((p) => p.status === 'drawn')).toHaveLength(2);
 
-    // draw with the stage-win draw: never her own cake
-    const { drawPrize } = await import('../server/bucket');
-    const anna = { uid: 'anna', email: 'anna@example.com', isAdmin: false };
-    await expect(drawPrize({ ...anna, uid: 'ben' }, 'g1', 'stage_s1')).rejects.toThrow(/Draw not found/);
-    const got = await drawPrize(anna, 'g1', 'stage_s1', () => 0.99);
-    expect(got.prize).toMatchObject({ title: 'Ben’s massage voucher', tier: 'rare', status: 'drawn', drawnBy: 'anna' });
-    expect(got.draw).toMatchObject({ usedAt: expect.any(String), prizeId: got.prize.id, tier: 'rare' });
-    expect(got.draw.odds!.rare).toBeCloseTo(30 / 90);
-    await expect(drawPrize(anna, 'g1', 'stage_s1')).rejects.toThrow(/already used/);
-    // Ben (anonymous giver) is told privately; the feed hides his name
-    expect(pushes.slice(-3)).toEqual([
-      { to: 'ben', title: '🎉 Anna drew your surprise: Ben’s massage voucher' },
-      // two left for three needed: the group is told the bucket runs low
-      { to: 'anna', title: '🪣 Only 2 surprises left in the bucket' },
-      { to: 'ben', title: '🪣 Only 2 surprises left in the bucket' },
-    ]);
-    const feed = await store.listFeed('g1');
-    expect(feed.find((f) => f.id === `drawn_${got.prize.id}`)!.text).toBe('🎉 drew a rare surprise: Ben’s massage voucher (from someone)');
-
+    // the rest of Anna's draws wait for new surprises
+    let annaView = (await bucket<BucketView>(ANNA, 'GET')).body;
+    expect(annaView.pending).toBe(draws.length - 2);
+    // the winner opens her surprises with a reveal; until then they're hidden from her list
+    expect(annaView.toReveal.map((p) => p.title).sort()).toEqual(['Ben’s massage voucher', 'Ben’s socks']);
+    expect(annaView.revealed).toEqual([]);
+    const reveal = await import('../routes/groups/draw');
+    expect((await reveal.POST(req('/api/groups/draw', { method: 'POST', headers: BEN, json: { id: 'g1', prizeId: got.prize.id } }))).status).toBe(404);
+    await reveal.POST(req('/api/groups/draw', { method: 'POST', headers: ANNA, json: { id: 'g1', prizeId: got.prize.id } }));
+    annaView = (await bucket<BucketView>(ANNA, 'GET')).body;
+    expect(annaView.toReveal.map((p) => p.title)).toEqual(['Ben’s socks']);
     // revealed for everyone, giver hidden (except for the giver)
-    const annaView = (await bucket<BucketView>(ANNA, 'GET')).body;
     expect(annaView.revealed[0]).toMatchObject({ title: 'Ben’s massage voucher', addedBy: '', drawnByName: 'Anna' });
     expect(annaView.revealed[0].giverName).toBeUndefined();
-    expect((await bucket<BucketView>(BEN, 'GET')).body.revealed[0]).toMatchObject({ addedBy: 'ben', giverName: 'Ben' });
+    expect((await bucket<BucketView>(BEN, 'GET')).body.revealed.find((p) => p.id === got.prize.id)).toMatchObject({ addedBy: 'ben', giverName: 'Ben' });
 
-    // one draw left for Anna that she could use: only Ben's socks remain drawable; then the bucket is empty for her
-    const pin = draws.find((d) => d.source === 'pin')!;
-    expect((await drawPrize(anna, 'g1', pin.id)).prize.title).toBe('Ben’s socks');
-    const ms = draws.find((d) => d.source === 'milestone')!;
-    await expect(drawPrize(anna, 'g1', ms.id)).rejects.toThrow(/Nothing in the bucket you could draw/);
-    expect((await store.getDraw('g1', ms.id))!.usedAt).toBeUndefined();
+    // a new surprise from Ben goes straight to Anna's waiting draws
+    pushes.length = 0;
+    const added = (await bucket<{ prize: Prize }>(BEN, 'POST', { id: 'g1', title: 'Ben’s tea', tier: 'medium' })).body.prize;
+    expect(added).toMatchObject({ status: 'drawn', drawnBy: 'anna' });
+    expect(pushes.find((p) => p.to === 'anna')!.title).toBe('🎁 You won a surprise!');
+    // …but a surprise from Anna waits for someone else's draw
+    expect((await bucket<{ prize: Prize }>(ANNA, 'POST', { id: 'g1', title: 'Anna’s book', tier: 'small' })).body.prize.status).toBe('available');
 
     // delivered with a photo (winner), not by strangers
     const up = await import('../routes/uploads');
@@ -210,9 +218,16 @@ describe('surprise bucket API', () => {
     await store.putStage({ id: 's1', groupId: 'g1', name: 'Stage 1', fromM: 0, toM: 1, startDate: '2026-09-01', endDate: '2026-09-30', participants: ['anna', 'ben'], prize: { text: 'Coffee', fulfillment: { kind: 'promise', status: 'pending' } }, createdBy: 'ben', createdAt: 'x', status: 'running', leaderUid: 'ben', results: [{ uid: 'ben', distanceM: 1, baselineM: 1, effort: 0.8 }, { uid: 'anna', distanceM: 1, baselineM: 1, effort: 0.5 }] });
     const play = await import('../routes/play');
     const body = (await (await play.GET(req('/api/play', { headers: ANNA }))).json()) as import('../shared/types').PlaySummary;
-    expect(body.draws).toEqual([{ groupId: 'g1', groupName: 'Autumn race', count: 1 }]);
+    expect(body.draws).toEqual([{ groupId: 'g1', groupName: 'Autumn race', count: 0, pending: 1 }]);
     expect(body.stages[0]).toMatchObject({ id: 's1', rank: 2, of: 2, effort: 0.5, leaderName: 'Ben', prize: 'Coffee' });
     expect(((await (await play.GET(req('/api/play', { headers: EVE }))).json()) as { draws: unknown[] }).draws).toEqual([]);
+    // the start page shows each shared journey's bucket
+    await store.putPrize({ ...prize('p1', 'small', 'ben'), groupId: 'g1' });
+    await store.putPrize({ ...prize('p2', 'rare', 'anna'), groupId: 'g1' });
+    await store.putPrize({ ...prize('p3', 'medium', 'ben', 'drawn'), groupId: 'g1', drawnBy: 'anna', revealed: false });
+    const groups = await import('../routes/groups');
+    const list = (await (await groups.GET(req('/api/groups', { headers: ANNA }))).json()) as { groups: { bucket: unknown }[] };
+    expect(list.groups[0].bucket).toEqual({ available: 2, mine: 1, toReveal: 1 });
   });
 
   it('givers can take back undrawn prizes only', async () => {

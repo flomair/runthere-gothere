@@ -474,6 +474,8 @@ export interface Prize {
   drawnBy?: string;
   drawnAt?: string;
   drawId?: string;
+  /** false until the winner has seen the reveal (prizes are drawn automatically). */
+  revealed?: boolean;
   deliveredAt?: string;
   deliveredPhoto?: string;
   deliveredNote?: string;
@@ -507,6 +509,10 @@ export interface BucketView {
   low: boolean;
   lowThreshold: number;
   mine: Prize[];
+  /** Surprises you won that you haven't opened yet. */
+  toReveal: Prize[];
+  /** Your draws still waiting for a surprise you could get. */
+  pending: number;
   revealed: (Prize & { giverName?: string; drawnByName?: string })[];
   draws: Draw[];
   pins: { key: string; m: number; collected: boolean }[];
@@ -514,7 +520,8 @@ export interface BucketView {
 
 /** Home-screen summary of group games (see routes/play.ts). */
 export interface PlaySummary {
-  draws: { groupId: string; groupName: string; count: number }[];
+  /** Per group: surprises you won but haven't opened, and draws waiting for new surprises. */
+  draws: { groupId: string; groupName: string; count: number; pending: number }[];
   stages: {
     groupId: string;
     groupName: string;

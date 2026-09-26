@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TIERS, tierOdds } from '../../shared/bucket';
 import { useMe } from '../lib/api';
 import { useBucket, useBucketActions, usePrizePhoto } from '../lib/bucket';
@@ -56,7 +56,7 @@ function drawLabel(d: Draw): string {
 
 const SOURCE_EMOJI: Record<Draw['source'], EmojiName> = { pin: 'question', stage: 'trophy', drop: 'clover', milestone: 'pin' };
 
-function AddPrizeDialog({ open, onClose, groupId }: { open: boolean; onClose: () => void; groupId: string }) {
+export function AddPrizeDialog({ open, onClose, groupId }: { open: boolean; onClose: () => void; groupId: string }) {
   const { add } = useBucketActions(groupId);
   const [title, setTitle] = useState('');
   const [tier, setTier] = useState<PrizeTier>('small');
@@ -118,8 +118,8 @@ function AddPrizeDialog({ open, onClose, groupId }: { open: boolean; onClose: ()
 
 const sparks = Array.from({ length: 18 }, (_, i) => ({ a: (i / 18) * Math.PI * 2, d: 90 + (i % 3) * 30, e: (['sparkles', 'party', 'star'] as const)[i % 3] }));
 
-/** Shake the box, burst, reveal. The server has already picked the prize when the box opens. */
-function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose: () => void; groupId: string; draw: Draw | null }) {
+/** Shake the box, burst, reveal a surprise the bucket has handed out to you. */
+function RevealDialog({ open, onClose, groupId, won }: { open: boolean; onClose: () => void; groupId: string; won: Prize | null }) {
   const actions = useBucketActions(groupId);
   const [phase, setPhase] = useState<'shake' | 'open' | 'error'>('shake');
   const [prize, setPrize] = useState<Prize | null>(null);
@@ -129,7 +129,7 @@ function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!open || !draw) return;
+    if (!open || !won) return;
     setPhase('shake');
     setPrize(null);
     setError(null);
@@ -138,7 +138,7 @@ function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose
     let alive = true;
     const minWait = new Promise((r) => setTimeout(r, 1600));
     actions
-      .draw(draw.id)
+      .reveal(won.id)
       .then(async (r) => {
         await minWait;
         if (!alive) return;
@@ -155,7 +155,7 @@ function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, draw?.id]);
+  }, [open, won?.id]);
 
   const close = () => {
     void actions.refresh();
@@ -308,16 +308,24 @@ function RevealedItem({ p, groupId, me }: { p: BucketView['revealed'][number]; g
   );
 }
 
-/** The group's surprise bucket: hidden prizes, your earned draws, the reveal and the delivered gallery. */
+/** The group's surprise bucket: hidden prizes, surprises handed out automatically, the reveal and the gallery. */
 export default function BucketCard({ group }: { group: Group }) {
   const { data: me } = useMe();
   const q = useBucket(group.id);
   const { remove } = useBucketActions(group.id);
   const [adding, setAdding] = useState(false);
-  const [drawing, setDrawing] = useState<Draw | null>(null);
+  const [opening, setOpening] = useState<Prize | null>(null);
   const uid = me?.user.uid ?? '';
   const b = q.data;
   const unused = (b?.draws ?? []).filter((d) => !d.usedAt);
+  // a surprise waiting for you opens by itself when you come to the group
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoOpened.current || !b?.toReveal.length) return;
+    autoOpened.current = true;
+    const id = setTimeout(() => setOpening(b.toReveal[0]), 700);
+    return () => clearTimeout(id);
+  }, [b]);
   const total = b ? b.counts.small + b.counts.medium + b.counts.rare : 0;
 
   return (
@@ -349,15 +357,33 @@ export default function BucketCard({ group }: { group: Group }) {
               </Alert>
             )}
 
+            {b.toReveal.length > 0 && (
+              <Box>
+                <Typography variant="overline" color="secondary" sx={{ fontWeight: 800 }}>
+                  {t('New for you')}
+                </Typography>
+                <Stack spacing={1}>
+                  {b.toReveal.map((p) => (
+                    <Stack key={p.id} direction="row" spacing={1.25} sx={{ alignItems: 'center', p: 1, pl: 1.5, borderRadius: '14px', background: TIER_STYLE[p.tier].bg, color: '#fff' }}>
+                      <Emoji name="gift" size={22} color="#fff" idle />
+                      <Typography sx={{ fontWeight: 800, flexGrow: 1 }}>{t('You won a {tier} surprise!', { tier: t(TIER_STYLE[p.tier].label).toLowerCase() })}</Typography>
+                      <Button size="small" variant="contained" sx={{ bgcolor: '#fff', color: '#232862', backgroundImage: 'none', '&:hover': { bgcolor: '#fff' } }} onClick={() => setOpening(p)}>
+                        {t('Reveal')}
+                      </Button>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
+            )}
+
             <Box>
               <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700 }}>
-                {t('Your draws')}
+                {t('How surprises are handed out')}
               </Typography>
-              {unused.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  {t('Earn draws by passing the "?" pins on the map, reaching cities, winning stages – and sometimes a lucky week drops one.')}
-                </Typography>
-              ) : (
+              <Typography variant="body2" color="text.secondary">
+                {t('Automatically: pass a "?" pin on the map, reach a city, win a stage – or have a lucky week – and the bucket hands you a surprise. Never your own; bigger achievements raise the chance of a rare one.')}
+              </Typography>
+              {unused.length === 0 ? null : (
                 <Stack spacing={1}>
                   {unused.map((d) => {
                     const odds = tierOdds(d.boost, b.counts);
@@ -373,17 +399,13 @@ export default function BucketCard({ group }: { group: Group }) {
                             {d.boost > 1 ? ` · ${t('boosted ×{n}', { n: d.boost.toFixed(1) })}` : ''}
                           </Typography>
                         </Box>
-                        <Button variant="contained" size="small" disabled={b.drawable === 0} onClick={() => setDrawing(d)} component={motion.button} whileTap={{ scale: 0.92 }}>
-                          {t('Draw!')}
-                        </Button>
+                        <Chip size="small" variant="outlined" label={t('Waiting')} />
                       </Stack>
                     );
                   })}
-                  {b.drawable === 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      {t('Nothing in the bucket you could draw yet – your draws stay saved.')}
-                    </Typography>
-                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    {t('These draws get a surprise as soon as someone adds one you could win.')}
+                  </Typography>
                 </Stack>
               )}
             </Box>
@@ -425,7 +447,7 @@ export default function BucketCard({ group }: { group: Group }) {
         )}
       </CardContent>
       <AddPrizeDialog open={adding} onClose={() => setAdding(false)} groupId={group.id} />
-      <RevealDialog open={!!drawing} onClose={() => setDrawing(null)} groupId={group.id} draw={drawing} />
+      <RevealDialog open={!!opening} onClose={() => setOpening(null)} groupId={group.id} won={opening} />
     </Card>
   );
 }

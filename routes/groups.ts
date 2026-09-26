@@ -7,9 +7,21 @@ import { repo } from '../server/repo.js';
 /** GET /api/groups – shared journeys I'm in, plus invitations. */
 export const GET = authed(async (_req, user) => {
   const groups = await repo.listGroupsFor(user.uid, user.email);
+  const mine = groups.filter((g) => g.memberUids.includes(user.uid));
+  // the surprise bucket at a glance, for the cards on the start page
+  const buckets = await Promise.all(
+    mine.map(async (g) => {
+      const prizes = await repo.listPrizes(g.id);
+      return {
+        available: prizes.filter((p) => p.status === 'available').length,
+        mine: prizes.filter((p) => p.status === 'available' && p.addedBy === user.uid).length,
+        toReveal: prizes.filter((p) => p.drawnBy === user.uid && p.revealed === false).length,
+      };
+    }),
+  );
   return json(
     {
-      groups: groups.filter((g) => g.memberUids.includes(user.uid)).map(({ route, ...g }) => ({ ...g, totalM: route.totalM })),
+      groups: mine.map(({ route, ...g }, i) => ({ ...g, totalM: route.totalM, bucket: buckets[i] })),
       invitations: groups.filter((g) => !g.memberUids.includes(user.uid)).map((g) => ({ id: g.id, name: g.name, mode: g.mode, from: Object.values(g.members).find((m) => m.uid === g.ownerUid)?.name ?? 'A friend', totalM: g.route.totalM })),
     },
     { headers: { 'Cache-Control': 'no-store' } },

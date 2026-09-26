@@ -1,12 +1,12 @@
 import { authed } from '../../server/access.js';
-import { drawPrize, prizePhotoUrl } from '../../server/bucket.js';
+import { markRevealed, prizePhotoUrl } from '../../server/bucket.js';
 import { HttpError, json, readJson } from '../../server/http.js';
 
-/** POST { id, drawId } – use a draw: returns the revealed prize. */
+/** POST { id, prizeId } – the winner opened the reveal of a surprise they won. */
 export const POST = authed(async (req, user) => {
-  const body = await readJson<{ id?: string; drawId?: string }>(req);
-  if (!body.id || !body.drawId) throw new HttpError(400, 'missing id or drawId');
-  return json(await drawPrize(user, body.id, body.drawId));
+  const body = await readJson<{ id?: string; prizeId?: string }>(req);
+  if (!body.id || !body.prizeId) throw new HttpError(400, 'missing id or prizeId');
+  return json({ prize: await markRevealed(user, body.id, body.prizeId) });
 });
 
 /** GET ?id=<group>&prizeId – signed link to the delivery photo (members only). */
