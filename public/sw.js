@@ -1,6 +1,6 @@
 /* Run There · Go There service worker: offline app shell, cached map tiles, push notifications.
    API responses are private and never cached here. */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL = `rtgt-shell-${VERSION}`;
 const ASSETS = `rtgt-assets-${VERSION}`;
 const TILES = `rtgt-tiles-${VERSION}`;

@@ -147,7 +147,7 @@ export default function CollectionPage() {
                     {r.claimPhoto || r.photo ? (
                       <PhotoImg path={(r.claimPhoto || r.photo)!} alt={r.title} height={150} />
                     ) : (
-                      <Box sx={{ height: 150, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #3F7CF6, #6A67F0 50%, #A259E8)' }}><Emoji name="gift" size={64} color="#fff" strokeWidth={1.3} idle /></Box>
+                      <Box sx={{ height: 150, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #3F7CF6, #6A67F0 50%, #A259E8)' }}><Emoji name="gift" size={52} color="#fff" idle /></Box>
                     )}
                     <Box sx={{ p: 1.5 }}>
                       <Typography sx={{ fontWeight: 700 }} noWrap>

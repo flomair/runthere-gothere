@@ -54,7 +54,7 @@ function avatarIcon(s: Standing, color: string, leader: boolean) {
   const inner = s.picture ? `<img src="${s.picture}" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>` : initials(s.name);
   return L.divIcon({
     className: '',
-    html: `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${color};background:${color};color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.35)">${inner}</div>${leader ? `<div style="position:absolute;top:-17px;left:9px;color:#E8B03A">${emojiHtml('crown', 20, '#E8B03A', 2.4)}</div>` : ''}`,
+    html: `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${color};background:${color};color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.35)">${inner}</div>${leader ? `<div style="position:absolute;top:-17px;left:9px;color:#5B5BF0">${emojiHtml('crown', 18, '#5B5BF0')}</div>` : ''}`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
   });
@@ -264,7 +264,7 @@ export default function GroupView({ id }: { id: string }) {
               <Marker
                 key={p.key}
                 position={positionAt(pts, cum, p.m * k).point}
-                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : emojiHtml('question', 15, '#D98A12', 2.2)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
+                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : emojiHtml('question', 14, '#5B5BF0')}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
                 zIndexOffset={100}
               >
                 <Tooltip>{p.collected ? t('Mystery pin – draw collected') : t('Mystery pin: pass it to earn a draw')}</Tooltip>

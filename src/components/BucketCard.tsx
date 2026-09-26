@@ -176,11 +176,11 @@ function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose
               transition={{ duration: 0.9, repeat: phase === 'shake' ? Infinity : 0 }}
               style={{ fontSize: 96, lineHeight: 1 }}
             >
-              <Emoji name={phase === 'error' ? 'bucket' : 'gift'} size={104} color="#fff" strokeWidth={1.3} />
+              <Emoji name={phase === 'error' ? 'bucket' : 'gift'} size={84} color="#fff" />
             </motion.div>
           ) : (
             <motion.div key="prize" initial={{ scale: 0.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 14 }} style={{ textAlign: 'center', padding: 16 }}>
-              <Emoji name={style!.emoji} size={72} color="#fff" strokeWidth={1.4} />
+              <Emoji name={style!.emoji} size={56} color="#fff" />
               <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', fontSize: 13, opacity: 0.95, mt: 1 }}>
                 {t(`${style!.label} surprise`)}
               </Typography>

@@ -514,7 +514,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         )}
       </PageTransition>
       <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-        {t('Route: {provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{mly}. Weather: Open-Meteo.', { provider: journey.route.provider, mly: me?.features.mapillary ? ', Mapillary' : '' })}
+        {t('Route: {provider}. Map data © OpenStreetMap contributors. Photos: Wikimedia Commons{mly}. Weather: Open-Meteo.', { provider: journey.route.provider, mly: me?.features.mapillary ? ', Mapillary' : '' })} {t('Icons: Font Awesome Free (CC BY 4.0).')}
       </Typography>
       {slideshow && (
         <Suspense fallback={null}>

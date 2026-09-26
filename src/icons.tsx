@@ -1,75 +1,78 @@
 import { Box, type SxProps, type Theme } from '@mui/material';
 import {
-  ArrowLeftIcon,
-  ArrowLeftRightIcon,
-  BellIcon,
-  BikeIcon,
-  BookOpenIcon,
-  BookmarkCheckIcon,
-  BookmarkPlusIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CircleStopIcon,
-  CompassIcon,
-  CopyIcon,
-  DownloadIcon,
-  EllipsisVerticalIcon,
-  ExternalLinkIcon,
-  FileUpIcon,
-  FlagIcon,
-  FlameIcon,
-  FootprintsIcon,
-  GalleryHorizontalEndIcon,
-  GiftIcon,
-  ImagePlusIcon,
-  LanguagesIcon,
-  LibraryIcon,
-  LinkIcon,
-  ListIcon,
-  LocateFixedIcon,
-  LockIcon,
-  LogOutIcon,
-  MapIcon,
-  MapPinIcon,
-  MessageCircleIcon,
-  MoonIcon,
-  MountainIcon,
-  MusicIcon,
-  PauseIcon,
-  PencilIcon,
-  PlayIcon,
-  PlusIcon,
-  PrinterIcon,
-  RefreshCwIcon,
-  Rotate3dIcon,
-  RotateCcwIcon,
-  RotateCwIcon,
-  RulerIcon,
-  SearchIcon,
-  SendIcon,
-  SettingsIcon,
-  ShareIcon,
-  ShieldCheckIcon,
-  SmartphoneIcon,
-  SquareIcon,
-  SquarePlusIcon,
-  StarIcon,
-  SunIcon,
-  SwordsIcon,
-  Trash2Icon,
-  TrophyIcon,
-  UnlinkIcon,
-  UploadIcon,
-  UserPlusIcon,
-  UsersIcon,
-  Volume2Icon,
-  XIcon,
-  type LucideIcon,
-} from 'lucide-react';
+  type IconDefinition,
+  faArrowLeft,
+  faArrowUpFromBracket,
+  faArrowUpRightFromSquare,
+  faArrowsRotate,
+  faBell,
+  faBicycle,
+  faBookBookmark,
+  faBookOpen,
+  faBookmark,
+  faCamera,
+  faChevronLeft,
+  faChevronRight,
+  faCircleStop,
+  faComment,
+  faCompass,
+  faCopy,
+  faCube,
+  faDownload,
+  faEllipsisVertical,
+  faFileArrowUp,
+  faFire,
+  faFlag,
+  faFlagCheckered,
+  faGear,
+  faGift,
+  faHandFist,
+  faImages,
+  faLanguage,
+  faLink,
+  faLinkSlash,
+  faList,
+  faLocationCrosshairs,
+  faLocationDot,
+  faLock,
+  faMagnifyingGlass,
+  faMap,
+  faMobileScreen,
+  faMoon,
+  faMountain,
+  faMusic,
+  faPaperPlane,
+  faPause,
+  faPen,
+  faPersonHiking,
+  faPersonRunning,
+  faPlay,
+  faPlus,
+  faPrint,
+  faRightFromBracket,
+  faRightLeft,
+  faRotateLeft,
+  faRotateRight,
+  faRuler,
+  faSquarePlus,
+  faStar,
+  faStop,
+  faSun,
+  faTrashCan,
+  faTrophy,
+  faUpload,
+  faUserGroup,
+  faUserPlus,
+  faUserShield,
+  faVolumeHigh,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 import { type Anim, AnimIcon } from './components/AnimIcon';
 
+
+
 /**
- * The app's UI icons: Lucide line icons with small motion presets (see AnimIcon). Each export keeps
+ * The app's UI icons: Font Awesome Free (solid) glyphs in a single colour, with small motion presets (see AnimIcon). Each export keeps
  * the name and props of the MUI icon it replaced (fontSize, color, sx), so MUI buttons, lists and
  * tabs size and colour them as before.
  */
@@ -81,7 +84,7 @@ type Props = {
   'aria-label'?: string;
 };
 
-const SIZE = { inherit: 'inherit', small: '1.25rem', medium: '1.5rem', large: '2.1875rem' } as const;
+const SIZE = { inherit: 'inherit', small: '1.05rem', medium: '1.25rem', large: '1.8rem' } as const;
 const COLOR: Record<string, string | undefined> = {
   inherit: undefined,
   primary: 'primary.main',
@@ -94,7 +97,7 @@ const COLOR: Record<string, string | undefined> = {
   info: 'info.main',
 };
 
-function make(icon: LucideIcon, anim: Anim) {
+function make(icon: IconDefinition, anim: Anim) {
   const C = ({ fontSize = 'medium', color, sx, className, ...rest }: Props) => (
     <AnimIcon
       icon={icon}
@@ -104,7 +107,7 @@ function make(icon: LucideIcon, anim: Anim) {
       sx={[{ fontSize: SIZE[fontSize], color: color ? COLOR[color] : undefined, verticalAlign: 'middle' }, ...(Array.isArray(sx) ? sx : [sx])]}
     />
   );
-  C.displayName = `Icon(${icon.displayName ?? 'Lucide'})`;
+  C.displayName = `Icon(${icon.iconName})`;
   return C;
 }
 
@@ -118,73 +121,73 @@ export const Google = ({ fontSize = 'medium', sx }: Props) => (
   </Box>
 );
 
-export const Add = make(PlusIcon, 'spin');
-export const ArrowBack = make(ArrowLeftIcon, 'nudge');
-export const Close = make(XIcon, 'spin');
-export const DeleteOutlined = make(Trash2Icon, 'wiggle');
-export const OpenInNew = make(ExternalLinkIcon, 'nudge');
-export const AutoStoriesOutlined = make(BookOpenIcon, 'pop');
-export const Straighten = make(RulerIcon, 'wiggle');
-export const Hiking = make(MountainIcon, 'bounce');
-export const CardGiftcardOutlined = make(GiftIcon, 'wiggle');
-export const UploadFileOutlined = make(FileUpIcon, 'bounce');
-export const SportsKabaddiOutlined = make(SwordsIcon, 'wiggle');
-export const PlayArrow = make(PlayIcon, 'pop');
-export const Pause = make(PauseIcon, 'pop');
-export const LinkOff = make(UnlinkIcon, 'wiggle');
-export const IosShare = make(ShareIcon, 'bounce');
-export const Groups = make(UsersIcon, 'bounce');
-export const FileDownloadOutlined = make(DownloadIcon, 'drop');
-export const EmojiEventsOutlined = make(TrophyIcon, 'wiggle');
-export const DirectionsRun = make(FootprintsIcon, 'bounce');
-export const DirectionsBike = make(BikeIcon, 'nudge');
-export const VolumeUpOutlined = make(Volume2Icon, 'pop');
-export const TravelExplore = make(CompassIcon, 'spin');
-export const Translate = make(LanguagesIcon, 'wiggle');
-export const ThreeDRotation = make(Rotate3dIcon, 'spin');
-export const Terrain = make(MountainIcon, 'bounce');
-export const Sync = make(RefreshCwIcon, 'spin');
-export const SwapHoriz = make(ArrowLeftRightIcon, 'nudge');
-export const StopRounded = make(SquareIcon, 'pop');
-export const StopCircleOutlined = make(CircleStopIcon, 'pop');
-export const Star = make(StarIcon, 'twinkle');
-export const SportsScoreOutlined = make(FlagIcon, 'wave');
-export const SportsScore = make(FlagIcon, 'wave');
-export const SlideshowOutlined = make(GalleryHorizontalEndIcon, 'nudge');
-export const SettingsOutlined = make(SettingsIcon, 'spin');
-export const Send = make(SendIcon, 'nudge');
-export const Search = make(SearchIcon, 'wiggle');
-export const Replay = make(RotateCcwIcon, 'spin');
-export const Refresh = make(RotateCwIcon, 'spin');
-export const PrintOutlined = make(PrinterIcon, 'drop');
-export const PlaceOutlined = make(MapPinIcon, 'drop');
-export const PersonAddAlt1 = make(UserPlusIcon, 'bounce');
-export const OutlinedFlag = make(FlagIcon, 'wave');
-export const NotificationsOutlined = make(BellIcon, 'ring');
-export const MyLocation = make(LocateFixedIcon, 'spin');
-export const MusicNoteOutlined = make(MusicIcon, 'bounce');
-export const MoreVert = make(EllipsisVerticalIcon, 'pop');
-export const MapOutlined = make(MapIcon, 'pop');
-export const Logout = make(LogOutIcon, 'nudge');
-export const LockOutlined = make(LockIcon, 'wiggle');
-export const LocalFireDepartmentOutlined = make(FlameIcon, 'twinkle');
-export const Link = make(LinkIcon, 'wiggle');
-export const LightModeOutlined = make(SunIcon, 'spin');
-export const InstallMobile = make(SmartphoneIcon, 'wiggle');
-export const FormatListBulleted = make(ListIcon, 'nudge');
-export const FlagOutlined = make(FlagIcon, 'wave');
-export const FileUploadOutlined = make(UploadIcon, 'bounce');
-export const EditOutlined = make(PencilIcon, 'wiggle');
-export const Download = make(DownloadIcon, 'drop');
-export const DarkModeOutlined = make(MoonIcon, 'wiggle');
-export const ContentCopy = make(CopyIcon, 'pop');
-export const CollectionsBookmarkOutlined = make(LibraryIcon, 'pop');
-export const ChevronRight = make(ChevronRightIcon, 'nudge');
-export const ChevronLeft = make(ChevronLeftIcon, 'nudge');
-export const ChatBubbleOutlined = make(MessageCircleIcon, 'wiggle');
-export const BookmarkAdded = make(BookmarkCheckIcon, 'pop');
-export const BookmarkAddOutlined = make(BookmarkPlusIcon, 'drop');
-export const AdminPanelSettingsOutlined = make(ShieldCheckIcon, 'pop');
-export const AddBoxOutlined = make(SquarePlusIcon, 'pop');
-export const AddAPhotoOutlined = make(ImagePlusIcon, 'pop');
-export const PlayArrowRounded = make(PlayIcon, 'pop');
+export const Add = make(faPlus, 'spin');
+export const ArrowBack = make(faArrowLeft, 'nudge');
+export const Close = make(faXmark, 'spin');
+export const DeleteOutlined = make(faTrashCan, 'wiggle');
+export const OpenInNew = make(faArrowUpRightFromSquare, 'nudge');
+export const AutoStoriesOutlined = make(faBookOpen, 'pop');
+export const Straighten = make(faRuler, 'wiggle');
+export const Hiking = make(faPersonHiking, 'bounce');
+export const CardGiftcardOutlined = make(faGift, 'wiggle');
+export const UploadFileOutlined = make(faFileArrowUp, 'bounce');
+export const SportsKabaddiOutlined = make(faHandFist, 'wiggle');
+export const PlayArrow = make(faPlay, 'pop');
+export const Pause = make(faPause, 'pop');
+export const LinkOff = make(faLinkSlash, 'wiggle');
+export const IosShare = make(faArrowUpFromBracket, 'bounce');
+export const Groups = make(faUserGroup, 'bounce');
+export const FileDownloadOutlined = make(faDownload, 'drop');
+export const EmojiEventsOutlined = make(faTrophy, 'wiggle');
+export const DirectionsRun = make(faPersonRunning, 'bounce');
+export const DirectionsBike = make(faBicycle, 'nudge');
+export const VolumeUpOutlined = make(faVolumeHigh, 'pop');
+export const TravelExplore = make(faCompass, 'spin');
+export const Translate = make(faLanguage, 'wiggle');
+export const ThreeDRotation = make(faCube, 'spin');
+export const Terrain = make(faMountain, 'bounce');
+export const Sync = make(faArrowsRotate, 'spin');
+export const SwapHoriz = make(faRightLeft, 'nudge');
+export const StopRounded = make(faStop, 'pop');
+export const StopCircleOutlined = make(faCircleStop, 'pop');
+export const Star = make(faStar, 'twinkle');
+export const SportsScoreOutlined = make(faFlagCheckered, 'wave');
+export const SportsScore = make(faFlagCheckered, 'wave');
+export const SlideshowOutlined = make(faImages, 'nudge');
+export const SettingsOutlined = make(faGear, 'spin');
+export const Send = make(faPaperPlane, 'nudge');
+export const Search = make(faMagnifyingGlass, 'wiggle');
+export const Replay = make(faRotateLeft, 'spin');
+export const Refresh = make(faRotateRight, 'spin');
+export const PrintOutlined = make(faPrint, 'drop');
+export const PlaceOutlined = make(faLocationDot, 'drop');
+export const PersonAddAlt1 = make(faUserPlus, 'bounce');
+export const OutlinedFlag = make(faFlag, 'wave');
+export const NotificationsOutlined = make(faBell, 'ring');
+export const MyLocation = make(faLocationCrosshairs, 'spin');
+export const MusicNoteOutlined = make(faMusic, 'bounce');
+export const MoreVert = make(faEllipsisVertical, 'pop');
+export const MapOutlined = make(faMap, 'pop');
+export const Logout = make(faRightFromBracket, 'nudge');
+export const LockOutlined = make(faLock, 'wiggle');
+export const LocalFireDepartmentOutlined = make(faFire, 'twinkle');
+export const Link = make(faLink, 'wiggle');
+export const LightModeOutlined = make(faSun, 'spin');
+export const InstallMobile = make(faMobileScreen, 'wiggle');
+export const FormatListBulleted = make(faList, 'nudge');
+export const FlagOutlined = make(faFlag, 'wave');
+export const FileUploadOutlined = make(faUpload, 'bounce');
+export const EditOutlined = make(faPen, 'wiggle');
+export const Download = make(faDownload, 'drop');
+export const DarkModeOutlined = make(faMoon, 'wiggle');
+export const ContentCopy = make(faCopy, 'pop');
+export const CollectionsBookmarkOutlined = make(faBookBookmark, 'pop');
+export const ChevronRight = make(faChevronRight, 'nudge');
+export const ChevronLeft = make(faChevronLeft, 'nudge');
+export const ChatBubbleOutlined = make(faComment, 'wiggle');
+export const BookmarkAdded = make(faBookmark, 'pop');
+export const BookmarkAddOutlined = make(faBookmark, 'drop');
+export const AdminPanelSettingsOutlined = make(faUserShield, 'pop');
+export const AddBoxOutlined = make(faSquarePlus, 'pop');
+export const AddAPhotoOutlined = make(faCamera, 'pop');
+export const PlayArrowRounded = make(faPlay, 'pop');

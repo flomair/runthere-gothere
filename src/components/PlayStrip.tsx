@@ -71,7 +71,7 @@ function Tile({ bg, eyebrow, title, sub, children, onClick, progress, emoji, lig
         transition={{ delay: delay + 0.1, type: 'spring', stiffness: 260, damping: 18 }}
         sx={{ position: 'absolute', right: 14, top: 14, pointerEvents: 'none', opacity: light ? 1 : 0.95 }}
       >
-        <Emoji name={emoji} size={44} color={light ? undefined : '#fff'} strokeWidth={1.6} idle />
+        <Emoji name={emoji} size={34} color={light ? undefined : '#fff'} idle />
       </Box>
       <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', opacity: 0.85, pr: 7 }} noWrap>{eyebrow}</Typography>
       <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2, mt: 0.5, pr: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>

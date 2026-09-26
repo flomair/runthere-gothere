@@ -163,7 +163,7 @@ It is written in your browser's language and streamed as it is generated. **Read
 
 ## Icons
 
-All icons are [Lucide](https://lucide.dev) line icons (MIT), animated with small CSS motion presets (`src/components/AnimIcon.tsx`, keyframes in `src/styles.css`): each icon plays its preset (wiggle, bounce, spin, wave, ring, twinkle…) when it or the button, tab or tile around it is hovered, and once when its tab is selected. The playful symbols (gifts, trophies, swords, the surprise bucket…) also draw their strokes in when they appear, and big ones float gently. UI icons live in `src/icons.tsx` (named after the MUI icons they replaced, same `fontSize`/`color`/`sx` props); playful ones in `src/components/Emoji.tsx` (`<Emoji name="gift" />`, `<EmojiText>` swaps emoji inside text, `emojiHtml()` for map markers). Motion is switched off when the device asks for reduced motion.
+All icons are [Font Awesome Free](https://fontawesome.com) solid glyphs (icons CC BY 4.0, code MIT; credited in the app footer), drawn as inline SVG in a single colour – the text colour, white on coloured tiles, or the app's violet accent. Small CSS motion presets (`src/components/AnimIcon.tsx`, keyframes in `src/styles.css`) make each icon wiggle, bounce, spin, wave, ring or twinkle when it or the button, tab or tile around it is hovered, and once when its tab is selected; playful symbols pop in when they appear and big ones float gently. UI icons live in `src/icons.tsx` (named after the MUI icons they replaced, same `fontSize`/`color`/`sx` props); playful ones in `src/components/Emoji.tsx` (`<Emoji name="gift" />`, `<EmojiText>` swaps emoji inside text, `emojiHtml()` for map markers). Motion is switched off when the device asks for reduced motion.
 
 ## Scripts
 

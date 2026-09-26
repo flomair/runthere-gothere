@@ -724,4 +724,5 @@ export const DE: Record<string, string> = {
   "{name} owes you": "{name} schuldet dir",
   "{n} mystery draws are waiting": "{n} Überraschungsziehungen warten",
   "Gifts": "Geschenke",
+  "Icons: Font Awesome Free (CC BY 4.0).": "Icons: Font Awesome Free (CC BY 4.0).",
 };
