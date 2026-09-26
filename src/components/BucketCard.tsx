@@ -1,4 +1,4 @@
-import AddIcon from '@mui/icons-material/Add';
+import { Add as AddIcon } from '../icons';
 import {
   Alert,
   Box,
@@ -30,11 +30,12 @@ import { getLang, t } from '../lib/i18n';
 import type { BucketView, Draw, Group, Milestone, Prize, PrizeTier } from '../lib/types';
 import { ROUNDED } from '../theme';
 import { PhotoPicker } from './RewardsCard';
+import { Emoji, EmojiText, type EmojiName } from './Emoji';
 
-export const TIER_STYLE: Record<PrizeTier, { label: string; emoji: string; color: string; bg: string }> = {
-  small: { label: 'Small', emoji: '🍬', color: '#149A80', bg: 'linear-gradient(135deg, #1FB597, #149A80)' },
-  medium: { label: 'Medium', emoji: '🎀', color: '#5B5BF0', bg: 'linear-gradient(135deg, #3F7CF6, #6A67F0 55%, #A259E8)' },
-  rare: { label: 'Rare', emoji: '💎', color: '#C98A12', bg: 'linear-gradient(135deg, #F5C451, #E8B03A 45%, #D9772B)' },
+export const TIER_STYLE: Record<PrizeTier, { label: string; emoji: EmojiName; color: string; bg: string }> = {
+  small: { label: 'Small', emoji: 'candy', color: '#149A80', bg: 'linear-gradient(135deg, #1FB597, #149A80)' },
+  medium: { label: 'Medium', emoji: 'ribbon', color: '#5B5BF0', bg: 'linear-gradient(135deg, #3F7CF6, #6A67F0 55%, #A259E8)' },
+  rare: { label: 'Rare', emoji: 'gem', color: '#C98A12', bg: 'linear-gradient(135deg, #F5C451, #E8B03A 45%, #D9772B)' },
 };
 
 /** Draw labels are stored in English; show them in the reader's language. */
@@ -53,7 +54,7 @@ function drawLabel(d: Draw): string {
   }
 }
 
-const SOURCE_EMOJI: Record<Draw['source'], string> = { pin: '❓', stage: '🏆', drop: '🍀', milestone: '📍' };
+const SOURCE_EMOJI: Record<Draw['source'], EmojiName> = { pin: 'question', stage: 'trophy', drop: 'clover', milestone: 'pin' };
 
 function AddPrizeDialog({ open, onClose, groupId }: { open: boolean; onClose: () => void; groupId: string }) {
   const { add } = useBucketActions(groupId);
@@ -80,7 +81,7 @@ function AddPrizeDialog({ open, onClose, groupId }: { open: boolean; onClose: ()
           <ToggleButtonGroup exclusive fullWidth value={tier} onChange={(_, v) => v && setTier(v)}>
             {TIERS.map((x) => (
               <ToggleButton key={x} value={x} sx={{ flexDirection: 'column', textTransform: 'none', py: 1 }}>
-                <Box sx={{ fontSize: 22 }}>{TIER_STYLE[x].emoji}</Box>
+                <Emoji name={TIER_STYLE[x].emoji} size={30} />
                 <Box sx={{ fontWeight: 700 }}>{t(TIER_STYLE[x].label)}</Box>
               </ToggleButton>
             ))}
@@ -115,7 +116,7 @@ function AddPrizeDialog({ open, onClose, groupId }: { open: boolean; onClose: ()
   );
 }
 
-const sparks = Array.from({ length: 18 }, (_, i) => ({ a: (i / 18) * Math.PI * 2, d: 90 + (i % 3) * 30, e: ['✨', '🎉', '⭐'][i % 3] }));
+const sparks = Array.from({ length: 18 }, (_, i) => ({ a: (i / 18) * Math.PI * 2, d: 90 + (i % 3) * 30, e: (['sparkles', 'party', 'star'] as const)[i % 3] }));
 
 /** Shake the box, burst, reveal. The server has already picked the prize when the box opens. */
 function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose: () => void; groupId: string; draw: Draw | null }) {
@@ -175,11 +176,11 @@ function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose
               transition={{ duration: 0.9, repeat: phase === 'shake' ? Infinity : 0 }}
               style={{ fontSize: 96, lineHeight: 1 }}
             >
-              {phase === 'error' ? '🪣' : '🎁'}
+              <Emoji name={phase === 'error' ? 'bucket' : 'gift'} size={120} />
             </motion.div>
           ) : (
             <motion.div key="prize" initial={{ scale: 0.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 14 }} style={{ textAlign: 'center', padding: 16 }}>
-              <Box sx={{ fontSize: 64, lineHeight: 1 }}>{style!.emoji}</Box>
+              <Emoji name={style!.emoji} size={84} />
               <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', fontSize: 13, opacity: 0.95, mt: 1 }}>
                 {t(`${style!.label} surprise`)}
               </Typography>
@@ -194,9 +195,9 @@ function RevealDialog({ open, onClose, groupId, draw }: { open: boolean; onClose
               initial={{ x: 0, y: 0, opacity: 1, scale: 0.6 }}
               animate={{ x: Math.cos(s.a) * s.d, y: Math.sin(s.a) * s.d, opacity: 0, scale: 1.2 }}
               transition={{ duration: 1.1, ease: 'easeOut' }}
-              style={{ position: 'absolute', left: '50%', top: '50%', fontSize: 20, pointerEvents: 'none' }}
+              style={{ position: 'absolute', left: '50%', top: '50%', pointerEvents: 'none' }}
             >
-              {s.e}
+              <Emoji name={s.e} size={22} />
             </motion.div>
           ))}
       </Box>
@@ -260,7 +261,7 @@ function RevealedItem({ p, groupId, me }: { p: BucketView['revealed'][number]; g
   return (
     <Box sx={{ p: 1.25, borderRadius: '14px', border: 1, borderColor: 'divider' }}>
       <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
-        <Box sx={{ width: 40, height: 40, borderRadius: '12px', background: st.bg, display: 'grid', placeItems: 'center', fontSize: 20, flexShrink: 0 }}>{st.emoji}</Box>
+        <Box sx={{ width: 40, height: 40, borderRadius: '12px', background: st.bg, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Emoji name={st.emoji} size={28} /></Box>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 700 }} noWrap>
             {p.title}
@@ -323,9 +324,7 @@ export default function BucketCard({ group }: { group: Group }) {
     <Card>
       <CardContent>
         <Stack direction="row" sx={{ alignItems: 'center', gap: 1, mb: 1.5 }}>
-          <Box sx={{ fontSize: 22 }} aria-hidden>
-            🪣
-          </Box>
+          <Emoji name="bucket" size={28} />
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             {t('Surprise bucket')}
           </Typography>
@@ -338,14 +337,14 @@ export default function BucketCard({ group }: { group: Group }) {
           <Stack spacing={2}>
             <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               {TIERS.map((x) => (
-                <Chip key={x} label={`${TIER_STYLE[x].emoji} ${b.counts[x]} ${t(TIER_STYLE[x].label).toLowerCase()}`} variant="outlined" />
+                <Chip key={x} icon={<Emoji name={TIER_STYLE[x].emoji} size={20} sx={{ ml: '6px !important' }} />} label={`${b.counts[x]} ${t(TIER_STYLE[x].label).toLowerCase()}`} variant="outlined" />
               ))}
               <Typography variant="caption" color="text.secondary">
                 {t('{n} hidden in the bucket', { n: total })}
               </Typography>
             </Stack>
             {b.low && (
-              <Alert severity="warning" icon={<span>🪣</span>}>
+              <Alert severity="warning" icon={<Emoji name="bucket" size={22} />}>
                 {t('The bucket is running low. Add a surprise or two so everyone keeps drawing.')}
               </Alert>
             )}
@@ -364,7 +363,7 @@ export default function BucketCard({ group }: { group: Group }) {
                     const odds = tierOdds(d.boost, b.counts);
                     return (
                       <Stack key={d.id} direction="row" spacing={1.25} sx={{ alignItems: 'center', p: 1, pl: 1.5, borderRadius: '14px', bgcolor: 'action.hover' }}>
-                        <Box sx={{ fontSize: 22 }}>{SOURCE_EMOJI[d.source]}</Box>
+                        <Emoji name={SOURCE_EMOJI[d.source]} size={30} />
                         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                           <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
                             {drawLabel(d)}
@@ -400,7 +399,7 @@ export default function BucketCard({ group }: { group: Group }) {
                     .map((p) => (
                       <Chip
                         key={p.id}
-                        label={`${TIER_STYLE[p.tier].emoji} ${p.title}${p.anonymous ? ' · 🕶️' : ''}`}
+                        icon={<Emoji name={TIER_STYLE[p.tier].emoji} size={20} sx={{ ml: '6px !important' }} />} label={<EmojiText text={`${p.title}${p.anonymous ? ' · 🕶️' : ''}`} />}
                         onDelete={() => {
                           if (confirm(t('Take "{title}" out of the bucket?', { title: p.title }))) void remove(p.id);
                         }}

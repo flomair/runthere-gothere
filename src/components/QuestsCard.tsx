@@ -1,5 +1,5 @@
-import AddIcon from '@mui/icons-material/Add';
-import SwordsIcon from '@mui/icons-material/SportsKabaddiOutlined';
+import { Add as AddIcon } from '../icons';
+import { SportsKabaddiOutlined as SwordsIcon } from '../icons';
 import {
   Alert,
   Autocomplete,
@@ -26,7 +26,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { QUEST_EMOJI, clock, isFinished, questFraction, questTitle, validateQuest } from '../../shared/quests';
+import { clock, isFinished, questFraction, questTitle, validateQuest } from '../../shared/quests';
 import { useMe } from '../lib/api';
 import { formatDate, formatKm } from '../lib/format';
 import { getLang, t } from '../lib/i18n';
@@ -34,6 +34,10 @@ import { type QuestDraft, useFriends, useQuestActions, useQuests } from '../lib/
 import { useJourneys } from '../lib/storage';
 import type { Quest, QuestType } from '../lib/types';
 import { fromUnit, getUnit } from '../lib/units';
+import { Emoji, EmojiText, type EmojiName } from './Emoji';
+
+/** 3D icon per quest type. */
+export const QUEST_ICON: Record<QuestType, EmojiName> = { distance: 'medal', habit: 'repeat', race: 'finish', speed: 'zap' };
 
 const TYPES: { value: QuestType; label: string; hint: string }[] = [
   { value: 'distance', label: 'Distance', hint: 'X km within Y days' },
@@ -137,7 +141,7 @@ export function QuestDialog({ open, onClose }: { open: boolean; onClose: () => v
           <ToggleButtonGroup exclusive value={type} onChange={(_, v) => v && setType(v)} fullWidth sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(4, 1fr)' } }}>
             {TYPES.map((x) => (
               <ToggleButton key={x.value} value={x.value} sx={{ flexDirection: 'column', py: 1, textTransform: 'none', lineHeight: 1.2 }}>
-                <Box sx={{ fontSize: 22 }}>{QUEST_EMOJI[x.value]}</Box>
+                <Emoji name={QUEST_ICON[x.value]} size={30} />
                 <Box sx={{ fontWeight: 700 }}>{t(x.label)}</Box>
                 <Box sx={{ fontSize: 11, opacity: 0.75 }}>{t(x.hint)}</Box>
               </ToggleButton>
@@ -180,7 +184,7 @@ export function QuestDialog({ open, onClose }: { open: boolean; onClose: () => v
           <TextField label={t('Fun penalty (optional)')} placeholder={t('Sing in the rain, bake a cake…')} value={penalty} onChange={(e) => setPenalty(e.target.value)} />
           <TextField label={t('Message (optional)')} value={message} onChange={(e) => setMessage(e.target.value)} multiline minRows={2} />
           {!invalid && (
-            <Alert severity="info" icon={<span>{QUEST_EMOJI[type]}</span>}>
+            <Alert severity="info" icon={<Emoji name={QUEST_ICON[type]} size={22} />}>
               {questTitle(draft, getLang())}
             </Alert>
           )}
@@ -262,7 +266,7 @@ function QuestItem({ q, me, journeyId }: { q: Quest; me: string; journeyId?: str
           <Avatar src={other.picture} sx={{ width: 40, height: 40 }}>
             {other.name[0]}
           </Avatar>
-          <Box sx={{ position: 'absolute', right: -6, bottom: -6, fontSize: 18 }}>{QUEST_EMOJI[q.type]}</Box>
+          <Box sx={{ position: 'absolute', right: -8, bottom: -8 }}><Emoji name={QUEST_ICON[q.type]} size={24} /></Box>
         </Box>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography sx={{ fontWeight: 700 }}>{questTitle(q, getLang())}</Typography>
@@ -276,8 +280,8 @@ function QuestItem({ q, me, journeyId }: { q: Quest; me: string; journeyId?: str
             </Typography>
           )}
           <Stack direction="row" sx={{ gap: 0.75, mt: 0.75, flexWrap: 'wrap' }}>
-            <Chip size="small" label={`🎁 ${q.gift.text}`} color={q.gift.fulfillment.status === 'fulfilled' ? 'success' : 'default'} />
-            {q.penalty && <Chip size="small" variant="outlined" label={`😈 ${q.penalty}`} />}
+            <Chip size="small" label={<EmojiText text={`🎁 ${q.gift.text}`} />} color={q.gift.fulfillment.status === 'fulfilled' ? 'success' : 'default'} />
+            {q.penalty && <Chip size="small" variant="outlined" label={<EmojiText text={`😈 ${q.penalty}`} />} />}
           </Stack>
           {(q.status === 'accepted' || q.status === 'won' || q.status === 'lost') && (
             <Box sx={{ mt: 1 }}>
@@ -349,7 +353,7 @@ export function QuestInvites({ journeyId }: { journeyId?: string }) {
   return (
     <Card sx={{ p: 1.5 }}>
       <Typography variant="overline" color="secondary" sx={{ fontWeight: 800, px: 0.5 }}>
-        ⚔️ {t('Challenges for you')}
+        <Emoji name="swords" /> {t('Challenges for you')}
       </Typography>
       <Stack spacing={1}>
         {incoming.map((q) => (

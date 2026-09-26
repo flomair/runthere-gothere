@@ -1,7 +1,7 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
-import PersonAddIcon from '@mui/icons-material/PersonAddAlt1';
-import SendIcon from '@mui/icons-material/Send';
+import { ArrowBack as ArrowBackIcon } from '../icons';
+import { ChatBubbleOutlined as ChatBubbleOutlineIcon } from '../icons';
+import { PersonAddAlt1 as PersonAddIcon } from '../icons';
+import { Send as SendIcon } from '../icons';
 import {
   Alert,
   Avatar,
@@ -44,6 +44,7 @@ import { useBucket } from '../lib/bucket';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStages } from '../lib/stages';
 import { cumulativeDistances, positionAt, sliceRoute } from '../../shared/geo';
+import { Emoji, EmojiText, emojiHtml } from './Emoji';
 
 // runner colours: violet first (usually you), then calm, well-separated tones
 const COLORS = ['#5B5BF0', '#3D6FA8', '#149A80', '#8C5A3C', '#D4A017', '#C2477A', '#5C7A29', '#6B7A8F'];
@@ -53,7 +54,7 @@ function avatarIcon(s: Standing, color: string, leader: boolean) {
   const inner = s.picture ? `<img src="${s.picture}" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>` : initials(s.name);
   return L.divIcon({
     className: '',
-    html: `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${color};background:${color};color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.35)">${inner}</div>${leader ? '<div style="position:absolute;top:-14px;left:10px;font-size:16px">👑</div>' : ''}`,
+    html: `<div style="width:38px;height:38px;border-radius:50%;border:3px solid ${color};background:${color};color:#fff;display:grid;place-items:center;font:700 13px Inter,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.35)">${inner}</div>${leader ? `<div style="position:absolute;top:-16px;left:9px">${emojiHtml('crown', 20)}</div>` : ''}`,
     iconSize: [38, 38],
     iconAnchor: [19, 19],
   });
@@ -77,7 +78,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
               <strong style={{ color: 'var(--mui-palette-text-primary)' }}>{item.name}</strong> · {formatDate(item.createdAt, { dateStyle: 'medium' })}
             </Typography>
             <Typography sx={{ fontWeight: item.type === 'milestone' ? 700 : 400, fontSize: item.type === 'milestone' ? '1.1rem' : '1rem', mt: 0.25 }}>
-              <span style={{ marginRight: 6 }}>{icon}</span>
+              <span style={{ marginRight: 6 }}><EmojiText text={icon} /></span>
               {item.type === 'join' ? `${item.name} ${t(item.text)}` : item.milestone ? milestoneTitle(item.milestone, getLang()) : item.text}
             </Typography>
             {item.milestone && (
@@ -94,7 +95,7 @@ function FeedCard({ item, groupId, myUid, nameOf }: { item: FeedItem; groupId: s
                 sx={{ minWidth: 0, px: 1.25, bgcolor: mine ? 'rgba(91, 91, 240,0.12)' : 'transparent', color: mine ? 'secondary.main' : 'text.secondary' }}
               >
                 <motion.span key={String(mine)} initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 15 }} style={{ marginRight: 6 }}>
-                  👏
+                  <Emoji name="clap" />
                 </motion.span>
                 {item.kudos.length || ''}
               </Button>
@@ -203,7 +204,7 @@ export default function GroupView({ id }: { id: string }) {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="overline" sx={{ flexGrow: 1, opacity: 0.9 }}>
-            {race ? t('🏁 Race') : t('🤝 Relay')} · {t('since {date}', { date: formatDate(g.startDate) })}
+            <EmojiText text={race ? t('🏁 Race') : t('🤝 Relay')} /> · {t('since {date}', { date: formatDate(g.startDate) })}
           </Typography>
           <IconButton onClick={() => setInviteOpen(true)} sx={{ color: 'inherit' }} aria-label="invite friends">
             <PersonAddIcon />
@@ -225,7 +226,7 @@ export default function GroupView({ id }: { id: string }) {
           </AvatarGroup>
           {race && leader ? (
             <Typography sx={{ fontWeight: 700 }}>
-              👑 {t('{name} leads with', { name: nameOf(leader.uid) })} <CountUp value={leader.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />
+              <Emoji name="crown" /> {t('{name} leads with', { name: nameOf(leader.uid) })} <CountUp value={leader.doneM / 1000} format={(n) => formatKm(n * 1000, 0)} />
             </Typography>
           ) : team ? (
             <Typography sx={{ fontWeight: 700 }}>
@@ -263,13 +264,13 @@ export default function GroupView({ id }: { id: string }) {
               <Marker
                 key={p.key}
                 position={positionAt(pts, cum, p.m * k).point}
-                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : '?'}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
+                icon={L.divIcon({ className: '', html: `<div class="rtgt-marker mystery${p.collected ? ' collected' : ''}">${p.collected ? '✓' : emojiHtml('question', 16)}</div>`, iconSize: [24, 24], iconAnchor: [12, 12] })}
                 zIndexOffset={100}
               >
                 <Tooltip>{p.collected ? t('Mystery pin – draw collected') : t('Mystery pin: pass it to earn a draw')}</Tooltip>
               </Marker>
             ))}
-            <Marker position={pts[pts.length - 1]} icon={L.divIcon({ className: '', html: `<div class="rtgt-marker goal">${g.bonusPrize ? '🏆' : '🏁'}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] })}>
+            <Marker position={pts[pts.length - 1]} icon={L.divIcon({ className: '', html: `<div class="rtgt-marker goal">${emojiHtml(g.bonusPrize ? 'trophy' : 'finish', 22)}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] })}>
               <Tooltip>{g.bonusPrize ? `${g.waypoints[g.waypoints.length - 1]?.name ?? ''} · 🏆 ${g.bonusPrize.text}` : (g.waypoints[g.waypoints.length - 1]?.name ?? '')}</Tooltip>
             </Marker>
             {race
@@ -281,7 +282,7 @@ export default function GroupView({ id }: { id: string }) {
                   </Marker>
                 ))
               : team && (
-                  <Marker position={team.point} icon={L.divIcon({ className: '', html: '<div class="rtgt-marker me">🤝</div>', iconSize: [34, 34], iconAnchor: [17, 17] })}>
+                  <Marker position={team.point} icon={L.divIcon({ className: '', html: `<div class="rtgt-marker me">${emojiHtml('handshake', 22)}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] })}>
                     <Tooltip permanent direction="top" offset={[0, -18]}>
                       {t('Team')}
                     </Tooltip>
@@ -317,7 +318,7 @@ export default function GroupView({ id }: { id: string }) {
                         color={colorOf(s.uid)}
                       />
                       <Typography variant="caption" color="text.secondary">
-                        {s.finishedOn ? `🏁 ${t('arrived {date}', { date: formatDate(s.finishedOn) })}` : t('{km} / week', { km: formatKm(s.weeklyAvgM) })}
+                        {s.finishedOn ? <EmojiText text={`🏁 ${t('arrived {date}', { date: formatDate(s.finishedOn) })}`} /> : t('{km} / week', { km: formatKm(s.weeklyAvgM) })}
                         {s.lastActivity ? ` · ${t('last run {date}', { date: formatDate(s.lastActivity) })}` : ''}
                       </Typography>
                     </Box>

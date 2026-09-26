@@ -1,6 +1,6 @@
-import MusicIcon from '@mui/icons-material/MusicNoteOutlined';
-import PlayIcon from '@mui/icons-material/PlayArrowRounded';
-import StopIcon from '@mui/icons-material/StopRounded';
+import { MusicNoteOutlined as MusicIcon } from '../icons';
+import { PlayArrowRounded as PlayIcon } from '../icons';
+import { StopRounded as StopIcon } from '../icons';
 import { Box, Button, Link, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { songLinks } from '../../shared/rewards';

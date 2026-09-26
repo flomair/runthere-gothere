@@ -1,8 +1,8 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import CloseIcon from '@mui/icons-material/Close';
-import PauseIcon from '@mui/icons-material/Pause';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import { ChevronLeft as ChevronLeftIcon } from '../icons';
+import { ChevronRight as ChevronRightIcon } from '../icons';
+import { Close as CloseIcon } from '../icons';
+import { Pause as PauseIcon } from '../icons';
+import { PlayArrow as PlayArrowIcon } from '../icons';
 import { Box, CircularProgress, Dialog, IconButton, Link, Stack, ToggleButton, ToggleButtonGroup, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';

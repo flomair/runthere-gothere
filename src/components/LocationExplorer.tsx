@@ -1,5 +1,5 @@
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import SlideshowIcon from '@mui/icons-material/SlideshowOutlined';
+import { OpenInNew as OpenInNewIcon } from '../icons';
+import { SlideshowOutlined as SlideshowIcon } from '../icons';
 import { Box, Button, Card, CardContent, Skeleton, Stack, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import type { LatLon } from '../../shared/geo';

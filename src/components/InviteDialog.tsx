@@ -1,4 +1,4 @@
-import GroupsIcon from '@mui/icons-material/Groups';
+import { Groups as GroupsIcon } from '../icons';
 import { Alert, Autocomplete, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useGroupActions } from '../lib/groups';

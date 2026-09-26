@@ -1,6 +1,6 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
-import PrintIcon from '@mui/icons-material/PrintOutlined';
+import { ArrowBack as ArrowBackIcon } from '../icons';
+import { AutoStoriesOutlined as AutoStoriesIcon } from '../icons';
+import { PrintOutlined as PrintIcon } from '../icons';
 import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Divider, IconButton, Stack, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { flag, useActivities, useJourneyStories, useMe, useMilestoneActions, useMilestones, useUnlockBackfill } from '../lib/api';
@@ -12,8 +12,9 @@ import type { Journey, Milestone } from '../lib/types';
 import { Reveal } from './motion';
 import { getLang, locale, t } from '../lib/i18n';
 import { milestoneTitle } from '../../shared/milestoneTitle';
+import { Emoji, type EmojiName } from './Emoji';
 
-const KIND_ICON: Record<Milestone['kind'], string> = { waypoint: '📍', distance: '🏃', halfway: '⚖️', border: '🛂', finish: '🏁' };
+const KIND_ICON: Record<Milestone['kind'], EmojiName> = { waypoint: 'pin', distance: 'runner', halfway: 'scale', border: 'passport', finish: 'finish' };
 
 function Prose({ text }: { text: string }) {
   return (
@@ -45,7 +46,7 @@ function MilestoneChapter({ m, canWrite }: { m: Milestone; canWrite: boolean }) 
       )}
       <CardContent>
         <Typography variant="overline" color="primary" sx={{ fontWeight: 700 }}>
-          {KIND_ICON[m.kind]} {formatDate(m.reachedAt)} · {formatKm(m.atM, 0)}
+          <Emoji name={KIND_ICON[m.kind]} /> {formatDate(m.reachedAt)} · {formatKm(m.atM, 0)}
         </Typography>
         <Typography variant="h5" component="h2" sx={{ mb: 0.5 }}>
           {m.kind === 'border' && m.countryCode ? `${flag(m.countryCode)} ` : ''}
@@ -185,7 +186,7 @@ export default function DiaryPage({ journey }: { journey: Journey }) {
               <Card variant="outlined" sx={{ breakInside: 'avoid', bgcolor: 'action.hover' }}>
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">
-                    📖 {t('Story')} · {formatDate(it.at)}
+                    <Emoji name="book" /> {t('Story')} · {formatDate(it.at)}
                   </Typography>
                   <Divider sx={{ mb: 1.5 }} />
                   <Prose text={it.text} />

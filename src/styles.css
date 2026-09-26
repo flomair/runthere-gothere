@@ -106,7 +106,8 @@ body,
   background: #149A80;
 }
 .rtgt-marker.mystery {
-  background: linear-gradient(135deg, #F5C451, #E8B03A 50%, #D9772B);
+  background: #fff;
+  border-color: #E8B03A;
   width: 24px;
   height: 24px;
   font-size: 13px;

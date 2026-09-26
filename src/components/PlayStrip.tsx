@@ -15,6 +15,7 @@ import { useJourneys } from '../lib/storage';
 import type { Journey, PlaySummary, Quest, Reward } from '../lib/types';
 import { ROUNDED } from '../theme';
 import { QuestDialog } from './QuestsCard';
+import { Emoji, type EmojiName } from './Emoji';
 
 export function usePlay() {
   return useQuery({ queryKey: ['play'], queryFn: () => api<PlaySummary>('/api/play'), staleTime: 60_000 });
@@ -33,7 +34,7 @@ const G = {
   cta: 'var(--mui-palette-background-paper)',
 };
 
-function Tile({ bg, eyebrow, title, sub, children, onClick, progress, emoji, light, delay = 0 }: { bg: string; eyebrow: string; title: string; sub?: ReactNode; children?: ReactNode; onClick?: () => void; progress?: number; emoji: string; light?: boolean; delay?: number }) {
+function Tile({ bg, eyebrow, title, sub, children, onClick, progress, emoji, light, delay = 0 }: { bg: string; eyebrow: string; title: string; sub?: ReactNode; children?: ReactNode; onClick?: () => void; progress?: number; emoji: EmojiName; light?: boolean; delay?: number }) {
   return (
     <Box
       component={motion.div}
@@ -61,11 +62,19 @@ function Tile({ bg, eyebrow, title, sub, children, onClick, progress, emoji, lig
         scrollSnapAlign: 'start',
       }}
     >
-      <Box aria-hidden sx={{ position: 'absolute', right: -6, top: -10, fontSize: 64, opacity: light ? 0.5 : 0.28, transform: 'rotate(12deg)', pointerEvents: 'none' }}>
-        {emoji}
+      <Box
+        component={motion.div}
+        aria-hidden
+        initial={{ rotate: 0, scale: 0.6, opacity: 0 }}
+        animate={{ rotate: 10, scale: 1, opacity: 1 }}
+        whileHover={{ rotate: -4, scale: 1.08 }}
+        transition={{ delay: delay + 0.15, type: 'spring', stiffness: 260, damping: 14 }}
+        sx={{ position: 'absolute', right: 10, top: 10, pointerEvents: 'none', filter: 'drop-shadow(0 8px 10px rgba(35, 40, 98, 0.35))' }}
+      >
+        <Emoji name={emoji} size={56} />
       </Box>
-      <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', opacity: 0.85 }}>{eyebrow}</Typography>
-      <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2, mt: 0.5, pr: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+      <Typography sx={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', opacity: 0.85, pr: 7 }} noWrap>{eyebrow}</Typography>
+      <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2, mt: 0.5, pr: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {title}
       </Typography>
       {sub && (
@@ -149,7 +158,7 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
   const tiles: ReactNode[] = [];
   for (const q of incoming)
     tiles.push(
-      <Tile key={`in-${q.id}`} bg={G.challenge} emoji="⚔️" eyebrow={t('{name} challenges you', { name: q.from.name })} title={questTitle(q, getLang())} sub={<>🎁 {q.gift.text}{q.penalty ? <><br />😈 {q.penalty}</> : null}</>} delay={d()}>
+      <Tile key={`in-${q.id}`} bg={G.challenge} emoji="swords" eyebrow={t('{name} challenges you', { name: q.from.name })} title={questTitle(q, getLang())} sub={<><Emoji name="gift" /> {q.gift.text}{q.penalty ? <><br /><Emoji name="devil" /> {q.penalty}</> : null}</>} delay={d()}>
         <Button size="small" variant="contained" sx={white} loading={busy === q.id + 'accept'} onClick={() => act(q, 'accept')}>
           {t('Accept')}
         </Button>
@@ -160,17 +169,17 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
     );
   for (const r of claimable)
     tiles.push(
-      <Tile key={`claim-${r.id}`} bg={G.gift} emoji="🎁" eyebrow={t('Reward unlocked!')} title={r.title} sub={journey ? t('Treat yourself – you ran there.') : nameOf(r.journeyId)} onClick={() => navigate(giftsUrl(r.journeyId))} delay={d()}>
+      <Tile key={`claim-${r.id}`} bg={G.gift} emoji="gift" eyebrow={t('Reward unlocked!')} title={r.title} sub={journey ? t('Treat yourself – you ran there.') : nameOf(r.journeyId)} onClick={() => navigate(giftsUrl(r.journeyId))} delay={d()}>
         <Button size="small" variant="contained" sx={white} onClick={() => navigate(giftsUrl(r.journeyId))}>
           {t('Claim it')}
         </Button>
       </Tile>,
     );
   for (const q of owedToMe)
-    tiles.push(<Tile key={`owed-${q.id}`} bg={G.gift} emoji="🏅" eyebrow={t('{name} owes you', { name: q.from.name })} title={q.gift.text} sub={t('You completed {quest}', { quest: questTitle(q, getLang()) })} onClick={() => navigate('/play')} delay={d()} />);
+    tiles.push(<Tile key={`owed-${q.id}`} bg={G.gift} emoji="medal" eyebrow={t('{name} owes you', { name: q.from.name })} title={q.gift.text} sub={t('You completed {quest}', { quest: questTitle(q, getLang()) })} onClick={() => navigate('/play')} delay={d()} />);
   for (const q of iOwe)
     tiles.push(
-      <Tile key={`owe-${q.id}`} bg={G.gift} emoji="🎀" eyebrow={t('You owe {name}', { name: q.to.name })} title={q.gift.text} sub={t('{name} completed your challenge', { name: q.to.name })} delay={d()}>
+      <Tile key={`owe-${q.id}`} bg={G.gift} emoji="ribbon" eyebrow={t('You owe {name}', { name: q.to.name })} title={q.gift.text} sub={t('{name} completed your challenge', { name: q.to.name })} delay={d()}>
         <Button size="small" variant="contained" sx={white} loading={busy === q.id + 'delivered'} onClick={() => act(q, 'delivered')}>
           {t('Gift delivered')}
         </Button>
@@ -178,7 +187,7 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
     );
   for (const s of draws)
     tiles.push(
-      <Tile key={`draw-${s.groupId}`} bg={G.bucket} emoji="🪣" eyebrow={s.groupName} title={s.count === 1 ? t('A mystery draw is waiting') : t('{n} mystery draws are waiting', { n: s.count })} sub={t('Reach into the surprise bucket')} onClick={() => navigate(`/g/${s.groupId}`)} delay={d()}>
+      <Tile key={`draw-${s.groupId}`} bg={G.bucket} emoji="bucket" eyebrow={s.groupName} title={s.count === 1 ? t('A mystery draw is waiting') : t('{n} mystery draws are waiting', { n: s.count })} sub={t('Reach into the surprise bucket')} onClick={() => navigate(`/g/${s.groupId}`)} delay={d()}>
         <Button size="small" variant="contained" sx={white} onClick={() => navigate(`/g/${s.groupId}`)}>
           {t('Draw!')}
         </Button>
@@ -191,10 +200,10 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
       <Tile
         key={`run-${q.id}`}
         bg={G.quest}
-        emoji="🏃"
+        emoji="runner"
         eyebrow={iAmFrom ? t('{name} is on your quest', { name: q.to.name }) : t('Quest from {name}', { name: q.from.name })}
         title={questTitle(q, getLang())}
-        sub={<>{left != null ? t('{n} days left', { n: left }) : ''} · 🎁 {q.gift.text}</>}
+        sub={<>{left != null ? t('{n} days left', { n: left }) : ''} · <Emoji name="gift" /> {q.gift.text}</>}
         progress={q.type === 'race' && iAmFrom ? (q.progress?.rival ?? 0) / (q.progress?.target || 1) : questFraction(q)}
         onClick={() => navigate(journey ? giftsUrl(journey.id) : '/play')}
         delay={d()}
@@ -206,13 +215,13 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
       <Tile
         key={`stage-${s.id}`}
         bg={G.stage}
-        emoji="🚩"
+        emoji="flag"
         eyebrow={`${t('Race stage')} · ${s.groupName}`}
         title={s.name}
         sub={
           <>
             {s.status === 'scheduled' ? t('Starts in {n} days', { n: daysLeft(`${s.startDate}T00:00:00Z`) ?? 0 }) : s.rank ? t('You are #{rank} of {of} · {pct}', { rank: s.rank, of: s.of, pct: pct(s.effort ?? 0) }) : ''}
-            <br />🏆 {s.prize}
+            <br /><Emoji name="trophy" /> {s.prize}
           </>
         }
         progress={s.status === 'running' ? Math.min(1, (s.effort ?? 0) / 1.5) : undefined}
@@ -226,7 +235,7 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
       <Tile
         key={`next-${r.id}`}
         bg={G.reward}
-        emoji="🎁"
+        emoji="gift"
         eyebrow={journey ? t('Next reward') : `${t('Next reward')} · ${nameOf(jid)}`}
         title={r.title}
         sub={t('{km} to go', { km: formatKm(r.atM - pos, 0) })}
@@ -237,9 +246,9 @@ export default function PlayStrip({ journey, doneM, title = true, max }: { journ
     );
   }
   // always offer the two ways to add more fun
-  tiles.push(<Tile key="cta-q" bg={G.cta} light emoji="⚔️" eyebrow={t('Side quest')} title={t('Challenge a friend')} sub={t('A distance, a habit, a race or a time – with a gift for the winner.')} onClick={() => setDialog(true)} delay={d()} />);
+  tiles.push(<Tile key="cta-q" bg={G.cta} light emoji="swords" eyebrow={t('Side quest')} title={t('Challenge a friend')} sub={t('A distance, a habit, a race or a time – with a gift for the winner.')} onClick={() => setDialog(true)} delay={d()} />);
   if (targetJourney && !nextByJourney.has(targetJourney))
-    tiles.push(<Tile key="cta-r" bg={G.cta} light emoji="🎁" eyebrow={t('Reward')} title={t('Pin a treat on your route')} sub={t('It unlocks when you run there.')} onClick={() => navigate(giftsUrl(targetJourney))} delay={d()} />);
+    tiles.push(<Tile key="cta-r" bg={G.cta} light emoji="gift" eyebrow={t('Reward')} title={t('Pin a treat on your route')} sub={t('It unlocks when you run there.')} onClick={() => navigate(giftsUrl(targetJourney))} delay={d()} />);
 
   return (
     <Box component="section" aria-label={t('Challenges & gifts')}>

@@ -1,10 +1,10 @@
-import AddIcon from '@mui/icons-material/Add';
-import BikeIcon from '@mui/icons-material/DirectionsBike';
-import CloseIcon from '@mui/icons-material/Close';
-import RunIcon from '@mui/icons-material/DirectionsRun';
-import FlagIcon from '@mui/icons-material/OutlinedFlag';
-import HikingIcon from '@mui/icons-material/Hiking';
-import StraightIcon from '@mui/icons-material/Straighten';
+import { Add as AddIcon } from '../icons';
+import { DirectionsBike as BikeIcon } from '../icons';
+import { Close as CloseIcon } from '../icons';
+import { DirectionsRun as RunIcon } from '../icons';
+import { OutlinedFlag as FlagIcon } from '../icons';
+import { Hiking as HikingIcon } from '../icons';
+import { Straighten as StraightIcon } from '../icons';
 import {
   Alert,
   Box,

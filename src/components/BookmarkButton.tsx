@@ -1,5 +1,5 @@
-import BookmarkAddOutlinedIcon from '@mui/icons-material/BookmarkAddOutlined';
-import BookmarkAddedIcon from '@mui/icons-material/BookmarkAdded';
+import { BookmarkAddOutlined as BookmarkAddOutlinedIcon } from '../icons';
+import { BookmarkAdded as BookmarkAddedIcon } from '../icons';
 import { IconButton, Tooltip } from '@mui/material';
 import { motion } from 'motion/react';
 import { useState } from 'react';

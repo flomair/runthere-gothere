@@ -1,7 +1,7 @@
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import DownloadIcon from '@mui/icons-material/Download';
-import IosShareIcon from '@mui/icons-material/IosShare';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
+import { ContentCopy as ContentCopyIcon } from '../icons';
+import { Download as DownloadIcon } from '../icons';
+import { IosShare as IosShareIcon } from '../icons';
+import { LinkOff as LinkOffIcon } from '../icons';
 import { Alert, Box, Button, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, Stack, TextField, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { createShare, getShare, revokeShare, shareUrl } from '../lib/groups';

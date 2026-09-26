@@ -1,6 +1,6 @@
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import UploadIcon from '@mui/icons-material/UploadFileOutlined';
+import { Add as AddIcon } from '../icons';
+import { DeleteOutlined as DeleteIcon } from '../icons';
+import { UploadFileOutlined as UploadIcon } from '../icons';
 import {
   Alert,
   Box,

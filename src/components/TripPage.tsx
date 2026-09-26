@@ -1,7 +1,7 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
-import DownloadIcon from '@mui/icons-material/FileDownloadOutlined';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { ArrowBack as ArrowBackIcon } from '../icons';
+import { DeleteOutlined as DeleteOutlinedIcon } from '../icons';
+import { FileDownloadOutlined as DownloadIcon } from '../icons';
+import { OpenInNew as OpenInNewIcon } from '../icons';
 import {
   Alert,
   Box,

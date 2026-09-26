@@ -1,4 +1,4 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowBack as ArrowBackIcon } from '../icons';
 import { IconButton, Stack, Typography } from '@mui/material';
 import { t } from '../lib/i18n';
 import { navigate } from '../lib/nav';

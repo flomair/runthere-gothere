@@ -1,4 +1,4 @@
-import TerrainIcon from '@mui/icons-material/Terrain';
+import { Terrain as TerrainIcon } from '../icons';
 import { Box, Card, CardContent, Skeleton, Stack, Typography, useTheme } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { profileStats } from '../../shared/geo';

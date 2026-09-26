@@ -1,7 +1,7 @@
-import CloseIcon from '@mui/icons-material/Close';
-import PauseIcon from '@mui/icons-material/Pause';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import ReplayIcon from '@mui/icons-material/Replay';
+import { Close as CloseIcon } from '../icons';
+import { Pause as PauseIcon } from '../icons';
+import { PlayArrow as PlayArrowIcon } from '../icons';
+import { Replay as ReplayIcon } from '../icons';
 import { Alert, Box, Dialog, IconButton, Slider, Stack, ToggleButton, ToggleButtonGroup, Typography, useMediaQuery, useTheme } from '@mui/material';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';

@@ -1,10 +1,10 @@
-import AdminIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
-import DarkModeIcon from '@mui/icons-material/DarkModeOutlined';
-import LightModeIcon from '@mui/icons-material/LightModeOutlined';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import LogoutIcon from '@mui/icons-material/Logout';
-import StraightenIcon from '@mui/icons-material/Straighten';
-import SyncIcon from '@mui/icons-material/Sync';
+import { AdminPanelSettingsOutlined as AdminIcon } from '../icons';
+import { DarkModeOutlined as DarkModeIcon } from '../icons';
+import { LightModeOutlined as LightModeIcon } from '../icons';
+import { LinkOff as LinkOffIcon } from '../icons';
+import { Logout as LogoutIcon } from '../icons';
+import { Straighten as StraightenIcon } from '../icons';
+import { Sync as SyncIcon } from '../icons';
 import {
   AppBar,
   Avatar,
@@ -32,14 +32,14 @@ import { getUnit, setUnit } from '../lib/units';
 import { useInstallAction } from './InstallPrompt';
 import { usePush } from '../lib/push';
 import { vapidKey } from '../lib/firebase';
-import NotificationsIcon from '@mui/icons-material/NotificationsOutlined';
-import TranslateIcon from '@mui/icons-material/Translate';
+import { NotificationsOutlined as NotificationsIcon } from '../icons';
+import { Translate as TranslateIcon } from '../icons';
 import { getLang, setLang, t } from '../lib/i18n';
 import StravaButton from './StravaButton';
-import InstallMobileIcon from '@mui/icons-material/InstallMobile';
-import CollectionsIcon from '@mui/icons-material/CollectionsBookmarkOutlined';
-import QuestIcon from '@mui/icons-material/SportsKabaddiOutlined';
-import GiftIcon from '@mui/icons-material/CardGiftcardOutlined';
+import { InstallMobile as InstallMobileIcon } from '../icons';
+import { CollectionsBookmarkOutlined as CollectionsIcon } from '../icons';
+import { SportsKabaddiOutlined as QuestIcon } from '../icons';
+import { CardGiftcardOutlined as GiftIcon } from '../icons';
 import { usePlayCount } from './PlayStrip';
 
 export default function AppHeader() {

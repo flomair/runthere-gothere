@@ -1,9 +1,9 @@
-import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
-import GiftIcon from '@mui/icons-material/CardGiftcardOutlined';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEventsOutlined';
-import ListIcon from '@mui/icons-material/FormatListBulleted';
-import MapIcon from '@mui/icons-material/MapOutlined';
-import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import { AutoStoriesOutlined as AutoStoriesIcon } from '../icons';
+import { CardGiftcardOutlined as GiftIcon } from '../icons';
+import { EmojiEventsOutlined as EmojiEventsIcon } from '../icons';
+import { FormatListBulleted as ListIcon } from '../icons';
+import { MapOutlined as MapIcon } from '../icons';
+import { TravelExplore as TravelExploreIcon } from '../icons';
 import { Badge, BottomNavigation, BottomNavigationAction, Box, Paper, Tab, Tabs } from '@mui/material';
 import { t } from '../lib/i18n';
 

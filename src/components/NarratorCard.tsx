@@ -1,7 +1,7 @@
-import AutoStoriesIcon from '@mui/icons-material/AutoStoriesOutlined';
-import SettingsIcon from '@mui/icons-material/SettingsOutlined';
-import StopIcon from '@mui/icons-material/StopCircleOutlined';
-import VolumeUpIcon from '@mui/icons-material/VolumeUpOutlined';
+import { AutoStoriesOutlined as AutoStoriesIcon } from '../icons';
+import { SettingsOutlined as SettingsIcon } from '../icons';
+import { StopCircleOutlined as StopIcon } from '../icons';
+import { VolumeUpOutlined as VolumeUpIcon } from '../icons';
 import {
   Alert,
   Box,

@@ -1,4 +1,4 @@
-import SportsIcon from '@mui/icons-material/SportsScore';
+import { SportsScore as SportsIcon } from '../icons';
 import { Alert, Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -7,6 +7,7 @@ import { formatDate } from '../lib/format';
 import type { CoachPlan, WorkoutType } from '../lib/types';
 import { CountUp, Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
+import { EmojiText } from './Emoji';
 
 const LOOK: Record<WorkoutType, { emoji: string; color: string; label: string }> = {
   easy: { emoji: '🙂', color: '#149A80', label: 'Easy' },
@@ -96,7 +97,7 @@ export default function CoachCard({ journeyId }: { journeyId: string }) {
                           {formatDate(new Date(2024, 0, 1 + i), { weekday: 'short' })}
                           {today ? ` · ${t('today')}` : ''}
                         </Typography>
-                        <Typography sx={{ fontSize: 22, lineHeight: 1.2 }}>{look.emoji}</Typography>
+                        <Typography sx={{ fontSize: 22, lineHeight: 1.2 }}><EmojiText text={look.emoji} size="1.2em" /></Typography>
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
                         <Chip size="small" label={d.type === 'rest' ? t('Rest') : `${t(look.label)} · ${d.distanceKm} km`} sx={{ bgcolor: look.color, color: '#fff', height: 22, mb: 0.5 }} />

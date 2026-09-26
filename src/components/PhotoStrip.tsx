@@ -1,5 +1,5 @@
-import CloseIcon from '@mui/icons-material/Close';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { Close as CloseIcon } from '../icons';
+import { OpenInNew as OpenInNewIcon } from '../icons';
 import { Box, Chip, Dialog, IconButton, Link, Skeleton, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import { useState } from 'react';
 import { formatDate, formatKm } from '../lib/format';

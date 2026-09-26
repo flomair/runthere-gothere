@@ -1,6 +1,6 @@
-import AddBoxOutlinedIcon from '@mui/icons-material/AddBoxOutlined';
-import CloseIcon from '@mui/icons-material/Close';
-import IosShareIcon from '@mui/icons-material/IosShare';
+import { AddBoxOutlined as AddBoxOutlinedIcon } from '../icons';
+import { Close as CloseIcon } from '../icons';
+import { IosShare as IosShareIcon } from '../icons';
 import { Box, Button, Card, CardContent, Dialog, DialogContent, DialogTitle, IconButton, Stack, Typography, useMediaQuery } from '@mui/material';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';

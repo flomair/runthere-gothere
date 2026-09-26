@@ -1,5 +1,5 @@
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import StarIcon from '@mui/icons-material/Star';
+import { OpenInNew as OpenInNewIcon } from '../icons';
+import { Star as StarIcon } from '../icons';
 import {
   Avatar,
   Box,

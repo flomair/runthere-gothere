@@ -1,5 +1,5 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
+import { ArrowBack as ArrowBackIcon } from '../icons';
+import { DeleteOutlined as DeleteIcon } from '../icons';
 import {
   Alert,
   Box,

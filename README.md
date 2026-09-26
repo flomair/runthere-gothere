@@ -161,6 +161,10 @@ When you press **"Tell me about this place"**, the server gathers context for th
 
 It is written in your browser's language and streamed as it is generated. **Read aloud** uses the browser's built-in voices (you pick the voice and speed in settings). Stories are saved in your account per spot and style, so reopening one doesn't cost another call, on any device.
 
+## Icons
+
+UI icons are [Phosphor](https://phosphoricons.com) (duotone weight, via `@phosphor-icons/react`), wrapped in `src/icons.tsx` so they take MUI's `fontSize`/`color`/`sx` props. Playful objects (gifts, trophies, swords, the bucket, map markers…) are [Microsoft Fluent Emoji 3D](https://github.com/microsoft/fluentui-emoji), resized to 128 px WebP in `public/emoji` and drawn with `src/components/Emoji.tsx` (`<Emoji name="gift" />`, or `<EmojiText>` to swap emoji inside text), so they look the same on every device. Both are MIT-licensed.
+
 ## Scripts
 
 ```bash

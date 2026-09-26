@@ -1,8 +1,8 @@
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEventsOutlined';
-import FlagIcon from '@mui/icons-material/FlagOutlined';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartmentOutlined';
+import { Add as AddIcon } from '../icons';
+import { DeleteOutlined as DeleteIcon } from '../icons';
+import { EmojiEventsOutlined as EmojiEventsIcon } from '../icons';
+import { FlagOutlined as FlagIcon } from '../icons';
+import { LocalFireDepartmentOutlined as LocalFireDepartmentIcon } from '../icons';
 import {
   Alert,
   Box,
@@ -27,6 +27,7 @@ import type { Progress } from '../lib/progress';
 import { journeyStore, newId } from '../lib/storage';
 import type { Journey } from '../lib/types';
 import { locale, t } from '../lib/i18n';
+import { Emoji, EmojiText } from './Emoji';
 
 function Tile({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
@@ -145,7 +146,7 @@ function RaceEditor({ journey }: { journey: Journey }) {
         {ev ? (
           <Alert
             severity="info"
-            icon={<span style={{ fontSize: 22 }}>🏅</span>}
+            icon={<Emoji name="medal" size={26} />}
             action={
               <Button color="inherit" size="small" onClick={() => setEditing(true)}>
                 {t('Edit')}
@@ -157,7 +158,7 @@ function RaceEditor({ journey }: { journey: Journey }) {
           </Alert>
         ) : (
           <Button size="small" onClick={() => setEditing(true)}>
-            {t('🏅 Finish at a real race')}
+            <EmojiText text={t('🏅 Finish at a real race')} />
           </Button>
         )}
       </Box>

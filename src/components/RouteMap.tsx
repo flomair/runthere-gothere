@@ -7,25 +7,26 @@ import { t } from '../lib/i18n';
 import { HIGHLIGHT } from '../theme';
 import BaseTiles from './BaseTiles';
 import { routeColors, useDarkMap } from '../lib/mapStyle';
+import { type EmojiName, emojiHtml } from './Emoji';
 
 const icon = (cls: string, html = '') =>
   L.divIcon({ className: '', html: `<div class="rtgt-marker ${cls}">${html}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
 
 const ICONS = {
-  me: icon('me', '🏃'),
+  me: icon('me', emojiHtml('runner', 22)),
   start: L.divIcon({ className: '', html: '<div class="rtgt-marker start">A</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
-  goal: icon('goal', '🏁'),
+  goal: icon('goal', emojiHtml('finish', 22)),
   via: L.divIcon({ className: '', html: '<div class="rtgt-marker start">•</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
   /** A stop you have reached ("unlocked"). */
   viaReached: L.divIcon({ className: '', html: '<div class="rtgt-marker reached">✓</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
   /** An earlier destination of the journey (end of a previous leg). */
-  legGoal: L.divIcon({ className: '', html: '<div class="rtgt-marker reached leg">🏁</div>', iconSize: [28, 28], iconAnchor: [14, 14] }),
+  legGoal: L.divIcon({ className: '', html: `<div class="rtgt-marker reached leg">${emojiHtml('finish', 18)}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
   reward: {
-    locked: L.divIcon({ className: '', html: '<div class="rtgt-marker reward">🎁</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
-    unlocked: L.divIcon({ className: '', html: '<div class="rtgt-marker reward unlocked">🎁</div>', iconSize: [30, 30], iconAnchor: [15, 15] }),
+    locked: L.divIcon({ className: '', html: `<div class="rtgt-marker reward">${emojiHtml('gift', 18)}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
+    unlocked: L.divIcon({ className: '', html: `<div class="rtgt-marker reward unlocked">${emojiHtml('gift', 22)}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }),
     claimed: L.divIcon({ className: '', html: '<div class="rtgt-marker reward claimed">✓</div>', iconSize: [22, 22], iconAnchor: [11, 11] }),
   },
-  peek: L.divIcon({ className: '', html: '<div class="rtgt-marker peek">👀</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
+  peek: L.divIcon({ className: '', html: `<div class="rtgt-marker peek">${emojiHtml('eyes', 18)}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }),
 };
 
 /** A side branch leaving the route at `m`: a gentle curve off to one side (stored-line metres). */
@@ -124,7 +125,7 @@ interface Props {
   /** Personal rewards pinned on the route (stored-line metres). */
   rewards?: { id: string; title: string; m: number; status: 'locked' | 'unlocked' | 'claimed' }[];
   /** Side quests branching off the route (stored-line metres). */
-  branches?: { id: string; m: number; fraction: number; label: string; emoji: string; offered?: boolean; done?: boolean }[];
+  branches?: { id: string; m: number; fraction: number; label: string; emoji: EmojiName; offered?: boolean; done?: boolean }[];
 }
 
 export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek, flyToken, flyTarget, height = 460, highlight, stops, rewards, branches }: Props) {
@@ -198,7 +199,7 @@ export default function RouteMap({ points, cum, doneM, waypoints, peekM, onPeek,
             {k > 0 && <Polyline positions={line.slice(0, k + 1)} pathOptions={{ color, weight: 5, opacity: 0.95, lineCap: 'round' }} />}
             <Marker
               position={line[line.length - 1]}
-              icon={L.divIcon({ className: '', html: `<div class="rtgt-marker quest${b.offered ? ' offered' : ''}${b.done ? ' done' : ''}">${b.emoji}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] })}
+              icon={L.divIcon({ className: '', html: `<div class="rtgt-marker quest${b.offered ? ' offered' : ''}${b.done ? ' done' : ''}">${emojiHtml(b.emoji, 18)}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] })}
               zIndexOffset={150}
             >
               <Tooltip>{b.label}</Tooltip>

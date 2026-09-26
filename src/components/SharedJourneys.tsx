@@ -1,4 +1,4 @@
-import GroupsIcon from '@mui/icons-material/Groups';
+import { Groups as GroupsIcon } from '../icons';
 import { Alert, AvatarGroup, Avatar, Box, Button, Card, CardActionArea, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { formatKm } from '../lib/format';
@@ -6,6 +6,7 @@ import { useGroupActions, useGroups } from '../lib/groups';
 import { navigate } from '../lib/nav';
 import { Stagger, StaggerItem } from './motion';
 import { t } from '../lib/i18n';
+import { Emoji, EmojiText } from './Emoji';
 
 /** Invitations and shared journeys on the start page. */
 export default function SharedJourneys() {
@@ -25,7 +26,7 @@ export default function SharedJourneys() {
           <Alert
             key={inv.id}
             severity="info"
-            icon={<span style={{ fontSize: 22 }}>{inv.mode === 'race' ? '🏁' : '🤝'}</span>}
+            icon={<Emoji name={inv.mode === 'race' ? 'finish' : 'handshake'} size={26} />}
             action={
               <Stack direction="row" spacing={1}>
                 <Button color="inherit" onClick={() => actions.leave(inv.id)} disabled={busy === inv.id}>
@@ -61,7 +62,7 @@ export default function SharedJourneys() {
                 <CardActionArea onClick={() => navigate(`/g/${g.id}`)}>
                   <CardContent>
                     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Chip size="small" label={g.mode === 'race' ? t('🏁 Race') : t('🤝 Relay')} />
+                      <Chip size="small" label={<EmojiText text={g.mode === 'race' ? t('🏁 Race') : t('🤝 Relay')} />} />
                       <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: 12 } }}>
                         {g.memberUids.map((u) => (
                           <Avatar key={u} src={g.members[u]?.picture}>

@@ -1,4 +1,4 @@
-import PlaceIcon from '@mui/icons-material/PlaceOutlined';
+import { PlaceOutlined as PlaceIcon } from '../icons';
 import { Autocomplete, Box, CircularProgress, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { geocode } from '../lib/api';

@@ -1,4 +1,4 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { ArrowBack as ArrowBackIcon } from '../icons';
 import { Box, Card, CardContent, Chip, CircularProgress, IconButton, Link, Stack, Typography } from '@mui/material';
 import { useMemo } from 'react';
 import { isCityMilestone } from '../../shared/rewards';
@@ -14,6 +14,7 @@ import { ROUNDED } from '../theme';
 import PhotoImg from './PhotoImg';
 import Stamp from './Stamp';
 import { Reveal } from './motion';
+import { Emoji, EmojiText } from './Emoji';
 
 /** Everything collected on the road: passport stamps from every journey and the gallery of claimed rewards. */
 export default function CollectionPage() {
@@ -111,7 +112,7 @@ export default function CollectionPage() {
                       boxShadow: '0 0 0 4px rgb(162 89 232 / 22%), 0 6px 16px rgb(35 40 98 / 25%)',
                     }}
                   >
-                    {q.badge!.emoji}
+                    <EmojiText text={q.badge!.emoji} size={48} />
                   </Box>
                   <Typography variant="body2" sx={{ fontWeight: 700, mt: 1, lineHeight: 1.25 }}>
                     {questTitle(q, getLang())}
@@ -146,7 +147,7 @@ export default function CollectionPage() {
                     {r.claimPhoto || r.photo ? (
                       <PhotoImg path={(r.claimPhoto || r.photo)!} alt={r.title} height={150} />
                     ) : (
-                      <Box sx={{ height: 150, display: 'grid', placeItems: 'center', fontSize: 48, background: 'linear-gradient(135deg, #3F7CF6, #6A67F0 50%, #A259E8)' }}>🎁</Box>
+                      <Box sx={{ height: 150, display: 'grid', placeItems: 'center', background: 'linear-gradient(135deg, #3F7CF6, #6A67F0 50%, #A259E8)' }}><Emoji name="gift" size={72} /></Box>
                     )}
                     <Box sx={{ p: 1.5 }}>
                       <Typography sx={{ fontWeight: 700 }} noWrap>

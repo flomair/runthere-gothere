@@ -1,4 +1,4 @@
-import GoogleIcon from '@mui/icons-material/Google';
+import { Google as GoogleIcon } from '../icons';
 import { Alert, Box, Button, Card, CircularProgress, Stack, Typography } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useState } from 'react';

@@ -1,5 +1,5 @@
-import MyLocationIcon from '@mui/icons-material/MyLocation';
-import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
+import { MyLocation as MyLocationIcon } from '../icons';
+import { ThreeDRotation as ThreeDRotationIcon } from '../icons';
 import {
   Alert,
   AlertTitle,
@@ -50,9 +50,11 @@ import RewardsCard from './RewardsCard';
 import QuestsCard from './QuestsCard';
 import PlayStrip from './PlayStrip';
 import { useQuests } from '../lib/quests';
-import { QUEST_EMOJI, questFraction, questTitle } from '../../shared/quests';
+import { questFraction, questTitle } from '../../shared/quests';
+import { QUEST_ICON } from './QuestsCard';
 import { useRewards } from '../lib/rewards';
 import { rewardState } from '../../shared/rewards';
+import { Emoji, EmojiText } from './Emoji';
 
 function downloadGpx(j: Journey) {
   const pts = j.route.points.map(([la, lo]) => `<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"/>`).join('');
@@ -195,7 +197,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
           m: (q.status === 'offered' ? progress.doneM : (q.branchAtM ?? 0)) * scale,
           fraction: questFraction(q),
           label: `${questTitle(q, getLang())} · ${q.from.name}${q.status === 'offered' ? ` · ${t('waiting for your answer')}` : ''}`,
-          emoji: QUEST_EMOJI[q.type],
+          emoji: QUEST_ICON[q.type],
           offered: q.status === 'offered',
           done: q.status === 'won',
         })),
@@ -227,10 +229,10 @@ export default function JourneyView({ journey }: { journey: Journey }) {
 
   const menuEl = (
     <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
-      <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}>{t('📤 Share card & public link')}</MenuItem>
-      <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}>{t('👥 Invite friends (race or relay)')}</MenuItem>
-      <MenuItem onClick={() => { setMenu(null); navigate(`/j/${journey.id}/trip`); }}>{t('🧳 Plan the real trip')}</MenuItem>
-      {!progress.finished && <MenuItem onClick={() => { setMenu(null); setLegDialog('edit'); }}>{t('🗺️ Change destination & stops')}</MenuItem>}
+      <MenuItem onClick={() => { setMenu(null); setShareOpen(true); }}><EmojiText text={t('📤 Share card & public link')} /></MenuItem>
+      <MenuItem onClick={() => { setMenu(null); setInviteOpen(true); }}><EmojiText text={t('👥 Invite friends (race or relay)')} /></MenuItem>
+      <MenuItem onClick={() => { setMenu(null); navigate(`/j/${journey.id}/trip`); }}><EmojiText text={t('🧳 Plan the real trip')} /></MenuItem>
+      {!progress.finished && <MenuItem onClick={() => { setMenu(null); setLegDialog('edit'); }}><EmojiText text={t('🗺️ Change destination & stops')} /></MenuItem>}
       {progress.finished && <MenuItem onClick={() => { setMenu(null); setLegDialog('next'); }}>{t('➡️ Pick your next destination')}</MenuItem>}
       <MenuItem onClick={() => { setMenu(null); setSettingsOpen(true); }}>{t('Settings')}</MenuItem>
       <MenuItem onClick={() => { setMenu(null); downloadGpx(journey); }}>{t('Download route as GPX')}</MenuItem>
@@ -277,7 +279,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       )}
       {progress.finished && (
         <Pop key="finished">
-          <Alert severity="success" icon={<span style={{ fontSize: 28 }}>🏁</span>}>
+          <Alert severity="success" icon={<Emoji name="finish" size={30} />}>
             <AlertTitle>{t("You've arrived in {place}!", { place: journey.waypoints[journey.waypoints.length - 1]?.name ?? t('your destination') })}</AlertTitle>
             {progress.finishedOn ? t('{km} done on {date}.', { km: formatKm(progress.totalM, 0), date: formatDate(progress.finishedOn) }) : t('{km} done.', { km: formatKm(progress.totalM, 0) })}{' '}
             {t('Pick your next destination and keep going, or go there for real.')}
@@ -294,7 +296,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
       )}
       {sinceLast && !progress.finished && (
         <Pop key="since">
-          <Alert severity="success" icon={<span style={{ fontSize: 22 }}>🏃</span>} onClose={() => setSinceLast(null)}>
+          <Alert severity="success" icon={<Emoji name="runner" size={26} />} onClose={() => setSinceLast(null)}>
             {t('Since your last visit ({date}) you have moved', { date: formatDate(sinceLast.at) })} <strong>{formatKm(sinceLast.m)}</strong> {t('further along the route.')}
           </Alert>
         </Pop>
@@ -305,11 +307,11 @@ export default function JourneyView({ journey }: { journey: Journey }) {
             severity="info"
             icon={
               <motion.span
-                style={{ fontSize: 24, display: 'inline-block' }}
+                style={{ display: 'inline-block' }}
                 animate={{ rotate: [0, -12, 10, -6, 0], y: [0, -3, 0] }}
                 transition={{ duration: 1.2, repeat: 2, repeatDelay: 1.5 }}
               >
-                📮
+                <Emoji name="postbox" size={26} />
               </motion.span>
             }
             action={
@@ -389,9 +391,9 @@ export default function JourneyView({ journey }: { journey: Journey }) {
   const explore = (
     <Stack spacing={2}>
       <ToggleButtonGroup exclusive value={tab} onChange={(_, v) => v && setTab(v)} fullWidth sx={{ bgcolor: 'background.paper', borderRadius: 999, '& .MuiToggleButton-root': { border: 0, borderRadius: '999px !important', py: 1 }, '& .Mui-selected': { bgcolor: 'action.selected' } }}>
-        <ToggleButton value="here">{t('📍 Where I am')}</ToggleButton>
+        <ToggleButton value="here"><EmojiText text={t('📍 Where I am')} /></ToggleButton>
         <ToggleButton value="ahead" disabled={progress.finished}>
-          {t('👀 Look ahead')}
+          <EmojiText text={t('👀 Look ahead')} />
         </ToggleButton>
       </ToggleButtonGroup>
       <AnimatePresence mode="wait" initial={false}>

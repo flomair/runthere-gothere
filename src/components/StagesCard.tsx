@@ -1,5 +1,5 @@
-import AddIcon from '@mui/icons-material/Add';
-import FlagIcon from '@mui/icons-material/SportsScoreOutlined';
+import { Add as AddIcon } from '../icons';
+import { SportsScoreOutlined as FlagIcon } from '../icons';
 import {
   Alert,
   Avatar,
@@ -29,6 +29,7 @@ import { t } from '../lib/i18n';
 import { useStageActions, useStages } from '../lib/stages';
 import type { Group, Journey, Stage } from '../lib/types';
 import { AnimatedBar } from './motion';
+import { Emoji, EmojiText } from './Emoji';
 
 const initials = (n: string) => n.split(/\s+/).map((p) => p[0]).join('').slice(0, 2).toUpperCase();
 
@@ -199,13 +200,13 @@ function StageItem({ s, group, colorOf, me }: { s: Stage; group: Group; colorOf:
   return (
     <Box sx={{ p: 1.5, borderRadius: '16px', border: 1, borderColor: s.status === 'running' ? 'secondary.main' : 'divider', opacity: s.status === 'cancelled' ? 0.6 : 1 }}>
       <Stack direction="row" sx={{ alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-        <Typography sx={{ fontWeight: 800, flexGrow: 1 }}>🚩 {s.name}</Typography>
+        <Typography sx={{ fontWeight: 800, flexGrow: 1 }}><Emoji name="flag" /> {s.name}</Typography>
         <Chip size="small" color={s.status === 'running' ? 'secondary' : 'default'} label={statusLine(s)} />
       </Stack>
       <Typography variant="caption" color="text.secondary" component="div">
         {formatDate(s.startDate)} – {formatDate(s.endDate)} · {t('{n} days', { n: stageDays(s) })} · {formatKm(s.fromM, 0)}–{formatKm(s.toM, 0)}
       </Typography>
-      <Chip size="small" sx={{ mt: 0.75 }} label={`🏆 ${s.prize.text}`} color={s.prize.fulfillment.status === 'fulfilled' ? 'success' : 'default'} />
+      <Chip size="small" sx={{ mt: 0.75 }} label={<EmojiText text={`🏆 ${s.prize.text}`} />} color={s.prize.fulfillment.status === 'fulfilled' ? 'success' : 'default'} />
       <Stack spacing={1} sx={{ mt: 1.25 }}>
         {rows.map((r, i) => (
           <Stack key={r.uid} direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
@@ -216,7 +217,7 @@ function StageItem({ s, group, colorOf, me }: { s: Stage; group: Group; colorOf:
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1 }}>
                 <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-                  {s.winnerUid === r.uid ? '🏆 ' : s.status === 'running' && s.leaderUid === r.uid ? '👑 ' : ''}
+                  {s.winnerUid === r.uid ? <><Emoji name="trophy" />{' '}</> : s.status === 'running' && s.leaderUid === r.uid ? <><Emoji name="crown" />{' '}</> : ''}
                   {name(r.uid)}
                   {r.uid === me ? ` (${t('you')})` : ''}
                 </Typography>
@@ -281,7 +282,7 @@ export default function StagesCard({ group, colorOf }: { group: Group; colorOf: 
         <Box sx={{ p: 1.5, mb: 1.5, borderRadius: '16px', bgcolor: 'action.hover' }}>
           <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Typography sx={{ fontWeight: 700, flexGrow: 1 }}>
-              🏆 {group.bonusPrize ? t('Bonus at {place}: {prize}', { place: dest, prize: group.bonusPrize.text }) : t('Bonus at {place} for the most stage wins', { place: dest })}
+              <Emoji name="trophy" size={24} /> {group.bonusPrize ? t('Bonus at {place}: {prize}', { place: dest, prize: group.bonusPrize.text }) : t('Bonus at {place} for the most stage wins', { place: dest })}
             </Typography>
             {group.ownerUid === uid && (
               <Button
@@ -308,7 +309,7 @@ export default function StagesCard({ group, colorOf }: { group: Group; colorOf: 
                   <Chip
                     key={u}
                     avatar={<Avatar src={group.members[u]?.picture} sx={{ bgcolor: colorOf(u) }}>{initials(group.members[u]?.name ?? '?')}</Avatar>}
-                    label={`${nameOf(u)} · ${n === 1 ? t('1 stage win') : t('{n} stage wins', { n })}${leaders.includes(u) ? ' 👑' : ''}`}
+                    label={<EmojiText text={`${nameOf(u)} · ${n === 1 ? t('1 stage win') : t('{n} stage wins', { n })}${leaders.includes(u) ? ' 👑' : ''}`} />}
                     variant={leaders.includes(u) ? 'filled' : 'outlined'}
                     color={leaders.includes(u) ? 'secondary' : 'default'}
                   />

@@ -1,10 +1,10 @@
-import AddAPhotoIcon from '@mui/icons-material/AddAPhotoOutlined';
-import AddIcon from '@mui/icons-material/Add';
-import CardGiftcardIcon from '@mui/icons-material/CardGiftcardOutlined';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import EditIcon from '@mui/icons-material/EditOutlined';
-import LinkIcon from '@mui/icons-material/Link';
-import LockIcon from '@mui/icons-material/LockOutlined';
+import { AddAPhotoOutlined as AddAPhotoIcon } from '../icons';
+import { Add as AddIcon } from '../icons';
+import { CardGiftcardOutlined as CardGiftcardIcon } from '../icons';
+import { DeleteOutlined as DeleteIcon } from '../icons';
+import { EditOutlined as EditIcon } from '../icons';
+import { Link as LinkIcon } from '../icons';
+import { LockOutlined as LockIcon } from '../icons';
 import {
   Alert,
   Box,
@@ -34,6 +34,7 @@ import { type RewardDraft, useRewardActions, useRewards } from '../lib/rewards';
 import type { Journey, Reward } from '../lib/types';
 import { uploadPhoto } from '../lib/uploads';
 import PhotoImg from './PhotoImg';
+import { Emoji } from './Emoji';
 
 const money = (v: number, currency: string) => new Intl.NumberFormat(locale(), { style: 'currency', currency }).format(v);
 
@@ -172,7 +173,7 @@ function ClaimDialog({ reward, onClose }: { reward: Reward | null; onClose: () =
   }, [reward?.id]);
   return (
     <Dialog open={!!reward} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>🎉 {reward?.title}</DialogTitle>
+      <DialogTitle><Emoji name="party" /> {reward?.title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <Typography color="text.secondary">{t('You earned it. Add a photo of your treat for the gallery, if you like.')}</Typography>
@@ -229,7 +230,7 @@ export default function RewardsCard({ journey, progress, cities }: { journey: Jo
         {journey.savings && (
           <Box sx={{ mb: 2, p: 1.5, borderRadius: '16px', bgcolor: 'action.hover', display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ fontSize: 30 }} aria-hidden>
-              🫙
+              <Emoji name="moneybag" size={36} />
             </Box>
             <Box>
               <Typography sx={{ fontWeight: 800, fontSize: '1.3rem', fontFamily: 'ui-rounded, "SF Pro Rounded", Nunito, sans-serif' }}>{money(saved, journey.savings.currency)}</Typography>
@@ -264,7 +265,7 @@ export default function RewardsCard({ journey, progress, cities }: { journey: Jo
                       }}
                     >
                       <Box sx={{ width: 44, height: 44, borderRadius: '12px', overflow: 'hidden', flexShrink: 0, display: 'grid', placeItems: 'center', bgcolor: 'action.hover', fontSize: 22 }}>
-                        {r.photo ? <PhotoImg path={r.photo} height={44} /> : state === 'locked' ? '🎁' : state === 'unlocked' ? '✨' : '✅'}
+                        {r.photo ? <PhotoImg path={r.photo} height={44} /> : <Emoji name={state === 'locked' ? 'gift' : state === 'unlocked' ? 'sparkles' : 'check'} size={30} sx={{ opacity: state === 'locked' ? 0.75 : 1 }} />}
                       </Box>
                       <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                         <Typography sx={{ fontWeight: 650 }} noWrap>

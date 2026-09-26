@@ -1,6 +1,6 @@
-import AddIcon from '@mui/icons-material/Add';
-import DownloadIcon from '@mui/icons-material/FileDownloadOutlined';
-import UploadIcon from '@mui/icons-material/FileUploadOutlined';
+import { Add as AddIcon } from '../icons';
+import { FileDownloadOutlined as DownloadIcon } from '../icons';
+import { FileUploadOutlined as UploadIcon } from '../icons';
 import {
   Alert,
   Box,
@@ -30,6 +30,7 @@ import { InstallBanner } from './InstallPrompt';
 import { t } from '../lib/i18n';
 import HeroSurface from './HeroSurface';
 import { INDIGO, ROUNDED } from '../theme';
+import { Emoji } from './Emoji';
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -69,11 +70,11 @@ function JourneyCard({ journey, connected, newPostcards }: { journey: Journey; c
             </Box>
             <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
               <Typography sx={{ fontFamily: ROUNDED, fontWeight: 800, fontSize: '1.6rem', lineHeight: 1, color: p.finished ? 'success.main' : 'secondary.main' }}>
-                {p.finished ? '🏁' : pct(p.fraction)}
+                {p.finished ? <Emoji name="finish" size="1em" /> : pct(p.fraction)}
               </Typography>
               {newPostcards > 0 && (
                 <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
-                  📮 {t('{n} new', { n: newPostcards })}
+                  <Emoji name="postbox" /> {t('{n} new', { n: newPostcards })}
                 </Typography>
               )}
             </Box>

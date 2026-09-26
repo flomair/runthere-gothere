@@ -1,7 +1,7 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import HikingIcon from '@mui/icons-material/Hiking';
-import SearchIcon from '@mui/icons-material/Search';
-import SwapIcon from '@mui/icons-material/SwapHoriz';
+import { ArrowBack as ArrowBackIcon } from '../icons';
+import { Hiking as HikingIcon } from '../icons';
+import { Search as SearchIcon } from '../icons';
+import { SwapHoriz as SwapIcon } from '../icons';
 import {
   Alert,
   Box,
