@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { decodePolyline, encodePolyline } from '../shared/geo.js';
-import type { Activity, Bookmark, CoachPlan, Draw, FeedItem, Group, Journey, Milestone, Prize, Quest, Reward, Stage } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, Draw, FeedItem, Group, Journey, Milestone, Prize, Quest, Reward, RunFeedback, Stage } from '../shared/types.js';
 import { db } from './firebase.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -14,6 +14,7 @@ import { migrateJourney } from '../shared/legs.js';
  *   users/{uid}/journeys/{id}          journeys (route stored as an encoded polyline)
  *   users/{uid}/activities/{id}        synced Strava activities
  *   users/{uid}/narrations/{key}       saved narrator stories
+ *   users/{uid}/runFeedback/{id}       post-run feedback per activity (computed numbers, never raw streams)
  *   secrets/{uid}                      encrypted Strava tokens and Anthropic key
  *   stravaAthletes/{athleteId}         → uid, for webhook routing
  *   quests/{id}                        friend challenges (fromUid / toUid / toEmail for queries)
@@ -129,6 +130,10 @@ export interface Repo {
 
   getCoachPlan(uid: string, journeyId: string): Promise<CoachPlan | null>;
   putCoachPlan(uid: string, journeyId: string, plan: CoachPlan): Promise<void>;
+
+  getRunFeedback(uid: string, activityId: number): Promise<RunFeedback | null>;
+  putRunFeedback(uid: string, f: RunFeedback): Promise<void>;
+  listRunFeedback(uid: string): Promise<RunFeedback[]>;
 
   incrementStat(uid: string, key: 'stories' | 'postcards' | 'coachPlans'): Promise<void>;
   addPushToken(uid: string, token: string): Promise<void>;
@@ -378,6 +383,17 @@ export const firestoreRepo: Repo = {
   },
   async putCoachPlan(uid, journeyId, plan) {
     await db().collection('users').doc(uid).collection('coach').doc(docId(journeyId)).set(plan);
+  },
+  async getRunFeedback(uid, activityId) {
+    const d = await db().collection('users').doc(uid).collection('runFeedback').doc(String(activityId)).get();
+    return d.exists ? (d.data() as RunFeedback) : null;
+  },
+  async putRunFeedback(uid, f) {
+    await db().collection('users').doc(uid).collection('runFeedback').doc(String(f.activityId)).set(f);
+  },
+  async listRunFeedback(uid) {
+    const snap = await db().collection('users').doc(uid).collection('runFeedback').get();
+    return snap.docs.map((d) => d.data() as RunFeedback).sort((a, b) => b.startDateLocal.localeCompare(a.startDateLocal));
   },
   async incrementStat(uid, key) {
     await db().collection('users').doc(uid).set({ stats: { [key]: FieldValue.increment(1) } }, { merge: true });

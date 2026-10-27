@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import type { LatLon } from '../../shared/geo';
 import { idToken } from './firebase';
-import type { Activity, Bookmark, CoachPlan, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, SurroundingsResponse } from './types';
+import type { Activity, Bookmark, CoachPlan, GeoResult, MeResponse, Milestone, Photo, PlannedRoute, RouteMode, RunFeedback, SurroundingsResponse } from './types';
 import { getLang } from './i18n';
 
 export class ApiError extends Error {
@@ -219,4 +219,23 @@ export function useUnlockBackfill(milestones: Milestone[] | undefined, max = 3) 
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [milestones]);
+}
+
+// ---- run feedback ----
+/** Feedback summaries (no steps / HR strip), newest first. */
+export function useRunFeedbackList(enabled = true) {
+  return useQuery({
+    queryKey: ['runFeedback'],
+    queryFn: () => api<{ feedback: Omit<RunFeedback, 'steps' | 'hr'>[] }>('/api/run-feedback').then((r) => r.feedback),
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+export function useRunFeedback(activityId: number | null) {
+  return useQuery({
+    queryKey: ['runFeedback', activityId],
+    queryFn: () => api<{ feedback: RunFeedback | null }>(`/api/run-feedback?activityId=${activityId}`).then((r) => r.feedback),
+    enabled: activityId != null,
+  });
 }

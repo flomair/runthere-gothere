@@ -77,7 +77,9 @@ export async function syncUser(uid: string, sinceEpoch?: number): Promise<SyncRe
 
   from = Math.floor(from);
   const acts = await listActivities(tokens, from);
-  await repo.putActivities(uid, acts);
+  // keep the webhook arrival time of activities stored before
+  const arrived = new Map((await repo.listActivities(uid, new Date(from * 1000).toISOString())).filter((a) => a.receivedAt).map((a) => [a.id, a.receivedAt]));
+  await repo.putActivities(uid, acts.map((a) => (arrived.has(a.id) ? { ...a, receivedAt: arrived.get(a.id) } : a)));
   await repo.updateUser(uid, {
     strava: { ...s, lastSyncAt: new Date().toISOString(), syncedFrom: Math.min(from, s.syncedFrom ?? from) },
   });
@@ -125,7 +127,9 @@ export async function handleStravaEvent(e: StravaEvent): Promise<string> {
   if (!tokens) return 'no tokens';
   try {
     const a = await getActivity(tokens, e.object_id);
-    await repo.putActivities(uid, [a]);
+    // remember when it first arrived (run feedback reports the sync latency)
+    const prev = e.aspect_type === 'update' ? (await repo.listActivities(uid, a.startDate)).find((x) => x.id === a.id) : undefined;
+    await repo.putActivities(uid, [{ ...a, receivedAt: prev?.receivedAt ?? new Date().toISOString() }]);
     const { detectMilestones } = await import('./milestones.js');
     const created = await detectMilestones(uid, { maxNew: 4, maxPostcards: 1, notifyRewards: true }).catch((err) => {
       console.error('milestone detection failed', err);

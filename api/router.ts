@@ -53,6 +53,7 @@ export const ROUTES: Record<string, () => Promise<RouteModule>> = {
   'push/test': () => import('../routes/push/test.js'),
   public: () => import('../routes/public.js'),
   route: () => import('../routes/route.js'),
+  'run-feedback': () => import('../routes/run-feedback.js'),
   shares: () => import('../routes/shares.js'),
   'strava/callback': () => import('../routes/strava/callback.js'),
   'strava/connect': () => import('../routes/strava/connect.js'),

@@ -1,4 +1,4 @@
-import type { Activity, Bookmark, CoachPlan, Draw, FeedItem, Group, Journey, Milestone, Prize, Quest, Reward, Stage } from '../shared/types.js';
+import type { Activity, Bookmark, CoachPlan, Draw, FeedItem, Group, Journey, Milestone, Prize, Quest, Reward, RunFeedback, Stage } from '../shared/types.js';
 import { type AllowEntry, type Repo, type Secrets, type UserDoc, fromStored, fromStoredGroup, toStored, toStoredGroup } from './repo.js';
 import { migrateJourney } from '../shared/legs.js';
 
@@ -27,6 +27,7 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
   const bookmarks = new Map<string, Map<string, Bookmark>>();
   const rewards = new Map<string, Map<string, Reward>>();
   const coach = new Map<string, Map<string, CoachPlan>>();
+  const feedback = new Map<string, Map<number, RunFeedback>>();
   const quests = new Map<string, Quest>();
   const stages = new Map<string, Map<string, Stage>>();
   const prizes = new Map<string, Map<string, Prize>>();
@@ -114,6 +115,9 @@ export function memoryRepo(): Repo & { dump: () => unknown } {
     uidForEmail: async (email) => [...users.entries()].find(([, u]) => u.email === email)?.[0] ?? null,
     getCoachPlan: async (uid, journeyId) => sub(coach, uid).get(journeyId) ?? null,
     putCoachPlan: async (uid, journeyId, plan) => void sub(coach, uid).set(journeyId, plan),
+    getRunFeedback: async (uid, id) => clone(sub(feedback, uid).get(id) ?? null),
+    putRunFeedback: async (uid, f) => void sub(feedback, uid).set(f.activityId, clone(f)),
+    listRunFeedback: async (uid) => [...sub(feedback, uid).values()].map(clone).sort((a, b) => b.startDateLocal.localeCompare(a.startDateLocal)),
     incrementStat: async (uid, key) => {
       const u = users.get(uid) ?? {};
       users.set(uid, { ...u, stats: { ...(u.stats ?? {}), [key]: (u.stats?.[key] ?? 0) + 1 } });
