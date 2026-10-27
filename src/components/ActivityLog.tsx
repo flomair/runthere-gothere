@@ -34,6 +34,27 @@ import { journeyStore, newId } from '../lib/storage';
 import type { Journey } from '../lib/types';
 import { fromUnit, getUnit, toUnit } from '../lib/units';
 import { locale, t } from '../lib/i18n';
+import { useRunFeedbackList } from '../lib/api';
+import RunFeedbackDialog, { STATUS_COLOR, worstCheck } from './RunFeedbackCard';
+import type { RunFeedback } from '../lib/types';
+
+/** Opens the run's feedback: share in target zone (or steps done), coloured by the recording check. */
+function FeedbackChip({ f, onOpen }: { f: Omit<RunFeedback, 'steps' | 'hr'>; onOpen: () => void }) {
+  const o = f.overall;
+  const label = o.inZonePct != null ? `${o.inZonePct}%` : o.stepsPlanned ? `${o.stepsCompleted}/${o.stepsPlanned}` : t('Feedback');
+  return (
+    <Chip
+      size="small"
+      label={`📊 ${label}`}
+      onClick={(ev) => {
+        ev.stopPropagation();
+        onOpen();
+      }}
+      sx={{ height: 22, fontWeight: 700, border: 2, borderColor: STATUS_COLOR[worstCheck(f.checks)], bgcolor: 'background.paper' }}
+      aria-label={t('Run feedback')}
+    />
+  );
+}
 
 function AddEntryDialog({ open, onClose, journey }: { open: boolean; onClose: () => void; journey: Journey }) {
   const [date, setDate] = useState(todayIso());
@@ -152,6 +173,9 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
   const [adding, setAdding] = useState(false);
   const rows = [...progress.entries].reverse();
   const isMobile = useMediaQuery((t: Theme) => t.breakpoints.down('sm'));
+  const { data: feedback } = useRunFeedbackList(journey.useStrava);
+  const feedbackFor = new Map((feedback ?? []).map((f) => [f.activityId, f]));
+  const [openFeedback, setOpenFeedback] = useState<number | null>(null);
 
   const toggleExcluded = (id: number) =>
     journeyStore.update(journey.id, (j) => ({
@@ -219,9 +243,12 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
                       </Typography>
                     </Box>
                     <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                      <Typography sx={{ fontWeight: 600 }} noWrap>
-                        {e.label === 'Manual entry' ? t('Manual entry') : e.label}
-                      </Typography>
+                      <Stack direction="row" sx={{ gap: 0.75, alignItems: 'center', minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 600 }} noWrap>
+                          {e.label === 'Manual entry' ? t('Manual entry') : e.label}
+                        </Typography>
+                        {e.activityId != null && feedbackFor.has(e.activityId) && <FeedbackChip f={feedbackFor.get(e.activityId)!} onOpen={() => setOpenFeedback(e.activityId!)} />}
+                      </Stack>
                       <Typography variant="caption" color="text.secondary" noWrap component="div">
                         {[e.source === 'manual' ? t('manual') : e.sportType, e.movingTimeS && formatDuration(e.movingTimeS), e.elevationGainM ? `↑ ${Math.round(e.elevationGainM)} m` : null]
                           .filter(Boolean)
@@ -295,6 +322,11 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
                           e.label === 'Manual entry' ? t('Manual entry') : e.label
                         )}{' '}
                         <Chip size="small" label={e.source === 'manual' ? t('manual') : e.sportType} variant="outlined" sx={{ ml: 0.5, height: 20 }} />
+                        {e.activityId != null && feedbackFor.has(e.activityId) && (
+                          <Box component="span" sx={{ ml: 0.5 }}>
+                            <FeedbackChip f={feedbackFor.get(e.activityId)!} onOpen={() => setOpenFeedback(e.activityId!)} />
+                          </Box>
+                        )}
                         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                           {[e.movingTimeS && formatDuration(e.movingTimeS), e.elevationGainM ? `↑ ${Math.round(e.elevationGainM)} m` : null].filter(Boolean).join(' · ')}
                         </Typography>
@@ -330,6 +362,7 @@ export default function ActivityLog({ journey, progress, selectedKey, onSelect }
         )}
       </CardContent>
       <AddEntryDialog open={adding} onClose={() => setAdding(false)} journey={journey} />
+      <RunFeedbackDialog activityId={openFeedback} onClose={() => setOpenFeedback(null)} />
     </Card>
   );
 }

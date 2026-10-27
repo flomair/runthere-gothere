@@ -7,6 +7,7 @@ import { PageTransition } from './components/motion';
 import JourneyList from './components/JourneyList';
 import { t, useLang } from './lib/i18n';
 import { journeyStore, useJourneyState } from './lib/storage';
+import { navigate } from './lib/nav';
 
 const JourneyView = lazy(() => import('./components/JourneyView'));
 const DiaryPage = lazy(() => import('./components/DiaryPage'));
@@ -15,8 +16,9 @@ const GroupView = lazy(() => import('./components/GroupView'));
 const QuestsPage = lazy(() => import('./components/QuestsPage'));
 const CollectionPage = lazy(() => import('./components/CollectionPage'));
 const PublicView = lazy(() => import('./components/PublicView'));
+const RunFeedbackDialog = lazy(() => import('./components/RunFeedbackCard'));
 
-/** Tiny hash router: #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/collection, #/play (challenges & gifts; #/quests too), #/admin. */
+/** Tiny hash router: #/run/<activityId> (run feedback, from the push notification), #/ (list), #/j/<id>, #/j/<id>/diary, #/j/<id>/trip, #/g/<id> (shared journey), #/s/<token> (public), #/collection, #/play (challenges & gifts; #/quests too), #/admin. */
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -27,7 +29,9 @@ function useHashRoute() {
   const m = /^#\/j\/([^/?]+)(?:\/(diary|trip))?/.exec(hash);
   const g = /^#\/g\/([^/?]+)/.exec(hash);
   const s = /^#\/s\/([^/?]+)/.exec(hash);
+  const r = /^#\/run\/(\d+)/.exec(hash);
   return {
+    runFeedbackId: r ? Number(r[1]) : null,
     journeyId: m ? decodeURIComponent(m[1]) : null,
     sub: (m?.[2] ?? null) as 'diary' | 'trip' | null,
     groupId: g ? decodeURIComponent(g[1]) : null,
@@ -53,7 +57,7 @@ function useStravaFlash() {
 }
 
 function Main() {
-  const { journeyId, sub, groupId, admin, collection, quests } = useHashRoute();
+  const { journeyId, sub, groupId, admin, collection, quests, runFeedbackId } = useHashRoute();
   const { journeys, status, error } = useJourneyState();
   const journey = journeyId ? journeys.find((j) => j.id === journeyId) : undefined;
   const [flash, clearFlash] = useStravaFlash();
@@ -99,6 +103,11 @@ function Main() {
           )}
         </PageTransition>
       </Container>
+      {runFeedbackId != null && (
+        <Suspense fallback={null}>
+          <RunFeedbackDialog activityId={runFeedbackId} onClose={() => navigate('#/')} />
+        </Suspense>
+      )}
       <Snackbar open={!!flash} autoHideDuration={6000} onClose={clearFlash}>
         {flash ? (
           <Alert severity={flash.severity} onClose={clearFlash} variant="filled">

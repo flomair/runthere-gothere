@@ -35,6 +35,7 @@ const Flyover3D = lazy(() => import('./Flyover3D'));
 const StreetSlideshow = lazy(() => import('./StreetSlideshow'));
 import RouteMap from './RouteMap';
 import CoachCard from './CoachCard';
+import LatestRunFeedback from './LatestRunFeedback';
 import InviteDialog from './InviteDialog';
 import JourneyHero from './JourneyHero';
 import ShareDialog from './ShareDialog';
@@ -203,6 +204,8 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         })),
     [questsQ.data, me?.user.uid, journey.id, progress.doneM, scale],
   );
+  // the latest run first; the card shows the newest one that has feedback within the last three
+  const latestRunIds = useMemo(() => [...progress.entries].reverse().filter((e) => e.activityId != null && !e.excluded).slice(0, 3).map((e) => e.activityId!), [progress.entries]);
   const waypointDist = useMemo(() => waypointPos.map((w) => ({ name: w.name, m: w.m })), [waypointPos]);
   const stops = useMemo(() => waypointPos.map((w) => ({ reached: w.m <= progress.doneM + 1, legFinish: w.legFinish && w.m < progress.totalM - 1 })), [waypointPos, progress.doneM, progress.totalM]);
 
@@ -471,6 +474,7 @@ export default function JourneyView({ journey }: { journey: Journey }) {
         {section === 'overview' && (
           <Stack spacing={2.5}>
             <PlayStrip journey={journey} doneM={progress.doneM} max={4} />
+            {journey.useStrava && <LatestRunFeedback activityIds={latestRunIds} />}
             {mapCard}
             <Reveal>
               <ElevationProfile

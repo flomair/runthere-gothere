@@ -13,6 +13,79 @@ export interface Activity {
   startDateLocal: string;
   /** Entered by hand on Strava, not recorded: doesn't count for quests and race stages. */
   manual?: boolean;
+  // recording details (optional: activities stored before these existed don't have them)
+  elapsedTimeS?: number;
+  hasHeartrate?: boolean;
+  averageHeartrate?: number;
+  maxHeartrate?: number;
+  averageCadence?: number;
+  deviceName?: string;
+  hasStartLatLng?: boolean;
+  /** Strava workout_type (runs: 0 default, 1 race, 2 long run, 3 workout). */
+  workoutType?: number;
+  /** When the webhook first stored it (ISO). */
+  receivedAt?: string;
+}
+
+/** A heart-rate zone in bpm (inclusive bounds). */
+export interface RunFeedbackZone {
+  name: string;
+  minBpm: number;
+  maxBpm: number;
+}
+
+/** One data-quality check of a recording. */
+export interface RunFeedbackCheck {
+  id: 'streams' | 'stopSave' | 'gaps' | 'duplicates' | 'totals' | 'laps' | 'cadenceLock' | 'syncLatency';
+  status: 'ok' | 'warning' | 'problem';
+  reason: string;
+}
+
+/** A planned step and what was recorded for it. */
+export interface RunFeedbackStep {
+  label: string;
+  block: string;
+  rep?: number;
+  planned: { durationS?: number; distanceM?: number; hrZones?: string[]; hrMin?: number; hrMax?: number };
+  actual: { movingS: number; distanceM?: number; avgHr?: number; paceSPerKm?: number; zoneS: Record<string, number> };
+  /** Share of the step's HR samples inside the target zone(s). */
+  inZonePct?: number;
+  completed: boolean;
+  /** Elapsed seconds from the start. */
+  startS: number;
+  endS: number;
+}
+
+/** Post-run feedback, stored at users/{uid}/runFeedback/{activityId}. */
+export interface RunFeedback {
+  activityId: number;
+  activityName: string;
+  startDateLocal: string;
+  computedAt: string;
+  /** Language of the check reasons and the summary. */
+  lang: 'en' | 'de';
+  deviceName?: string;
+  plan: { source: 'intervals' | 'text' | 'coach' | 'none'; name: string; topLevelSteps: number; steps: number };
+  alignment: { method: 'laps' | 'moving-time' | 'none'; note: string };
+  steps: RunFeedbackStep[];
+  overall: {
+    inZonePct?: number;
+    stepsCompleted: number;
+    stepsPlanned: number;
+    movingS: number;
+    elapsedS: number;
+    distanceM: number;
+    plannedTimeS?: number;
+    /** False when HR itself is in doubt (cadence lock, missing HR). */
+    zoneVerdictReliable: boolean;
+  };
+  zones: RunFeedbackZone[];
+  pauses: { atS: number; durationS: number }[];
+  checks: RunFeedbackCheck[];
+  /** Downsampled HR over elapsed time. */
+  hr: { t: number[]; bpm: number[] };
+  /** Coach summary (written by Claude from the computed numbers only), in `lang`. */
+  summary?: { headline: string; text: string; keep: string; change: string; dataNote?: string };
 }
 
 export interface GeoResult {

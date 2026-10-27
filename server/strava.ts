@@ -85,6 +85,14 @@ interface RawActivity {
   start_date_local: string;
   /** Entered by hand on Strava (no GPS/device recording). */
   manual?: boolean;
+  has_heartrate?: boolean;
+  average_heartrate?: number;
+  max_heartrate?: number;
+  average_cadence?: number;
+  /** Only on the detailed activity (GET /activities/{id}). */
+  device_name?: string;
+  start_latlng?: [number, number] | [] | null;
+  workout_type?: number | null;
 }
 
 const mapActivity = (a: RawActivity): Activity => ({
@@ -97,7 +105,20 @@ const mapActivity = (a: RawActivity): Activity => ({
   startDate: a.start_date,
   startDateLocal: a.start_date_local,
   ...(a.manual ? { manual: true } : {}),
+  // optional recording details; undefined values are dropped so Firestore accepts the document
+  ...defined({
+    elapsedTimeS: a.elapsed_time,
+    hasHeartrate: a.has_heartrate,
+    averageHeartrate: a.average_heartrate,
+    maxHeartrate: a.max_heartrate,
+    averageCadence: a.average_cadence,
+    deviceName: a.device_name,
+    hasStartLatLng: a.start_latlng === undefined ? undefined : Array.isArray(a.start_latlng) && a.start_latlng.length === 2,
+    workoutType: a.workout_type ?? undefined,
+  }),
 });
+
+const defined = <T extends object>(o: T): Partial<T> => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
 
 /** All activities since `afterEpoch` (seconds), oldest first. */
 export async function listActivities(t: StravaTokens, afterEpoch: number): Promise<Activity[]> {

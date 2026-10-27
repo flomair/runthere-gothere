@@ -50,6 +50,7 @@ routes/         the /api handlers (all require sign-in except Strava's callbacks
   ai-key.ts     save / test / delete your own Anthropic key (encrypted)
   narrate.ts    AI narrator (streams text, saves the story)
   narrations.ts saved stories
+  run-feedback.ts post-run feedback (read; push from scripts/run-feedback.ts)
   route.ts      route planning (OSRM foot/bike, BRouter hiking trails, great circle fallback)
   trails/       classic trails: search (Waymarked Trails / Nominatim) and route geometry (Overpass)
   geocode.ts    place search (Nominatim)
@@ -68,6 +69,19 @@ firestore.rules deny-all rules for direct database access
 2. **Strava webhook:** Strava notifies `/api/strava/webhook` within seconds about new, edited or deleted activities of every connected user. The app re-fetches the activity with that user's token and stores it.
 3. **Daily cron** (`/api/cron/sync`, 04:30 UTC) catches anything a webhook missed. **Sync now** in the account menu does the same on demand.
 4. Journeys calculate progress from the stored activities, so no Strava calls are needed to show your progress.
+
+### Run feedback
+
+After a run, the logbook (📊 chip) and the journey overview show how it went against the planned workout: time in the target HR zone per step, steps completed, an HR strip with the target bands, and a **recording check** (sensors present, stopped and saved properly, gaps, duplicate recordings, implausible totals, lap count vs steps, wrist HR locked onto cadence, sync latency).
+
+The numbers come from pure functions in `shared/runFeedback.ts` (unit-tested in `test/runFeedback.test.ts`). They are computed outside the app, e.g. in a Claude session with the Strava connector: dump the activity, laps and streams to JSON, add the planned workout (Intervals.icu workout text) and the HR zones, then
+
+```bash
+node scripts/run-feedback.ts input.json                                  # print
+FEEDBACK_PUSH_SECRET=… node scripts/run-feedback.ts input.json --push https://<app>/api/run-feedback
+```
+
+The app stores only the computed result (`users/{uid}/runFeedback/{activityId}`, never raw streams), adds the webhook's sync latency and sends a "Your run feedback is ready" notification.
 
 ## Data sources
 
@@ -110,6 +124,7 @@ At <https://www.strava.com/settings/api>:
 
 - `SESSION_SECRET`: any long random string (`openssl rand -hex 32`). It encrypts stored tokens and keys; don't change it later.
 - `CRON_SECRET`: any random string; protects the daily sync job.
+- `FEEDBACK_PUSH_SECRET` (optional, at least 24 characters): lets `scripts/run-feedback.ts` push post-run feedback to `/api/run-feedback`.
 
 ### 4. Run locally
 
